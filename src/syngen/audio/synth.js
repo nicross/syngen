@@ -1,5 +1,11 @@
+/**
+ * @namespace
+ */
 syngen.audio.synth = {}
 
+/**
+ * @static
+ */
 syngen.audio.synth.assign = function (synth, key, plugin) {
   synth[key] = plugin
   synth.param = synth.param || {}
@@ -7,6 +13,9 @@ syngen.audio.synth.assign = function (synth, key, plugin) {
   return synth
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.chain = function (synth, plugin) {
   const pluginInput = plugin.input || plugin,
     pluginOutput = plugin.output || plugin,
@@ -39,11 +48,17 @@ syngen.audio.synth.chain = function (synth, plugin) {
   return synth
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.chainAssign = function (synth, key, plugin) {
   this.assign(synth, key, plugin)
   return this.chain(synth, plugin)
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.chainStop = function (synth, plugin) {
   const pluginStop = plugin.stop,
     synthStop = synth.stop
@@ -65,6 +80,9 @@ syngen.audio.synth.chainStop = function (synth, plugin) {
   return synth
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createAdditive = ({
   detune,
   frequency,
@@ -151,6 +169,9 @@ syngen.audio.synth.createAdditive = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createAm = ({
   carrierDetune,
   carrierFrequency,
@@ -220,6 +241,9 @@ syngen.audio.synth.createAm = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createAmBuffer = ({
   buffer,
   carrierGain: carrierGainAmount,
@@ -301,6 +325,9 @@ syngen.audio.synth.createAmBuffer = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createBuffer = ({
   buffer,
   detune,
@@ -356,6 +383,9 @@ syngen.audio.synth.createBuffer = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createFm = ({
   carrierDetune,
   carrierFrequency,
@@ -419,6 +449,9 @@ syngen.audio.synth.createFm = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createLfo = ({
   depth: depthAmount,
   detune,
@@ -461,6 +494,9 @@ syngen.audio.synth.createLfo = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createMod = ({
   amodDepth: amodDepthAmount = syngen.const.zeroGain,
   amodDetune,
@@ -551,6 +587,9 @@ syngen.audio.synth.createMod = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createPwm = ({
   detune,
   frequency,
@@ -610,6 +649,9 @@ syngen.audio.synth.createPwm = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createSimple = ({
   detune,
   frequency,
@@ -652,10 +694,16 @@ syngen.audio.synth.createSimple = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.decorate = (synth = {}) => {
   return Object.setPrototypeOf(synth, syngen.audio.synth.decoration)
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.decoration = {
   assign: function (...args) {
     return syngen.audio.synth.assign(this, ...args)
@@ -693,6 +741,9 @@ syngen.audio.synth.decoration = {
   },
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.filtered = function (synth, {
   detune,
   gain,
@@ -714,6 +765,9 @@ syngen.audio.synth.filtered = function (synth, {
   return this.chainAssign(synth, 'filter', filter)
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.setAudioParams = function (...params) {
   for (const [param, value] of params) {
     if (param instanceof AudioParam) {
@@ -726,6 +780,9 @@ syngen.audio.synth.setAudioParams = function (...params) {
   return this
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.shaped = function (synth, curve) {
   const shaper = syngen.audio.context().createWaveShaper()
   shaper.curve = curve

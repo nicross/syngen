@@ -1,5 +1,11 @@
+/**
+ * @namespace
+ */
 syngen.audio.effect = {}
 
+/**
+ * @static
+ */
 syngen.audio.effect.createDubDelay = function ({
   filterFrequency = syngen.const.maxFrequency,
   filterType = 'lowpass',
@@ -25,6 +31,9 @@ syngen.audio.effect.createDubDelay = function ({
   return feedbackDelay
 }
 
+/**
+ * @static
+ */
 syngen.audio.effect.createFeedbackDelay = ({
   delay: delayAmount = 0.5,
   dry: dryAmount = 1,
@@ -73,6 +82,9 @@ syngen.audio.effect.createFeedbackDelay = ({
   }
 }
 
+/**
+ * @static
+ */
 syngen.audio.effect.createMultitapFeedbackDelay = ({
   dry: dryAmount = 1,
   tap: tapParams = [],
@@ -160,6 +172,9 @@ syngen.audio.effect.createMultitapFeedbackDelay = ({
 
 // This is not an out-of-the-box solution for phaser, chorus, or flange
 // Depth and rate values must be exact values, e.g. 20ms delayTime, 1ms depth, 1/2hz rate
+/**
+ * @static
+ */
 syngen.audio.effect.createPhaser = ({
   dry: dryAmount = 1/2,
   depth: depthAmount = 0.001,
@@ -225,6 +240,9 @@ syngen.audio.effect.createPhaser = ({
   }
 }
 
+/**
+ * @static
+ */
 syngen.audio.effect.createPingPongDelay = function (options) {
   const context = syngen.audio.context(),
     feedbackDelay = this.createFeedbackDelay(options),
@@ -247,6 +265,9 @@ syngen.audio.effect.createPingPongDelay = function (options) {
   return feedbackDelay
 }
 
+/**
+ * @static
+ */
 syngen.audio.effect.createShaper = ({
   curve = syngen.audio.shape.warm(),
   dry: dryAmount = 0,
@@ -289,6 +310,9 @@ syngen.audio.effect.createShaper = ({
   }
 }
 
+/**
+ * @static
+ */
 syngen.audio.effect.createTalkbox = ({
   dry: dryAmount = 0,
   formant0 = syngen.audio.formant.createU(),

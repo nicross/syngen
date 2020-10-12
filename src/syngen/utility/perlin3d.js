@@ -1,5 +1,13 @@
+/**
+ * @interface
+ * @property {Number} pruneThreshold=10**2
+ * @property {Number} range=Math.sqrt(3/4)
+ */
 syngen.utility.perlin3d = {}
 
+/**
+ * @static
+ */
 syngen.utility.perlin3d.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
@@ -7,11 +15,17 @@ syngen.utility.perlin3d.create = function (...args) {
 // SEE: https://en.wikipedia.org/wiki/Perlin_noise
 // SEE: https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/perlin-noise-part-2
 syngen.utility.perlin3d.prototype = {
+  /**
+   * @instance
+   */
   construct: function (...seeds) {
     this.gradient = new Map()
     this.seed = seeds.join(syngen.const.seedSeparator)
     return this
   },
+  /**
+   * @instance
+   */
   generateGradient: function (x, y, z) {
     const srand = syngen.utility.srand('perlin', this.seed, x, y, z)
 
@@ -33,6 +47,9 @@ syngen.utility.perlin3d.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   getDotProduct: function (xi, yi, zi, x, y, z) {
     const dx = x - xi,
       dy = y - yi,
@@ -40,6 +57,9 @@ syngen.utility.perlin3d.prototype = {
 
     return (dx * this.getGradient(xi, yi, zi, 0)) + (dy * this.getGradient(xi, yi, zi, 1)) + (dz * this.getGradient(xi, yi, zi, 2))
   },
+  /**
+   * @instance
+   */
   getGradient: function (x, y, z, i) {
     if (!this.hasGradient(x, y, z)) {
       this.generateGradient(x, y, z)
@@ -48,6 +68,9 @@ syngen.utility.perlin3d.prototype = {
 
     return this.gradient.get(x).get(y).get(z)[i]
   },
+  /**
+   * @instance
+   */
   hasGradient: function (x, y, z) {
     const xMap = this.gradient.get(x)
 
@@ -63,6 +86,9 @@ syngen.utility.perlin3d.prototype = {
 
     return yMap.has(z)
   },
+  /**
+   * @instance
+   */
   prune: function () {
     this.gradient.forEach((xMap, x) => {
       if (xMap.size >= this.pruneThreshold) {
@@ -84,7 +110,10 @@ syngen.utility.perlin3d.prototype = {
 
     return this
   },
-  pruneThreshold: 10 ** 1,
+  pruneThreshold: 10 ** 2,
+  /**
+   * @instance
+   */
   requestPrune: function () {
     if (this.pruneRequest) {
       return this
@@ -98,6 +127,9 @@ syngen.utility.perlin3d.prototype = {
     return this
   },
   range: Math.sqrt(3/4),
+  /**
+   * @instance
+   */
   reset: function () {
     if (this.pruneRequest) {
       cancelIdleCallback(this.pruneRequest)
@@ -107,10 +139,16 @@ syngen.utility.perlin3d.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   smooth: function (value) {
     // 6x^5 - 15x^4 + 10x^3
     return (value ** 3) * (value * ((value * 6) - 15) + 10)
   },
+  /**
+   * @instance
+   */
   value: function (x, y, z) {
     const x0 = Math.floor(x),
       x1 = x0 + 1,

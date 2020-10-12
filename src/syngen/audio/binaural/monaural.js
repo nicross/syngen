@@ -1,10 +1,19 @@
+/**
+ * @interface
+ */
 syngen.audio.binaural.monaural = {}
 
+/**
+ * @static
+ */
 syngen.audio.binaural.monaural.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
 syngen.audio.binaural.monaural.prototype = {
+  /**
+   * @instance
+   */
   construct: function ({
     pan = 0,
   }) {
@@ -25,18 +34,30 @@ syngen.audio.binaural.monaural.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function () {
     this.filter.disconnect()
     return this
   },
+  /**
+   * @instance
+   */
   from: function (input, ...args) {
     input.connect(this.gain, ...args)
     return this
   },
+  /**
+   * @instance
+   */
   to: function (output, ...args) {
     this.filter.connect(output, ...args)
     return this
   },
+  /**
+   * @instance
+   */
   update: function ({
     x = 0,
     y = 0,

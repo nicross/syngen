@@ -1,9 +1,18 @@
+/**
+ * @interface
+ */
 syngen.utility.octree = {}
 
+/**
+ * @static
+ */
 syngen.utility.octree.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
+/**
+ * @static
+ */
 syngen.utility.octree.from = function (items = [], options = {}) {
   const tree = this.create(options)
 
@@ -15,11 +24,17 @@ syngen.utility.octree.from = function (items = [], options = {}) {
 }
 
 syngen.utility.octree.prototype = {
+  /**
+   * @instance
+   */
   clear: function () {
     this.items.length = 0
     this.nodes.length = 0
     return this
   },
+  /**
+   * @instance
+   */
   construct: function ({
     depth = syngen.const.maxSafeFloat * 2,
     height = syngen.const.maxSafeFloat * 2,
@@ -41,9 +56,15 @@ syngen.utility.octree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function () {
     return this.clear()
   },
+  /**
+   * @instance
+   */
   find: function (query = {}, radius = Infinity) {
     // NOTE: Assumes query.x, query.y, and query.z exist
 
@@ -109,6 +130,9 @@ syngen.utility.octree.prototype = {
 
     return result
   },
+  /**
+   * @instance
+   */
   getIndex: function ({
     x = 0,
     y = 0,
@@ -155,6 +179,9 @@ syngen.utility.octree.prototype = {
 
     return 7
   },
+  /**
+   * @instance
+   */
   insert: function (item = {}) {
     // XXX: Assumes item.x and item.y exist
 
@@ -174,21 +201,15 @@ syngen.utility.octree.prototype = {
 
     return this
   },
-  intersects: function (rect) {
-    // TODO: Update syngen.utility.intersects with 3D
-    const between = syngen.utility.between
-
-    const xOverlap = between(this.x, rect.x, rect.x + rect.width)
-      || between(rect.x, this.x, this.x + this.width)
-
-    const yOverlap = between(this.y, rect.y, rect.y + rect.height)
-      || between(rect.y, this.y, this.y + this.height)
-
-    const zOverlap = between(this.z, rect.z, rect.z + rect.depth)
-      || between(rect.z, this.z, this.z + this.depth)
-
-    return xOverlap && yOverlap && zOverlap
+  /**
+   * @instance
+   */
+  intersects: function (prism) {
+    return syngen.utility.intersects(this, prism)
   },
+  /**
+   * @instance
+   */
   retrieve: function ({
     depth = 0,
     height = 0,
@@ -231,6 +252,9 @@ syngen.utility.octree.prototype = {
 
     return items
   },
+  /**
+   * @instance
+   */
   remove: function (item) {
     if (this.nodes.length) {
       const index = this.getIndex(item)
@@ -246,6 +270,9 @@ syngen.utility.octree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   split: function () {
     if (this.nodes.length) {
       return this

@@ -1,3 +1,6 @@
+/**
+ * @namespace
+ */
 syngen.props = (() => {
   const pool = new Set()
 
@@ -6,6 +9,9 @@ syngen.props = (() => {
   }
 
   return {
+    /**
+     * @memberof syngen.props
+     */
     add: function (...props) {
       for (const prop of props) {
         if (isValidPrototype(prop)) {
@@ -15,6 +21,9 @@ syngen.props = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.props
+     */
     create: function (prototype, options) {
       if (!isValidPrototype(prototype)) {
         prototype = syngen.prop.null
@@ -25,6 +34,9 @@ syngen.props = (() => {
 
       return prop
     },
+    /**
+     * @memberof syngen.props
+     */
     destroy: function (...props) {
       for (const prop of props) {
         if (prop.destroy) {
@@ -36,12 +48,21 @@ syngen.props = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.props
+     */
     get: () => [...pool],
+    /**
+     * @memberof syngen.props
+     */
     reset: function () {
       pool.forEach((prop) => prop.destroy())
       pool.clear()
       return this
     },
+    /**
+     * @memberof syngen.props
+     */
     update: function ({delta, paused}) {
       pool.forEach((prop) => prop.update({delta, paused}))
       return this

@@ -1,10 +1,19 @@
+/**
+ * @interface
+ */
 syngen.audio.send.reverb = {}
 
+/**
+ * @static
+ */
 syngen.audio.send.reverb.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
 syngen.audio.send.reverb.prototype = {
+  /**
+   * @instance
+   */
   construct: function () {
     const context = syngen.audio.context()
 
@@ -28,27 +37,42 @@ syngen.audio.send.reverb.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function () {
     syngen.audio.mixer.auxiliary.reverb.off('activate', this.onSendActivate)
     syngen.audio.mixer.auxiliary.reverb.off('deactivate', this.onSendDeactivate)
     this.send.disconnect()
     return this
   },
+  /**
+   * @instance
+   */
   from: function (input) {
     input.connect(this.input)
     return this
   },
+  /**
+   * @instance
+   */
   onSendActivate: function () {
     this.update(this.relative)
     this.input.connect(this.delay)
     this.delay.connect(this.send)
     return this
   },
+  /**
+   * @instance
+   */
   onSendDeactivate: function () {
     this.input.disconnect()
     this.delay.disconnect()
     return this
   },
+  /**
+   * @instance
+   */
   update: function ({
     x = 0,
     y = 0,

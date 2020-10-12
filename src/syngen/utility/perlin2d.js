@@ -1,5 +1,13 @@
+/**
+ * @interface
+ * @property {Number} pruneThreshold=10**3
+ * @property {Number} range=Math.sqrt(2/4)
+ */
 syngen.utility.perlin2d = {}
 
+/**
+ * @static
+ */
 syngen.utility.perlin2d.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
@@ -8,11 +16,17 @@ syngen.utility.perlin2d.create = function (...args) {
 // SEE: https://gamedev.stackexchange.com/questions/23625/how-do-you-generate-tileable-perlin-noise
 // SEE: https://github.com/josephg/noisejs
 syngen.utility.perlin2d.prototype = {
+  /**
+   * @instance
+   */
   construct: function (...seeds) {
     this.gradient = new Map()
     this.seed = seeds.join(syngen.const.seedSeparator)
     return this
   },
+  /**
+   * @instance
+   */
   generateGradient: function (x, y) {
     const srand = syngen.utility.srand('perlin', this.seed, x, y)
 
@@ -27,12 +41,18 @@ syngen.utility.perlin2d.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   getDotProduct: function (xi, yi, x, y) {
     const dx = x - xi,
       dy = y - yi
 
     return (dx * this.getGradient(xi, yi, 0)) + (dy * this.getGradient(xi, yi, 1))
   },
+  /**
+   * @instance
+   */
   getGradient: function (x, y, i) {
     if (!this.hasGradient(x, y)) {
       this.generateGradient(x, y)
@@ -40,6 +60,9 @@ syngen.utility.perlin2d.prototype = {
 
     return this.gradient.get(x).get(y)[i]
   },
+  /**
+   * @instance
+   */
   hasGradient: function (x, y) {
     const xMap = this.gradient.get(x)
 
@@ -49,6 +72,9 @@ syngen.utility.perlin2d.prototype = {
 
     return xMap.has(y)
   },
+  /**
+   * @instance
+   */
   prune: function () {
     this.gradient.forEach((xMap, x) => {
       if (xMap.size >= this.pruneThreshold) {
@@ -64,7 +90,10 @@ syngen.utility.perlin2d.prototype = {
 
     return this
   },
-  pruneThreshold: 10 ** 2,
+  pruneThreshold: 10 ** 3,
+  /**
+   * @instance
+   */
   requestPrune: function () {
     if (this.pruneRequest) {
       return this

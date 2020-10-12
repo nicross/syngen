@@ -1,3 +1,6 @@
+/**
+ * @namespace
+ */
 syngen.audio.shape = (() => {
   const crush6 = createBitcrush(6),
     crush8 = createBitcrush(8),
@@ -36,6 +39,9 @@ syngen.audio.shape = (() => {
     square[i] = i < square.length / 2 ? -1 : 1
   }
 
+  /**
+   * @memberof syngen.audio.shape
+   */
   function createBitcrush(depth = 16, samples = 2 ** 16) {
     const factor = 2 ** (depth - 1),
       shape = new Float32Array(samples)
@@ -50,6 +56,9 @@ syngen.audio.shape = (() => {
     return shape
   }
 
+  /**
+   * @memberof syngen.audio.shape
+   */
   function createNoise(variance = 2, samples = 2 ** 16) {
     const shape = new Float32Array(samples),
       srand = syngen.utility.srand('syngen.audio.shape.createNoise')
@@ -67,6 +76,9 @@ syngen.audio.shape = (() => {
     return shape
   }
 
+  /**
+   * @memberof syngen.audio.shape
+   */
   function createRandom(samples = 2, seed = '') {
     const shape = new Float32Array(samples),
       srand = syngen.utility.srand('syngen.audio.shape.createRandom', seed)
@@ -79,6 +91,9 @@ syngen.audio.shape = (() => {
   }
 
   // NOTE: amount should be in radians
+  /**
+   * @memberof syngen.audio.shape
+   */
   function createSigmoid(amount = 0, samples = 2 ** 16) {
     const shape = new Float32Array(samples)
 
@@ -90,6 +105,9 @@ syngen.audio.shape = (() => {
     return shape
   }
 
+  /**
+   * @memberof syngen.audio.shape
+   */
   function createTuple(times = 1) {
     const samples = (times * 4) - 1,
       shape = new Float32Array(samples)
@@ -111,6 +129,9 @@ syngen.audio.shape = (() => {
     return shape
   }
 
+  /**
+   * @memberof syngen.audio.shape
+   */
   function createTuplePulse(times = 1) {
     const samples = times * 2,
       shape = new Float32Array(samples)
@@ -130,35 +151,125 @@ syngen.audio.shape = (() => {
     createTuple,
     createTuplePulse,
     crush12: () => crush12,
+    /**
+     * @memberof syngen.audio.shape
+     */
     crush6: () => crush6,
+    /**
+     * @memberof syngen.audio.shape
+     */
     crush8: () => crush8,
+    /**
+     * @memberof syngen.audio.shape
+     */
     distort: () => distort,
+    /**
+     * @memberof syngen.audio.shape
+     */
     double: () => double,
+    /**
+     * @memberof syngen.audio.shape
+     */
     doublePulse: () => doublePulse,
+    /**
+     * @memberof syngen.audio.shape
+     */
     equalFadeIn: () => equalFadeIn,
+    /**
+     * @memberof syngen.audio.shape
+     */
     equalFadeOut: () => equalFadeOut,
+    /**
+     * @memberof syngen.audio.shape
+     */
     hot: () => hot,
+    /**
+     * @memberof syngen.audio.shape
+     */
     invert: () => invert,
+    /**
+     * @memberof syngen.audio.shape
+     */
     invertShape: (shape) => new Float32Array([...shape].reverse()),
+    /**
+     * @memberof syngen.audio.shape
+     */
     linear: () => linear,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noise: () => noise,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noise2: () => noise2,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noise4: () => noise4,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noise8: () => noise8,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noise16: () => noise16,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noise32: () => noise32,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noiseZero: () => noiseZero,
+    /**
+     * @memberof syngen.audio.shape
+     */
     offset: (offset = syngen.const.zeroGain) => new Float32Array([offset, offset]),
+    /**
+     * @memberof syngen.audio.shape
+     */
     offsetShape: (shape, offset = syngen.const.zeroGain) => shape.map((value) => value + offset),
+    /**
+     * @memberof syngen.audio.shape
+     */
     one: () => one,
+    /**
+     * @memberof syngen.audio.shape
+     */
     pulse: () => pulse,
+    /**
+     * @memberof syngen.audio.shape
+     */
     rectify: () => rectify,
+    /**
+     * @memberof syngen.audio.shape
+     */
     rectifyShape: (shape) => shape.map(Math.abs),
+    /**
+     * @memberof syngen.audio.shape
+     */
     reverseShape: (shape) => shape.slice().reverse(),
+    /**
+     * @memberof syngen.audio.shape
+     */
     square: () => square,
+    /**
+     * @memberof syngen.audio.shape
+     */
     triple: () => triple,
+    /**
+     * @memberof syngen.audio.shape
+     */
     triplePulse: () => triplePulse,
+    /**
+     * @memberof syngen.audio.shape
+     */
     warm: () => warm,
+    /**
+     * @memberof syngen.audio.shape
+     */
     zero: () => zero,
   }
 })()

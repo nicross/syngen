@@ -1,5 +1,17 @@
+/**
+ * @mixin
+ * @property {syngen.utility.quaternion} angularVelocity
+ * @property {syngen.utility.quaternion} quaternion
+ * @property {syngen.utility.vector3d} velocity
+ * @property {Number} x
+ * @property {Number} y
+ * @property {Number} z
+ */
 syngen.utility.physical = {}
 
+/**
+ * @static
+ */
 syngen.utility.physical.decorate = function (target = {}) {
   if (!target.x) {
     target.x = 0
@@ -24,15 +36,27 @@ syngen.utility.physical.decorate = function (target = {}) {
   return target
 }
 
+/**
+ * @lends syngen.utility.physical
+ */
 syngen.utility.physical.decoration = {
+  /**
+   * @instance
+   */
   euler: function () {
     return syngen.utility.euler.fromQuaternion(this.quaternion)
   },
+  /**
+   * @instance
+   */
   resetPhysics: function () {
     this.angularVelocity.set({w: 1})
     this.velocity.set()
     return this
   },
+  /**
+   * @instance
+   */
   updatePhysics: function () {
     const delta = syngen.loop.delta()
 
@@ -48,6 +72,9 @@ syngen.utility.physical.decoration = {
       this.z += this.velocity.z * delta
     }
   },
+  /**
+   * @instance
+   */
   vector: function () {
     return syngen.utility.vector3d.create(this)
   },

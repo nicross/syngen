@@ -1,9 +1,18 @@
+/**
+ * @interface
+ */
 syngen.utility.bitree = {}
 
+/**
+ * @static
+ */
 syngen.utility.bitree.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
+/**
+ * @static
+ */
 syngen.utility.bitree.from = function (items = [], options = {}) {
   const tree = this.create(options)
 
@@ -15,11 +24,17 @@ syngen.utility.bitree.from = function (items = [], options = {}) {
 }
 
 syngen.utility.bitree.prototype = {
+  /**
+   * @instance
+   */
   clear: function () {
     this.items.length = 0
     this.nodes.length = 0
     return this
   },
+  /**
+   * @instance
+   */
   construct: function ({
     dimension = 'x',
     maxItems = 12,
@@ -35,9 +50,15 @@ syngen.utility.bitree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function () {
     return this.clear()
   },
+  /**
+   * @instance
+   */
   find: function (query, radius = Infinity) {
     // XXX: Assumes query[this.dimension] exists
 
@@ -92,6 +113,9 @@ syngen.utility.bitree.prototype = {
 
     return result
   },
+  /**
+   * @instance
+   */
   getIndex: function (item) {
     if (!this.nodes.length) {
       return -1
@@ -105,6 +129,9 @@ syngen.utility.bitree.prototype = {
 
     return 1
   },
+  /**
+   * @instance
+   */
   insert: function (item = {}) {
     // XXX: Assumes item[this.dimension] exists
 
@@ -124,10 +151,16 @@ syngen.utility.bitree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   intersects: function (value, width) {
     return syngen.utility.between(this.value, value, value + width)
       || syngen.utility.between(value, this.value, this.value + this.width)
   },
+  /**
+   * @instance
+   */
   retrieve: function (value, width) {
     const items = []
 
@@ -149,6 +182,9 @@ syngen.utility.bitree.prototype = {
 
     return items
   },
+  /**
+   * @instance
+   */
   split: function () {
     if (this.nodes.length) {
       return this

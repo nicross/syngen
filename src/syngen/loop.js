@@ -1,3 +1,7 @@
+/**
+ * @implements syngen.utility.pubsub
+ * @namespace
+ */
 syngen.loop = (() => {
   const pubsub = syngen.utility.pubsub.create()
 
@@ -68,10 +72,25 @@ syngen.loop = (() => {
   })
 
   return syngen.utility.pubsub.decorate({
+    /**
+     * @memberof syngen.loop
+     */
     delta: () => delta,
+    /**
+     * @memberof syngen.loop
+     */
     frame: () => frameCount,
+    /**
+     * @memberof syngen.loop
+     */
     isPaused: () => isPaused,
+    /**
+     * @memberof syngen.loop
+     */
     isRunning: () => isRunning,
+    /**
+     * @memberof syngen.loop
+     */
     pause: function () {
       if (isPaused) {
         return this
@@ -82,6 +101,9 @@ syngen.loop = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.loop
+     */
     resume: function () {
       if (!isPaused) {
         return this
@@ -92,6 +114,9 @@ syngen.loop = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.loop
+     */
     start: function () {
       if (isRunning) {
         return this
@@ -105,6 +130,9 @@ syngen.loop = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.loop
+     */
     stop: function () {
       if (!isRunning) {
         return this
@@ -122,6 +150,9 @@ syngen.loop = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.loop
+     */
     time: () => time,
   }, pubsub)
 })()

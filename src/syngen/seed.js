@@ -1,12 +1,24 @@
+/**
+ * @namespace
+ */
 syngen.seed = (() => {
   let seed
 
   return {
+    /**
+     * @memberof syngen.seed
+     */
     get: () => seed,
+    /**
+     * @memberof syngen.seed
+     */
     set: function (value) {
       seed = value
       return this
     },
+    /**
+     * @memberof syngen.seed
+     */
     valueOf: () => seed,
   }
 })()

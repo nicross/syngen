@@ -1,3 +1,6 @@
+/**
+ * @static
+ */
 syngen.audio.buffer.noise.white = (() => {
   const context = syngen.audio.context()
 

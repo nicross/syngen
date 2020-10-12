@@ -1,7 +1,13 @@
+/**
+ * @namespace
+ */
 syngen.position = (() => {
   const proxy = syngen.utility.physical.decorate({})
 
   return {
+    /**
+     * @memberof syngen.position
+     */
     export: () => ({
       quaternion: {
         w: proxy.quaternion.w,
@@ -13,12 +19,33 @@ syngen.position = (() => {
       y: proxy.y,
       z: proxy.z,
     }),
+    /**
+     * @memberof syngen.position
+     */
     getAngularVelocity: () => proxy.angularVelocity.clone(),
+    /**
+     * @memberof syngen.position
+     */
     getAngularVelocityEuler: () => syngen.utility.euler.fromQuaternion(proxy.angularVelocity),
+    /**
+     * @memberof syngen.position
+     */
     getEuler: () => proxy.euler(),
+    /**
+     * @memberof syngen.position
+     */
     getQuaternion: () => proxy.quaternion.clone(),
+    /**
+     * @memberof syngen.position
+     */
     getVector: () => proxy.vector(),
+    /**
+     * @memberof syngen.position
+     */
     getVelocity: () => proxy.velocity.clone(),
+    /**
+     * @memberof syngen.position
+     */
     import: function ({
       quaternion = {w: 1},
       x = 0,
@@ -34,6 +61,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     rect: () => ({
       depth: syngen.const.positionRadius * 2,
       height: syngen.const.positionRadius * 2,
@@ -42,9 +72,15 @@ syngen.position = (() => {
       y: proxy.y - syngen.const.positionRadius,
       z: proxy.z - syngen.const.positionRadius,
     }),
+    /**
+     * @memberof syngen.position
+     */
     reset: function () {
       return this.import()
     },
+    /**
+     * @memberof syngen.position
+     */
     setAngularVelocity: function ({
       w = 0,
       x = 0,
@@ -60,6 +96,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     setAngularVelocityEuler: function ({
       pitch = 0,
       roll = 0,
@@ -75,6 +114,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     setEuler: function ({
       pitch = 0,
       roll = 0,
@@ -90,6 +132,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     setQuaternion: function ({
       w = 0,
       x = 0,
@@ -105,6 +150,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     setVector: function ({
       x = 0,
       y = 0,
@@ -116,6 +164,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     setVelocity: function ({
       x = 0,
       y = 0,
@@ -129,6 +180,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     update: function () {
       proxy.updatePhysics()
       return this

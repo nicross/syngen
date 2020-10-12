@@ -1,6 +1,25 @@
+/**
+ * @interface
+ * @property {String} name
+ * @property {Number} radius
+ * @property {String} token
+ * @property {Number} x
+ * @property {Number} y
+ * @property {Number} z
+ */
 syngen.prop.base = {
   name: 'base',
   radius: 0,
+  /**
+   * @method
+   * @param {Object} [options]
+   * @param {AudioDestinationNode|GainNode} [options.destination=syngen.audio.mixer.bus.props]
+   * @param {Number} [options.radius=0]
+   * @param {String} [options.token]
+   * @param {Number} [options.x=0]
+   * @param {Number} [options.y=0]
+   * @param {Number} [options.z=0]
+   */
   construct: function ({
     destination = syngen.audio.mixer.bus.props(),
     radius,
@@ -39,6 +58,9 @@ syngen.prop.base = {
 
     return this
   },
+  /**
+   * @method
+   */
   destroy: function () {
     syngen.audio.ramp.linear(this.output.gain, syngen.const.zeroGain, syngen.const.propFadeDuration)
 
@@ -51,6 +73,9 @@ syngen.prop.base = {
 
     return this
   },
+  /**
+   * @method
+   */
   invent: function (definition = {}) {
     if (typeof definition == 'function') {
       definition = definition(this)
@@ -58,6 +83,9 @@ syngen.prop.base = {
 
     return Object.setPrototypeOf({...definition}, this)
   },
+  /**
+   * @method
+   */
   handlePeriodic: function ({
     delay = () => 0,
     key = '',
@@ -91,18 +119,39 @@ syngen.prop.base = {
 
     return this
   },
+  /**
+   * @method
+   */
   hasPeriodic: function (key) {
     return key in this.periodic
   },
+  /**
+   * @method
+   */
   isPeriodicActive: function (key) {
     return this.periodic[key] && this.periodic[key].active
   },
+  /**
+   * @method
+   */
   isPeriodicPending: function (key) {
     return this.periodic[key] && !this.periodic[key].active
   },
+  /**
+   * @method
+   */
   onConstruct: () => {},
+  /**
+   * @method
+   */
   onDestroy: () => {},
+  /**
+   * @method
+   */
   onUpdate: () => {},
+  /**
+   * @method
+   */
   recalculate: function () {
     const positionQuaternion = syngen.position.getQuaternion(),
       positionVector = syngen.position.getVector()
@@ -121,6 +170,9 @@ syngen.prop.base = {
 
     return this
   },
+  /**
+   * @method
+   */
   rect: function () {
     return {
       height: this.radius * 2,
@@ -129,10 +181,16 @@ syngen.prop.base = {
       y: this.y - this.radius,
     }
   },
+  /**
+   * @method
+   */
   resetPeriodic: function (key) {
     delete this.periodic[key]
     return this
   },
+  /**
+   * @method
+   */
   update: function ({
     paused,
   } = {}) {

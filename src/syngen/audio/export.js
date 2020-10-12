@@ -1,3 +1,6 @@
+/**
+ * @static
+ */
 syngen.audio.export = ({
   duration = 0,
   input = syngen.audio.mixer.master.output,

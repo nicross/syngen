@@ -3,8 +3,14 @@
 // SEE: https://www.reasonstudios.com/blog/thor-demystified-17-filters-pt-5-formant-filters
 // SEE: http://www.ipachart.com
 
+/**
+ * @namespace
+ */
 syngen.audio.formant = {}
 
+/**
+ * @static
+ */
 syngen.audio.formant.blend = (a, b, mix = 0) => {
   const getFrequency = (array, index) => (array[index] && array[index].frequency) || syngen.const.zero
   const getGain = (array, index) => (array[index] && array[index].gain) || syngen.const.zeroGain
@@ -17,6 +23,9 @@ syngen.audio.formant.blend = (a, b, mix = 0) => {
   }))
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.create = (frequencies = []) => {
   const context = syngen.audio.context()
 
@@ -49,36 +58,54 @@ syngen.audio.formant.create = (frequencies = []) => {
   }
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.createA = () => {
   return syngen.audio.formant.create(
     syngen.audio.formant.a()
   )
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.createE = () => {
   return syngen.audio.formant.create(
     syngen.audio.formant.e()
   )
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.createI = () => {
   return syngen.audio.formant.create(
     syngen.audio.formant.i()
   )
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.createO = () => {
   return syngen.audio.formant.create(
     syngen.audio.formant.o()
   )
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.createU = () => {
   return syngen.audio.formant.create(
     syngen.audio.formant.u()
   )
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.transition = function(formant, frequencies = [], duration) {
   formant.filters.forEach((filter, i) => {
     if (!frequencies[i]) {
@@ -104,6 +131,9 @@ syngen.audio.formant.transition = function(formant, frequencies = [], duration) 
   return syngen.utility.timing.promise(duration * 1000)
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.a = () => [
   {
     frequency: 599,
@@ -127,6 +157,9 @@ syngen.audio.formant.a = () => [
   },
 ]
 
+/**
+ * @static
+ */
 syngen.audio.formant.e = () => [
   {
     frequency: 469,
@@ -150,6 +183,9 @@ syngen.audio.formant.e = () => [
   },
 ]
 
+/**
+ * @static
+ */
 syngen.audio.formant.i = () => [
   {
     frequency: 274,
@@ -173,6 +209,9 @@ syngen.audio.formant.i = () => [
   },
 ]
 
+/**
+ * @static
+ */
 syngen.audio.formant.o = () => [
   {
     frequency: 411,
@@ -196,6 +235,9 @@ syngen.audio.formant.o = () => [
   },
 ]
 
+/**
+ * @static
+ */
 syngen.audio.formant.u = () => [
   {
     frequency: 290,

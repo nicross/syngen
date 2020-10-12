@@ -1,3 +1,6 @@
+/**
+ * @namespace
+ */
 syngen.input.keyboard = (() => {
   let state = {}
 
@@ -17,8 +20,17 @@ syngen.input.keyboard = (() => {
   }
 
   return {
+    /**
+     * @memberof syngen.input.keyboard
+     */
     get: () => ({...state}),
+    /**
+     * @memberof syngen.input.keyboard
+     */
     is: (key) => state[key] || false,
+    /**
+     * @memberof syngen.input.keyboard
+     */
     reset: function () {
       state = {}
       return this

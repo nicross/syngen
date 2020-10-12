@@ -1,15 +1,29 @@
+/**
+ * @interface
+ * @property {Number} pruneThreshold=10**2
+ * @property {Number} range=Math.sqrt(4/4)
+ */
 syngen.utility.perlin4d = {}
 
+/**
+ * @static
+ */
 syngen.utility.perlin4d.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
 syngen.utility.perlin4d.prototype = {
+  /**
+   * @instance
+   */
   construct: function (...seeds) {
     this.gradient = new Map()
     this.seed = seeds.join(syngen.const.seedSeparator)
     return this
   },
+  /**
+   * @instance
+   */
   generateGradient: function (x, y, z, t) {
     const srand = syngen.utility.srand('perlin', this.seed, x, y, z, t)
 
@@ -38,6 +52,9 @@ syngen.utility.perlin4d.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   getDotProduct: function (xi, yi, zi, ti, x, y, z, t) {
     const dt = t - ti,
       dx = x - xi,
@@ -46,6 +63,9 @@ syngen.utility.perlin4d.prototype = {
 
     return (dt * this.getGradient(xi, yi, zi, ti, 3)) + (dx * this.getGradient(xi, yi, zi, ti, 0)) + (dy * this.getGradient(xi, yi, zi, ti, 1)) + (dz * this.getGradient(xi, yi, zi, ti, 2))
   },
+  /**
+   * @instance
+   */
   getGradient: function (x, y, z, t, i) {
     if (!this.hasGradient(x, y, z, t)) {
       this.generateGradient(x, y, z, t)
@@ -54,6 +74,9 @@ syngen.utility.perlin4d.prototype = {
 
     return this.gradient.get(x).get(y).get(z).get(t)[i]
   },
+  /**
+   * @instance
+   */
   hasGradient: function (x, y, z, t) {
     const xMap = this.gradient.get(x)
 
@@ -75,6 +98,9 @@ syngen.utility.perlin4d.prototype = {
 
     return zMap.has(t)
   },
+  /**
+   * @instance
+   */
   prune: function () {
     this.gradient.forEach((xMap, x) => {
       if (xMap.size >= this.pruneThreshold) {
@@ -102,7 +128,10 @@ syngen.utility.perlin4d.prototype = {
 
     return this
   },
-  pruneThreshold: 10 ** 1,
+  pruneThreshold: 10 ** 2,
+  /**
+   * @instance
+   */
   requestPrune: function () {
     if (this.pruneRequest) {
       return this
@@ -116,6 +145,9 @@ syngen.utility.perlin4d.prototype = {
     return this
   },
   range: Math.sqrt(4/4),
+  /**
+   * @instance
+   */
   reset: function () {
     if (this.pruneRequest) {
       cancelIdleCallback(this.pruneRequest)
@@ -125,10 +157,16 @@ syngen.utility.perlin4d.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   smooth: function (value) {
     // 6x^5 - 15x^4 + 10x^3
     return (value ** 3) * (value * ((value * 6) - 15) + 10)
   },
+  /**
+   * @instance
+   */
   value: function (x, y, z, t) {
     const t0 = Math.floor(t),
       t1 = t0 + 1,

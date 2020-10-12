@@ -1,3 +1,7 @@
+/**
+ * @implements syngen.utility.pubsub
+ * @namespace
+ */
 syngen.audio.mixer.auxiliary.reverb = (() => {
   const context = syngen.audio.context(),
     input = context.createGain(),
@@ -15,13 +19,25 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
   convolver.connect(output)
 
   return syngen.utility.pubsub.decorate({
+    /**
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     */
     createSend: () => {
       const gain = context.createGain()
       gain.connect(input)
       return gain
     },
+    /**
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     */
     isActive: () => active,
+    /**
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     */
     output: () => output,
+    /**
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     */
     setActive: function (state) {
       if (active == state) {
         return this
@@ -39,10 +55,16 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     */
     setGain: function (gain, duration) {
       syngen.audio.ramp.linear(output.gain, gain, duration)
       return this
     },
+    /**
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     */
     setImpulse: function (buffer) {
       input.disconnect()
 

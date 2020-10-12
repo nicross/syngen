@@ -1,14 +1,19 @@
+/**
+ * @interface
+ */
 syngen.utility.machine = {}
 
+/**
+ * @static
+ */
 syngen.utility.machine.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
-syngen.utility.machine.is = function (x) {
-  return this.prototype.isPrototypeOf(x)
-}
-
 syngen.utility.machine.prototype = {
+  /**
+   * @instance
+   */
   change: function (state, data = {}) {
     if (this.is(state)) {
       return this
@@ -37,6 +42,9 @@ syngen.utility.machine.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   construct: function ({state = 'none', transition = {}} = {}) {
     this.state = state
     this.transition = {...transition}
@@ -45,10 +53,16 @@ syngen.utility.machine.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function () {
     this.pubsub.destroy()
     return this
   },
+  /**
+   * @instance
+   */
   dispatch: function (event, data = {}) {
     const actions = this.transition[this.state]
 
@@ -87,9 +101,15 @@ syngen.utility.machine.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   getState: function () {
     return this.state
   },
+  /**
+   * @instance
+   */
   is: function (state) {
     return this.state == state
   },

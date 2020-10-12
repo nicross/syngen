@@ -1,3 +1,6 @@
+/**
+ * @static
+ */
 syngen.audio.buffer.impulse.medium = (() => {
   const context = syngen.audio.context()
 

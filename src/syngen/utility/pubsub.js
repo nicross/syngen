@@ -1,15 +1,23 @@
+/**
+ * @interface
+ */
 syngen.utility.pubsub = {}
 
+/**
+ * @static
+ */
 syngen.utility.pubsub.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
+/**
+ * @static
+ */
 syngen.utility.pubsub.decorate = function (target, instance) {
-  if (!this.is(instance)) {
+  if (!this.prototype.isPrototypeOf(instance)) {
     instance = this.create()
+    target.pubsub = instance
   }
-
-  target.pubsub = instance;
 
   ['emit', 'off', 'on', 'once'].forEach((method) => {
     target[method] = function (...args) {
@@ -21,19 +29,24 @@ syngen.utility.pubsub.decorate = function (target, instance) {
   return target
 }
 
-syngen.utility.pubsub.is = function (x) {
-  return this.prototype.isPrototypeOf(x)
-}
-
 syngen.utility.pubsub.prototype = {
+  /**
+   * @instance
+   */
   construct: function() {
     this._handler = {}
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function() {
     this.off()
     return this
   },
+  /**
+   * @instance
+   */
   emit: function (event, ...args) {
     if (!this._handler[event]) {
       return this
@@ -46,6 +59,9 @@ syngen.utility.pubsub.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   off: function (event, handler) {
     if (event === undefined) {
       this._handler = {}
@@ -70,6 +86,9 @@ syngen.utility.pubsub.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   on: function (event, handler) {
     if (!this._handler[event]) {
       this._handler[event] = []
@@ -79,6 +98,9 @@ syngen.utility.pubsub.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   once: function (event, handler) {
     const wrapper = (...args) => {
       this.off(event, wrapper)

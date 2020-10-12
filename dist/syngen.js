@@ -2,6 +2,9 @@
 (() => {
 'use strict'
 
+/**
+ * @namespace
+ */
 const syngen = (() => {
   const ready = new Promise((resolve) => {
     document.addEventListener('DOMContentLoaded', resolve)
@@ -10,19 +13,37 @@ const syngen = (() => {
   return {
     input: {},
     prop: {},
+    /**
+     * @memberof syngen
+     * @param {Function} [callback]
+     * @returns {Promise}
+     */
     ready: (callback) => {
       return typeof callback == 'function'
         ? ready.then(callback)
         : ready
     },
-    utility: {},
   }
 })()
 
+/**
+ * @namespace
+ */
+syngen.utility = {}
+
+/**
+ * @static
+ */
 syngen.utility.addInterval = (frequency, interval) => frequency * (2 ** interval)
 
+/**
+ * @static
+ */
 syngen.utility.between = (value, min, max) => value >= min && value <= max
 
+/**
+ * @static
+ */
 syngen.utility.centroid = (vectors = []) => {
   // NOTE: Returns origin if empty set
   if (!vectors.length) {
@@ -39,13 +60,16 @@ syngen.utility.centroid = (vectors = []) => {
     zSum += vector.z || 0
   }
 
-  return {
+  return syngen.utility.vector3d.create({
     x: xSum / vectors.length,
     y: ySum / vectors.length,
     z: zSum / vectors.length,
-  }
+  })
 }
 
+/**
+ * @static
+ */
 syngen.utility.choose = (options = [], value = 0) => {
   value = syngen.utility.clamp(value, 0, 1)
 
@@ -53,6 +77,9 @@ syngen.utility.choose = (options = [], value = 0) => {
   return options[index]
 }
 
+/**
+ * @static
+ */
 syngen.utility.chooseSplice = (options = [], value = 0) => {
   // NOTE: Mutates options
   value = syngen.utility.clamp(value, 0, 1)
@@ -61,6 +88,9 @@ syngen.utility.chooseSplice = (options = [], value = 0) => {
   return options.splice(index, 1)[0]
 }
 
+/**
+ * @static
+ */
 syngen.utility.chooseWeighted = (options = [], value = 0) => {
   // SEE: https://medium.com/@peterkellyonline/weighted-random-selection-3ff222917eb6
   value = syngen.utility.clamp(value, 0, 1)
@@ -80,6 +110,9 @@ syngen.utility.chooseWeighted = (options = [], value = 0) => {
   }
 }
 
+/**
+ * @static
+ */
 syngen.utility.clamp = (x, min, max) => {
   if (x > max) {
     return max
@@ -92,15 +125,24 @@ syngen.utility.clamp = (x, min, max) => {
   return x
 }
 
+/**
+ * @static
+ */
 syngen.utility.closer = (x, a, b) => {
   return Math.abs(x - a) <= Math.abs(x - b) ? a : b
 }
 
+/**
+ * @static
+ */
 syngen.utility.closest = function (x, bag) {
   // TODO: This could be improved with a version for sorted arrays
   return bag.reduce((closest, value) => syngen.utility.closer(x, closest, value))
 }
 
+/**
+ * @static
+ */
 syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
   const compensation = 1 / (1 - (2 ** -octaves)),
     perlins = []
@@ -141,12 +183,24 @@ syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
   }
 }
 
+/**
+ * @static
+ */
 syngen.utility.degreesToRadians = (degrees) => degrees * Math.PI / 180
 
+/**
+ * @static
+ */
 syngen.utility.detune = (f, cents = 0) => f * (2 ** (cents / 1200))
 
+/**
+ * @static
+ */
 syngen.utility.distance = (a, b) => Math.sqrt(syngen.utility.distance2(a, b))
 
+/**
+ * @static
+ */
 syngen.utility.distance2 = ({
   x: x1 = 0,
   y: y1 = 0,
@@ -157,6 +211,9 @@ syngen.utility.distance2 = ({
   z: z2 = 0,
 } = {}) => ((x2 - x1) ** 2) + ((y2 - y1) ** 2) + ((z2 - z1) ** 2)
 
+/**
+ * @static
+ */
 syngen.utility.distanceToPower = (distance) => {
   // XXX: One is added so all distances yield sensible values
   distance = Math.max(1, distance + 1)
@@ -174,10 +231,19 @@ syngen.utility.distanceToPower = (distance) => {
   return distancePower * horizonPower
 }
 
+/**
+ * @static
+ */
 syngen.utility.frequencyToMidi = (frequency) => (Math.log2(frequency / syngen.const.midiReferenceFrequency) * 12) + syngen.const.midiReferenceNote
 
+/**
+ * @static
+ */
 syngen.utility.fromDb = (value) => 10 ** (value / 10)
 
+/**
+ * @static
+ */
 syngen.utility.hash = (value) => {
   // SEE: https://en.wikipedia.org/wiki/Jenkins_hash_function
   let hash = 0,
@@ -196,15 +262,24 @@ syngen.utility.hash = (value) => {
 	return Math.abs(hash)
 }
 
+/**
+ * @static
+ */
 syngen.utility.humanize = (value = 1, amount = 0) => {
   return value + syngen.utility.random.float(-amount, amount)
 }
 
+/**
+ * @static
+ */
 syngen.utility.humanizeDb = (value = 1, db = 0) => {
   const gain = syngen.utility.fromDb(db)
   return value * syngen.utility.random.float(1 - gain, 1 + gain)
 }
 
+/**
+ * @static
+ */
 syngen.utility.intersects = (a, b) => {
   const between = syngen.utility.between
 
@@ -214,15 +289,27 @@ syngen.utility.intersects = (a, b) => {
   const yOverlap = between(a.y, b.y, b.y + b.height)
     || between(b.y, a.y, a.y + a.height)
 
-  return xOverlap && yOverlap
+  const zOverlap = between(a.z, b.z, b.z + b.depth)
+    || between(b.z, a.z, a.z + a.depth)
+
+  return xOverlap && yOverlap && zOverlap
 }
 
+/**
+ * @static
+ */
 syngen.utility.lerp = (min, max, value) => (min * (1 - value)) + (max * value)
 
+/**
+ * @static
+ */
 syngen.utility.lerpExp = (min, max, value, power = 2) => {
   return syngen.utility.lerp(min, max, value ** power)
 }
 
+/**
+ * @static
+ */
 syngen.utility.lerpExpRandom = ([lowMin, lowMax], [highMin, highMax], value, power) => {
   return syngen.utility.random.float(
     syngen.utility.lerpExp(lowMin, highMin, value, power),
@@ -230,11 +317,17 @@ syngen.utility.lerpExpRandom = ([lowMin, lowMax], [highMin, highMax], value, pow
   )
 }
 
+/**
+ * @static
+ */
 syngen.utility.lerpLog = (min, max, value, base = 2) => {
   value *= base - 1
   return syngen.utility.lerp(min, max, Math.log(1 + value) / Math.log(base))
 }
 
+/**
+ * @static
+ */
 syngen.utility.lerpLogRandom = ([lowMin, lowMax], [highMin, highMax], value) => {
   return syngen.utility.random.float(
     syngen.utility.lerpLog(lowMin, highMin, value),
@@ -242,11 +335,17 @@ syngen.utility.lerpLogRandom = ([lowMin, lowMax], [highMin, highMax], value) => 
   )
 }
 
+/**
+ * @static
+ */
 syngen.utility.lerpLogi = (min, max, value, base) => {
   // Equivalent to syngen.utility.lerpLog(min, max, value, 1 / base)
   return syngen.utility.lerpLog(max, min, 1 - value, base)
 }
 
+/**
+ * @static
+ */
 syngen.utility.lerpLogiRandom = ([lowMin, lowMax], [highMin, highMax], value) => {
   return syngen.utility.random.float(
     syngen.utility.lerpLogi(lowMin, highMin, value),
@@ -254,6 +353,9 @@ syngen.utility.lerpLogiRandom = ([lowMin, lowMax], [highMin, highMax], value) =>
   )
 }
 
+/**
+ * @static
+ */
 syngen.utility.lerpRandom = ([lowMin, lowMax], [highMin, highMax], value) => {
   return syngen.utility.random.float(
     syngen.utility.lerp(lowMin, highMin, value),
@@ -261,10 +363,16 @@ syngen.utility.lerpRandom = ([lowMin, lowMax], [highMin, highMax], value) => {
   )
 }
 
+/**
+ * @static
+ */
 syngen.utility.midiToFrequency = (note) => {
   return syngen.const.midiReferenceFrequency * Math.pow(2, (note - syngen.const.midiReferenceNote) / 12)
 }
 
+/**
+ * @static
+ */
 syngen.utility.normalizeAngle = (angle) => {
   const tau = Math.PI * 2
 
@@ -278,6 +386,9 @@ syngen.utility.normalizeAngle = (angle) => {
   return angle
 }
 
+/**
+ * @static
+ */
 syngen.utility.normalizeAngleSigned = (angle) => {
   const tau = 2 * Math.PI
 
@@ -294,6 +405,9 @@ syngen.utility.normalizeAngleSigned = (angle) => {
   return angle
 }
 
+/**
+ * @static
+ */
 syngen.utility.quadratic = (a, b, c) => {
   return [
     (-1 * b + Math.sqrt(Math.pow(b, 2) - (4 * a * c))) / (2 * a),
@@ -301,10 +415,19 @@ syngen.utility.quadratic = (a, b, c) => {
   ]
 }
 
+/**
+ * @static
+ */
 syngen.utility.radiansToDegrees = (radians) => radians * 180 / Math.PI
 
+/**
+ * @static
+ */
 syngen.utility.regularPolygonInteriorAngle = (sides) => (sides - 2) * Math.PI / sides
 
+/**
+ * @static
+ */
 syngen.utility.round = (x, precision = 0) => {
   precision = 10 ** precision
   return Math.round(x * precision) / precision
@@ -315,8 +438,14 @@ syngen.utility.rotatePoint = (x, y, theta) => ({
   y: (y * Math.cos(theta)) - (x * Math.sin(theta)),
 })
 
+/**
+ * @static
+ */
 syngen.utility.scale = (value, min, max, a, b) => ((b - a) * (value - min) / (max - min)) + a
 
+/**
+ * @static
+ */
 syngen.utility.shuffle = (array, random = Math.random) => {
   array = [].slice.call(array)
 
@@ -328,12 +457,51 @@ syngen.utility.shuffle = (array, random = Math.random) => {
   return array
 }
 
+/**
+ * @static
+ */
 syngen.utility.sign = (value) => value >= 0 ? 1 : -1
 
+// SEE: https://stackoverflow.com/a/47593316
+// SEE: https://github.com/micro-js/srand
+// SEE: https://en.wikipedia.org/wiki/Linear_congruential_generator
+/**
+ * @static
+ */
+syngen.utility.srand = (...seeds) => {
+  const increment = 1,
+    modulus = 34359738337,
+    multiplier = 185852,
+    rotate = (seed) => ((seed * multiplier) + increment) % modulus
+
+  let seed = syngen.utility.hash(
+    [
+      syngen.seed.get(),
+      ...seeds,
+    ].join(syngen.const.seedSeparator)
+  )
+
+  seed = rotate(seed)
+
+  return (min = 0, max = 1) => {
+    seed = rotate(seed)
+    return min + ((seed / modulus) * (max - min))
+  }
+}
+
+/**
+ * @static
+ */
 syngen.utility.toCents = (f1, f2) => (f2 - f1) / f1 * 1200
 
+/**
+ * @static
+ */
 syngen.utility.toDb = (value) => 10 * Math.log10(value)
 
+/**
+ * @static
+ */
 syngen.utility.toSubFrequency = (frequency, sub = syngen.const.subFrequency) => {
   while (frequency > sub) {
     frequency /= 2
@@ -346,6 +514,19 @@ syngen.utility.toSubFrequency = (frequency, sub = syngen.const.subFrequency) => 
   return frequency
 }
 
+/**
+ * @static
+ */
+syngen.utility.uuid = () => {
+  // SEE: https://stackoverflow.com/a/2117523
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  )
+}
+
+/**
+ * @static
+ */
 syngen.utility.wrap = (value, min = 0, max = 1) => {
   // Treats min and max as the same value, e.g. [min, max)
   const range = max - min
@@ -361,6 +542,9 @@ syngen.utility.wrap = (value, min = 0, max = 1) => {
   return value
 }
 
+/**
+ * @static
+ */
 syngen.utility.wrapAlternate = (value, min = 0, max = 1) => {
   // Scales values to an oscillation between [min, max]
   const range = max - min
@@ -387,19 +571,21 @@ syngen.utility.wrapAlternate = (value, min = 0, max = 1) => {
   return value
 }
 
-syngen.utility.uuid = () => {
-  // SEE: https://stackoverflow.com/a/2117523
-  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-  )
-}
-
+/**
+ * @interface
+ */
 syngen.utility.bitree = {}
 
+/**
+ * @static
+ */
 syngen.utility.bitree.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
+/**
+ * @static
+ */
 syngen.utility.bitree.from = function (items = [], options = {}) {
   const tree = this.create(options)
 
@@ -411,11 +597,17 @@ syngen.utility.bitree.from = function (items = [], options = {}) {
 }
 
 syngen.utility.bitree.prototype = {
+  /**
+   * @instance
+   */
   clear: function () {
     this.items.length = 0
     this.nodes.length = 0
     return this
   },
+  /**
+   * @instance
+   */
   construct: function ({
     dimension = 'x',
     maxItems = 12,
@@ -431,9 +623,15 @@ syngen.utility.bitree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function () {
     return this.clear()
   },
+  /**
+   * @instance
+   */
   find: function (query, radius = Infinity) {
     // XXX: Assumes query[this.dimension] exists
 
@@ -488,6 +686,9 @@ syngen.utility.bitree.prototype = {
 
     return result
   },
+  /**
+   * @instance
+   */
   getIndex: function (item) {
     if (!this.nodes.length) {
       return -1
@@ -501,6 +702,9 @@ syngen.utility.bitree.prototype = {
 
     return 1
   },
+  /**
+   * @instance
+   */
   insert: function (item = {}) {
     // XXX: Assumes item[this.dimension] exists
 
@@ -520,10 +724,16 @@ syngen.utility.bitree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   intersects: function (value, width) {
     return syngen.utility.between(this.value, value, value + width)
       || syngen.utility.between(value, this.value, this.value + this.width)
   },
+  /**
+   * @instance
+   */
   retrieve: function (value, width) {
     const items = []
 
@@ -545,6 +755,9 @@ syngen.utility.bitree.prototype = {
 
     return items
   },
+  /**
+   * @instance
+   */
   split: function () {
     if (this.nodes.length) {
       return this
@@ -577,12 +790,24 @@ syngen.utility.bitree.prototype = {
   },
 }
 
+/**
+ * @interface
+ * @property {Number} pitch
+ * @property {Number} roll
+ * @property {Number} yaw
+ */
 syngen.utility.euler = {}
 
+/**
+ * @static
+ */
 syngen.utility.euler.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
+/**
+ * @static
+ */
 syngen.utility.euler.fromQuaternion = function ({
   w = 0,
   x = 0,
@@ -642,9 +867,15 @@ syngen.utility.euler.fromQuaternion = function ({
 }
 
 syngen.utility.euler.prototype = {
+  /**
+   * @instance
+   */
   clone: function () {
     return syngen.utility.euler.create(this)
   },
+  /**
+   * @instance
+   */
   construct: function ({
     pitch = 0,
     roll = 0,
@@ -655,15 +886,27 @@ syngen.utility.euler.prototype = {
     this.yaw = yaw
     return this
   },
+  /**
+   * @instance
+   */
   forward: function () {
     return syngen.utility.vector3d.unitX().rotateEuler(this)
   },
+  /**
+   * @instance
+   */
   isZero: function () {
     return !this.pitch && !this.roll && !this.yaw
   },
+  /**
+   * @instance
+   */
   right: function () {
     return syngen.utility.vector3d.unitY().rotateEuler(this)
   },
+  /**
+   * @instance
+   */
   scale: function (scalar = 0) {
     return syngen.utility.euler.create({
       pitch: this.pitch * scalar,
@@ -671,6 +914,9 @@ syngen.utility.euler.prototype = {
       yaw: this.yaw * scalar,
     })
   },
+  /**
+   * @instance
+   */
   set: function ({
     pitch = 0,
     roll = 0,
@@ -681,22 +927,30 @@ syngen.utility.euler.prototype = {
     this.yaw = yaw
     return this
   },
+  /**
+   * @instance
+   */
   up: function () {
     return syngen.utility.vector3d.unitZ().rotateEuler(this)
   },
 }
 
+/**
+ * @interface
+ */
 syngen.utility.machine = {}
 
+/**
+ * @static
+ */
 syngen.utility.machine.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
-syngen.utility.machine.is = function (x) {
-  return this.prototype.isPrototypeOf(x)
-}
-
 syngen.utility.machine.prototype = {
+  /**
+   * @instance
+   */
   change: function (state, data = {}) {
     if (this.is(state)) {
       return this
@@ -725,6 +979,9 @@ syngen.utility.machine.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   construct: function ({state = 'none', transition = {}} = {}) {
     this.state = state
     this.transition = {...transition}
@@ -733,10 +990,16 @@ syngen.utility.machine.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function () {
     this.pubsub.destroy()
     return this
   },
+  /**
+   * @instance
+   */
   dispatch: function (event, data = {}) {
     const actions = this.transition[this.state]
 
@@ -775,20 +1038,35 @@ syngen.utility.machine.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   getState: function () {
     return this.state
   },
+  /**
+   * @instance
+   */
   is: function (state) {
     return this.state == state
   },
 }
 
+/**
+ * @interface
+ */
 syngen.utility.octree = {}
 
+/**
+ * @static
+ */
 syngen.utility.octree.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
+/**
+ * @static
+ */
 syngen.utility.octree.from = function (items = [], options = {}) {
   const tree = this.create(options)
 
@@ -800,11 +1078,17 @@ syngen.utility.octree.from = function (items = [], options = {}) {
 }
 
 syngen.utility.octree.prototype = {
+  /**
+   * @instance
+   */
   clear: function () {
     this.items.length = 0
     this.nodes.length = 0
     return this
   },
+  /**
+   * @instance
+   */
   construct: function ({
     depth = syngen.const.maxSafeFloat * 2,
     height = syngen.const.maxSafeFloat * 2,
@@ -826,9 +1110,15 @@ syngen.utility.octree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function () {
     return this.clear()
   },
+  /**
+   * @instance
+   */
   find: function (query = {}, radius = Infinity) {
     // NOTE: Assumes query.x, query.y, and query.z exist
 
@@ -894,6 +1184,9 @@ syngen.utility.octree.prototype = {
 
     return result
   },
+  /**
+   * @instance
+   */
   getIndex: function ({
     x = 0,
     y = 0,
@@ -940,6 +1233,9 @@ syngen.utility.octree.prototype = {
 
     return 7
   },
+  /**
+   * @instance
+   */
   insert: function (item = {}) {
     // XXX: Assumes item.x and item.y exist
 
@@ -959,21 +1255,15 @@ syngen.utility.octree.prototype = {
 
     return this
   },
-  intersects: function (rect) {
-    // TODO: Update syngen.utility.intersects with 3D
-    const between = syngen.utility.between
-
-    const xOverlap = between(this.x, rect.x, rect.x + rect.width)
-      || between(rect.x, this.x, this.x + this.width)
-
-    const yOverlap = between(this.y, rect.y, rect.y + rect.height)
-      || between(rect.y, this.y, this.y + this.height)
-
-    const zOverlap = between(this.z, rect.z, rect.z + rect.depth)
-      || between(rect.z, this.z, this.z + this.depth)
-
-    return xOverlap && yOverlap && zOverlap
+  /**
+   * @instance
+   */
+  intersects: function (prism) {
+    return syngen.utility.intersects(this, prism)
   },
+  /**
+   * @instance
+   */
   retrieve: function ({
     depth = 0,
     height = 0,
@@ -1016,6 +1306,9 @@ syngen.utility.octree.prototype = {
 
     return items
   },
+  /**
+   * @instance
+   */
   remove: function (item) {
     if (this.nodes.length) {
       const index = this.getIndex(item)
@@ -1031,6 +1324,9 @@ syngen.utility.octree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   split: function () {
     if (this.nodes.length) {
       return this
@@ -1131,23 +1427,39 @@ syngen.utility.octree.prototype = {
   },
 }
 
+/**
+ * @interface
+ * @property {Number} pruneThreshold=10**4
+ */
 syngen.utility.perlin1d = {}
 
+/**
+ * @static
+ */
 syngen.utility.perlin1d.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
 syngen.utility.perlin1d.prototype = {
+  /**
+   * @instance
+   */
   construct: function (...seeds) {
     this.gradient = new Map()
     this.seed = seeds.join(syngen.const.seedSeparator)
     return this
   },
+  /**
+   * @instance
+   */
   generateGradient: function (x) {
     const srand = syngen.utility.srand('perlin', this.seed, x)
     this.gradient.set(x, srand(0, 1))
     return this
   },
+  /**
+   * @instance
+   */
   getGradient: function (x) {
     if (!this.hasGradient(x)) {
       this.generateGradient(x)
@@ -1156,9 +1468,15 @@ syngen.utility.perlin1d.prototype = {
 
     return this.gradient.get(x)
   },
+  /**
+   * @instance
+   */
   hasGradient: function (x) {
     return this.gradient.has(x)
   },
+  /**
+   * @instance
+   */
   prune: function () {
     if (this.gradient.size >= this.pruneThreshold) {
       this.gradient.clear()
@@ -1166,7 +1484,10 @@ syngen.utility.perlin1d.prototype = {
 
     return this
   },
-  pruneThreshold: 10 ** 3,
+  pruneThreshold: 10 ** 4,
+  /**
+   * @instance
+   */
   requestPrune: function () {
     if (this.pruneRequest) {
       return this
@@ -1179,6 +1500,9 @@ syngen.utility.perlin1d.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   reset: function () {
     if (this.pruneRequest) {
       cancelIdleCallback(this.pruneRequest)
@@ -1188,6 +1512,9 @@ syngen.utility.perlin1d.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   value: function (x) {
     const x0 = Math.floor(x),
       x1 = x0 + 1
@@ -1200,8 +1527,16 @@ syngen.utility.perlin1d.prototype = {
   },
 }
 
+/**
+ * @interface
+ * @property {Number} pruneThreshold=10**3
+ * @property {Number} range=Math.sqrt(2/4)
+ */
 syngen.utility.perlin2d = {}
 
+/**
+ * @static
+ */
 syngen.utility.perlin2d.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
@@ -1210,11 +1545,17 @@ syngen.utility.perlin2d.create = function (...args) {
 // SEE: https://gamedev.stackexchange.com/questions/23625/how-do-you-generate-tileable-perlin-noise
 // SEE: https://github.com/josephg/noisejs
 syngen.utility.perlin2d.prototype = {
+  /**
+   * @instance
+   */
   construct: function (...seeds) {
     this.gradient = new Map()
     this.seed = seeds.join(syngen.const.seedSeparator)
     return this
   },
+  /**
+   * @instance
+   */
   generateGradient: function (x, y) {
     const srand = syngen.utility.srand('perlin', this.seed, x, y)
 
@@ -1229,12 +1570,18 @@ syngen.utility.perlin2d.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   getDotProduct: function (xi, yi, x, y) {
     const dx = x - xi,
       dy = y - yi
 
     return (dx * this.getGradient(xi, yi, 0)) + (dy * this.getGradient(xi, yi, 1))
   },
+  /**
+   * @instance
+   */
   getGradient: function (x, y, i) {
     if (!this.hasGradient(x, y)) {
       this.generateGradient(x, y)
@@ -1242,6 +1589,9 @@ syngen.utility.perlin2d.prototype = {
 
     return this.gradient.get(x).get(y)[i]
   },
+  /**
+   * @instance
+   */
   hasGradient: function (x, y) {
     const xMap = this.gradient.get(x)
 
@@ -1251,6 +1601,9 @@ syngen.utility.perlin2d.prototype = {
 
     return xMap.has(y)
   },
+  /**
+   * @instance
+   */
   prune: function () {
     this.gradient.forEach((xMap, x) => {
       if (xMap.size >= this.pruneThreshold) {
@@ -1266,7 +1619,10 @@ syngen.utility.perlin2d.prototype = {
 
     return this
   },
-  pruneThreshold: 10 ** 2,
+  pruneThreshold: 10 ** 3,
+  /**
+   * @instance
+   */
   requestPrune: function () {
     if (this.pruneRequest) {
       return this
@@ -1322,8 +1678,16 @@ syngen.utility.perlin2d.prototype = {
   },
 }
 
+/**
+ * @interface
+ * @property {Number} pruneThreshold=10**2
+ * @property {Number} range=Math.sqrt(3/4)
+ */
 syngen.utility.perlin3d = {}
 
+/**
+ * @static
+ */
 syngen.utility.perlin3d.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
@@ -1331,11 +1695,17 @@ syngen.utility.perlin3d.create = function (...args) {
 // SEE: https://en.wikipedia.org/wiki/Perlin_noise
 // SEE: https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/perlin-noise-part-2
 syngen.utility.perlin3d.prototype = {
+  /**
+   * @instance
+   */
   construct: function (...seeds) {
     this.gradient = new Map()
     this.seed = seeds.join(syngen.const.seedSeparator)
     return this
   },
+  /**
+   * @instance
+   */
   generateGradient: function (x, y, z) {
     const srand = syngen.utility.srand('perlin', this.seed, x, y, z)
 
@@ -1357,6 +1727,9 @@ syngen.utility.perlin3d.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   getDotProduct: function (xi, yi, zi, x, y, z) {
     const dx = x - xi,
       dy = y - yi,
@@ -1364,6 +1737,9 @@ syngen.utility.perlin3d.prototype = {
 
     return (dx * this.getGradient(xi, yi, zi, 0)) + (dy * this.getGradient(xi, yi, zi, 1)) + (dz * this.getGradient(xi, yi, zi, 2))
   },
+  /**
+   * @instance
+   */
   getGradient: function (x, y, z, i) {
     if (!this.hasGradient(x, y, z)) {
       this.generateGradient(x, y, z)
@@ -1372,6 +1748,9 @@ syngen.utility.perlin3d.prototype = {
 
     return this.gradient.get(x).get(y).get(z)[i]
   },
+  /**
+   * @instance
+   */
   hasGradient: function (x, y, z) {
     const xMap = this.gradient.get(x)
 
@@ -1387,6 +1766,9 @@ syngen.utility.perlin3d.prototype = {
 
     return yMap.has(z)
   },
+  /**
+   * @instance
+   */
   prune: function () {
     this.gradient.forEach((xMap, x) => {
       if (xMap.size >= this.pruneThreshold) {
@@ -1408,7 +1790,10 @@ syngen.utility.perlin3d.prototype = {
 
     return this
   },
-  pruneThreshold: 10 ** 1,
+  pruneThreshold: 10 ** 2,
+  /**
+   * @instance
+   */
   requestPrune: function () {
     if (this.pruneRequest) {
       return this
@@ -1422,6 +1807,9 @@ syngen.utility.perlin3d.prototype = {
     return this
   },
   range: Math.sqrt(3/4),
+  /**
+   * @instance
+   */
   reset: function () {
     if (this.pruneRequest) {
       cancelIdleCallback(this.pruneRequest)
@@ -1431,10 +1819,16 @@ syngen.utility.perlin3d.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   smooth: function (value) {
     // 6x^5 - 15x^4 + 10x^3
     return (value ** 3) * (value * ((value * 6) - 15) + 10)
   },
+  /**
+   * @instance
+   */
   value: function (x, y, z) {
     const x0 = Math.floor(x),
       x1 = x0 + 1,
@@ -1481,18 +1875,32 @@ syngen.utility.perlin3d.prototype = {
   },
 }
 
+/**
+ * @interface
+ * @property {Number} pruneThreshold=10**2
+ * @property {Number} range=Math.sqrt(4/4)
+ */
 syngen.utility.perlin4d = {}
 
+/**
+ * @static
+ */
 syngen.utility.perlin4d.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
 syngen.utility.perlin4d.prototype = {
+  /**
+   * @instance
+   */
   construct: function (...seeds) {
     this.gradient = new Map()
     this.seed = seeds.join(syngen.const.seedSeparator)
     return this
   },
+  /**
+   * @instance
+   */
   generateGradient: function (x, y, z, t) {
     const srand = syngen.utility.srand('perlin', this.seed, x, y, z, t)
 
@@ -1521,6 +1929,9 @@ syngen.utility.perlin4d.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   getDotProduct: function (xi, yi, zi, ti, x, y, z, t) {
     const dt = t - ti,
       dx = x - xi,
@@ -1529,6 +1940,9 @@ syngen.utility.perlin4d.prototype = {
 
     return (dt * this.getGradient(xi, yi, zi, ti, 3)) + (dx * this.getGradient(xi, yi, zi, ti, 0)) + (dy * this.getGradient(xi, yi, zi, ti, 1)) + (dz * this.getGradient(xi, yi, zi, ti, 2))
   },
+  /**
+   * @instance
+   */
   getGradient: function (x, y, z, t, i) {
     if (!this.hasGradient(x, y, z, t)) {
       this.generateGradient(x, y, z, t)
@@ -1537,6 +1951,9 @@ syngen.utility.perlin4d.prototype = {
 
     return this.gradient.get(x).get(y).get(z).get(t)[i]
   },
+  /**
+   * @instance
+   */
   hasGradient: function (x, y, z, t) {
     const xMap = this.gradient.get(x)
 
@@ -1558,6 +1975,9 @@ syngen.utility.perlin4d.prototype = {
 
     return zMap.has(t)
   },
+  /**
+   * @instance
+   */
   prune: function () {
     this.gradient.forEach((xMap, x) => {
       if (xMap.size >= this.pruneThreshold) {
@@ -1585,7 +2005,10 @@ syngen.utility.perlin4d.prototype = {
 
     return this
   },
-  pruneThreshold: 10 ** 1,
+  pruneThreshold: 10 ** 2,
+  /**
+   * @instance
+   */
   requestPrune: function () {
     if (this.pruneRequest) {
       return this
@@ -1599,6 +2022,9 @@ syngen.utility.perlin4d.prototype = {
     return this
   },
   range: Math.sqrt(4/4),
+  /**
+   * @instance
+   */
   reset: function () {
     if (this.pruneRequest) {
       cancelIdleCallback(this.pruneRequest)
@@ -1608,10 +2034,16 @@ syngen.utility.perlin4d.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   smooth: function (value) {
     // 6x^5 - 15x^4 + 10x^3
     return (value ** 3) * (value * ((value * 6) - 15) + 10)
   },
+  /**
+   * @instance
+   */
   value: function (x, y, z, t) {
     const t0 = Math.floor(t),
       t1 = t0 + 1,
@@ -1693,8 +2125,20 @@ syngen.utility.perlin4d.prototype = {
   },
 }
 
+/**
+ * @mixin
+ * @property {syngen.utility.quaternion} angularVelocity
+ * @property {syngen.utility.quaternion} quaternion
+ * @property {syngen.utility.vector3d} velocity
+ * @property {Number} x
+ * @property {Number} y
+ * @property {Number} z
+ */
 syngen.utility.physical = {}
 
+/**
+ * @static
+ */
 syngen.utility.physical.decorate = function (target = {}) {
   if (!target.x) {
     target.x = 0
@@ -1719,15 +2163,27 @@ syngen.utility.physical.decorate = function (target = {}) {
   return target
 }
 
+/**
+ * @lends syngen.utility.physical
+ */
 syngen.utility.physical.decoration = {
+  /**
+   * @instance
+   */
   euler: function () {
     return syngen.utility.euler.fromQuaternion(this.quaternion)
   },
+  /**
+   * @instance
+   */
   resetPhysics: function () {
     this.angularVelocity.set({w: 1})
     this.velocity.set()
     return this
   },
+  /**
+   * @instance
+   */
   updatePhysics: function () {
     const delta = syngen.loop.delta()
 
@@ -1743,23 +2199,34 @@ syngen.utility.physical.decoration = {
       this.z += this.velocity.z * delta
     }
   },
+  /**
+   * @instance
+   */
   vector: function () {
     return syngen.utility.vector3d.create(this)
   },
 }
 
+/**
+ * @interface
+ */
 syngen.utility.pubsub = {}
 
+/**
+ * @static
+ */
 syngen.utility.pubsub.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
+/**
+ * @static
+ */
 syngen.utility.pubsub.decorate = function (target, instance) {
-  if (!this.is(instance)) {
+  if (!this.prototype.isPrototypeOf(instance)) {
     instance = this.create()
+    target.pubsub = instance
   }
-
-  target.pubsub = instance;
 
   ['emit', 'off', 'on', 'once'].forEach((method) => {
     target[method] = function (...args) {
@@ -1771,19 +2238,24 @@ syngen.utility.pubsub.decorate = function (target, instance) {
   return target
 }
 
-syngen.utility.pubsub.is = function (x) {
-  return this.prototype.isPrototypeOf(x)
-}
-
 syngen.utility.pubsub.prototype = {
+  /**
+   * @instance
+   */
   construct: function() {
     this._handler = {}
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function() {
     this.off()
     return this
   },
+  /**
+   * @instance
+   */
   emit: function (event, ...args) {
     if (!this._handler[event]) {
       return this
@@ -1796,6 +2268,9 @@ syngen.utility.pubsub.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   off: function (event, handler) {
     if (event === undefined) {
       this._handler = {}
@@ -1820,6 +2295,9 @@ syngen.utility.pubsub.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   on: function (event, handler) {
     if (!this._handler[event]) {
       this._handler[event] = []
@@ -1829,6 +2307,9 @@ syngen.utility.pubsub.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   once: function (event, handler) {
     const wrapper = (...args) => {
       this.off(event, wrapper)
@@ -1839,12 +2320,21 @@ syngen.utility.pubsub.prototype = {
   },
 }
 
+/**
+ * @interface
+ */
 syngen.utility.quadtree = {}
 
+/**
+ * @static
+ */
 syngen.utility.quadtree.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
+/**
+ * @static
+ */
 syngen.utility.quadtree.from = function (items = [], options = {}) {
   const tree = this.create(options)
 
@@ -1856,11 +2346,17 @@ syngen.utility.quadtree.from = function (items = [], options = {}) {
 }
 
 syngen.utility.quadtree.prototype = {
+  /**
+   * @instance
+   */
   clear: function () {
     this.items.length = 0
     this.nodes.length = 0
     return this
   },
+  /**
+   * @instance
+   */
   construct: function ({
     height = syngen.const.maxSafeFloat * 2,
     maxItems = 12,
@@ -1878,9 +2374,15 @@ syngen.utility.quadtree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function () {
     return this.clear()
   },
+  /**
+   * @instance
+   */
   find: function (query = {}, radius = Infinity) {
     // NOTE: Assumes query.x and query.y exist
 
@@ -1944,6 +2446,9 @@ syngen.utility.quadtree.prototype = {
 
     return result
   },
+  /**
+   * @instance
+   */
   getIndex: function ({
     x = 0,
     y = 0,
@@ -1969,6 +2474,9 @@ syngen.utility.quadtree.prototype = {
 
     return 3
   },
+  /**
+   * @instance
+   */
   insert: function (item = {}) {
     // XXX: Assumes item.x and item.y exist
 
@@ -1988,9 +2496,15 @@ syngen.utility.quadtree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   intersects: function (rect) {
     return syngen.utility.intersects(this, rect)
   },
+  /**
+   * @instance
+   */
   remove: function (item) {
     if (this.nodes.length) {
       const index = this.getIndex(item)
@@ -2006,6 +2520,9 @@ syngen.utility.quadtree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   retrieve: function ({
     height = 0,
     width = 0,
@@ -2037,6 +2554,9 @@ syngen.utility.quadtree.prototype = {
 
     return items
   },
+  /**
+   * @instance
+   */
   split: function () {
     if (this.nodes.length) {
       return this
@@ -2088,12 +2608,25 @@ syngen.utility.quadtree.prototype = {
   },
 }
 
+/**
+ * @interface
+ * @property {Number} w
+ * @property {Number} x
+ * @property {Number} y
+ * @property {Number} z
+ */
 syngen.utility.quaternion = {}
 
+/**
+ * @static
+ */
 syngen.utility.quaternion.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
+/**
+ * @static
+ */
 syngen.utility.quaternion.fromEuler = function ({
   pitch = 0,
   roll = 0,
@@ -2159,7 +2692,13 @@ syngen.utility.quaternion.fromEuler = function ({
   }
 }
 
+/**
+ * @interface
+ */
 syngen.utility.quaternion.prototype = {
+  /**
+   * @instance
+   */
   add: function ({
     w = 0,
     x = 0,
@@ -2173,9 +2712,15 @@ syngen.utility.quaternion.prototype = {
       z: this.z + z,
     })
   },
+  /**
+   * @instance
+   */
   clone: function () {
     return syngen.utility.quaternion.create(this)
   },
+  /**
+   * @instance
+   */
   conjugate: function () {
     return syngen.utility.quaternion.create({
       w: this.w,
@@ -2184,6 +2729,9 @@ syngen.utility.quaternion.prototype = {
       z: -this.z,
     })
   },
+  /**
+   * @instance
+   */
   construct: function ({
     w = 1,
     x = 0,
@@ -2196,6 +2744,9 @@ syngen.utility.quaternion.prototype = {
     this.z = z
     return this
   },
+  /**
+   * @instance
+   */
   distance: function ({
     w = 0,
     x = 0,
@@ -2204,6 +2755,9 @@ syngen.utility.quaternion.prototype = {
   } = {}) {
     return Math.sqrt(((this.w - w) ** 2) + ((this.x - x) ** 2) + ((this.y - y) ** 2) + ((this.z - z) ** 2))
   },
+  /**
+   * @instance
+   */
   distance2: function ({
     w = 0,
     x = 0,
@@ -2212,6 +2766,9 @@ syngen.utility.quaternion.prototype = {
   } = {}) {
     return ((this.w - w) ** 2) + ((this.x - x) ** 2) + ((this.y - y) ** 2) + ((this.z - z) ** 2)
   },
+  /**
+   * @instance
+   */
   divide: function (divisor) {
     if (!syngen.utility.quaternion.prototype.isPrototypeOf(divisor)) {
       divisor = syngen.utility.quaternion.create(divisor)
@@ -2219,6 +2776,9 @@ syngen.utility.quaternion.prototype = {
 
     return this.multiply(divisor.inverse())
   },
+  /**
+   * @instance
+   */
   equals: function ({
     w = 0,
     x = 0,
@@ -2227,9 +2787,15 @@ syngen.utility.quaternion.prototype = {
   } = {}) {
     return (this.w == w) && (this.x == x) && (this.y == y) && (this.z == z)
   },
+  /**
+   * @instance
+   */
   forward: function () {
     return syngen.utility.vector3d.unitX().rotateQuaternion(this)
   },
+  /**
+   * @instance
+   */
   inverse: function () {
     const scalar = 1 / this.distance2()
 
@@ -2239,9 +2805,15 @@ syngen.utility.quaternion.prototype = {
 
     return this.conjugate().scale(scalar)
   },
+  /**
+   * @instance
+   */
   isZero: function () {
     return !this.x && !this.y && !this.z
   },
+  /**
+   * @instance
+   */
   lerpFrom: function ({
     w = 0,
     x = 0,
@@ -2255,6 +2827,9 @@ syngen.utility.quaternion.prototype = {
       z: syngen.utility.lerp(z, this.z, value),
     })
   },
+  /**
+   * @instance
+   */
   lerpTo: function ({
     w = 0,
     x = 0,
@@ -2268,6 +2843,9 @@ syngen.utility.quaternion.prototype = {
       z: syngen.utility.lerp(this.z, z, value),
     })
   },
+  /**
+   * @instance
+   */
   multiply: function ({
     w = 0,
     x = 0,
@@ -2281,6 +2859,9 @@ syngen.utility.quaternion.prototype = {
       z: (this.w * z) + (this.z * w) + (this.x * y) - (this.y * x),
     })
   },
+  /**
+   * @instance
+   */
   normalize: function () {
     const distance = this.distance()
 
@@ -2290,9 +2871,15 @@ syngen.utility.quaternion.prototype = {
 
     return this.scale(1 / distance)
   },
+  /**
+   * @instance
+   */
   right: function () {
     return syngen.utility.vector3d.unitY().rotateQuaternion(this)
   },
+  /**
+   * @instance
+   */
   scale: function (scalar = 0) {
     return syngen.utility.quaternion.create({
       w: this.w * scalar,
@@ -2301,6 +2888,9 @@ syngen.utility.quaternion.prototype = {
       z: this.z * scalar,
     })
   },
+  /**
+   * @instance
+   */
   set: function ({
     w = 0,
     x = 0,
@@ -2313,6 +2903,9 @@ syngen.utility.quaternion.prototype = {
     this.z = z
     return this
   },
+  /**
+   * @instance
+   */
   subtract: function ({
     w = 0,
     x = 0,
@@ -2326,31 +2919,52 @@ syngen.utility.quaternion.prototype = {
       z: this.z - z,
     })
   },
+  /**
+   * @instance
+   */
   up: function () {
     return syngen.utility.vector3d.unitZ().rotateQuaternion(this)
   },
 }
 
+/**
+ * @static
+ */
 syngen.utility.quaternion.identity = function () {
   return Object.create(this.prototype).construct({
     w: 1,
   })
 }
 
+/**
+ * @namespace
+ */
 syngen.utility.random = {}
 
+/**
+ * @method
+ */
 syngen.utility.random.float = (min = 0, max = 1) => {
   return min + (Math.random() * (max - min))
 }
 
+/**
+ * @method
+ */
 syngen.utility.random.integer = function (min = 0, max = 1) {
   return Math.round(
     this.float(min, max)
   )
 }
 
+/**
+ * @method
+ */
 syngen.utility.random.sign = (bias = 0.5) => Math.random() < bias ? 1 : -1
 
+/**
+ * @method
+ */
 syngen.utility.random.key = function (bag) {
   const keys = Object.keys(bag)
   return keys[
@@ -2358,38 +2972,23 @@ syngen.utility.random.key = function (bag) {
   ]
 }
 
+/**
+ * @method
+ */
 syngen.utility.random.value = function (bag) {
   return bag[
     this.key(bag)
   ]
 }
 
-// SEE: https://stackoverflow.com/a/47593316
-// SEE: https://github.com/micro-js/srand
-// SEE: https://en.wikipedia.org/wiki/Linear_congruential_generator
-syngen.utility.srand = (...seeds) => {
-  const increment = 1,
-    modulus = 34359738337,
-    multiplier = 185852,
-    rotate = (seed) => ((seed * multiplier) + increment) % modulus
-
-  let seed = syngen.utility.hash(
-    [
-      syngen.seed.get(),
-      ...seeds,
-    ].join(syngen.const.seedSeparator)
-  )
-
-  seed = rotate(seed)
-
-  return (min = 0, max = 1) => {
-    seed = rotate(seed)
-    return min + ((seed / modulus) * (max - min))
-  }
-}
-
+/**
+ * @namespace
+ */
 syngen.utility.timing = {}
 
+/**
+ * @method
+ */
 syngen.utility.timing.cancelablePromise = (duration) => {
   const scope = {}
 
@@ -2411,15 +3010,29 @@ syngen.utility.timing.cancelablePromise = (duration) => {
   return promise
 }
 
+/**
+ * @method
+ */
 syngen.utility.timing.promise = (duration) => new Promise((resolve) => setTimeout(resolve, duration))
 
+/**
+ * @interface
+ * @property {Number} x
+ * @property {Number} y
+ */
 syngen.utility.vector2d = {}
 
+/**
+ * @static
+ */
 syngen.utility.vector2d.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
 syngen.utility.vector2d.prototype = {
+  /**
+   * @instance
+   */
   add: function ({
     x = 0,
     y = 0,
@@ -2429,9 +3042,15 @@ syngen.utility.vector2d.prototype = {
       y: this.y + y,
     })
   },
+  /**
+   * @instance
+   */
   angle: function () {
     return Math.atan2(this.y, this.x)
   },
+  /**
+   * @instance
+   */
   angleTo: function (vector, angle = 0) {
     let relative = syngen.utility.vector2d.prototype.isPrototypeOf(vector)
       ? vector
@@ -2445,9 +3064,15 @@ syngen.utility.vector2d.prototype = {
 
     return relative.angle()
   },
+  /**
+   * @instance
+   */
   clone: function () {
     return syngen.utility.vector2d.create(this)
   },
+  /**
+   * @instance
+   */
   construct: function ({
     x = 0,
     y = 0,
@@ -2456,45 +3081,69 @@ syngen.utility.vector2d.prototype = {
     this.y = y
     return this
   },
+  /**
+   * @instance
+   */
   crossProduct: function ({
     x = 0,
     y = 0,
   } = {}) {
     return (this.x * y) - (this.y * x)
   },
+  /**
+   * @instance
+   */
   distance: function ({
     x = 0,
     y = 0,
   } = {}) {
     return Math.sqrt(((this.x - x) ** 2) + ((this.y - y) ** 2))
   },
+  /**
+   * @instance
+   */
   distance2: function ({
     x = 0,
     y = 0,
   } = {}) {
     return ((this.x - x) ** 2) + ((this.y - y) ** 2)
   },
+  /**
+   * @instance
+   */
   dotProduct: function ({
     x = 0,
     y = 0,
   } = {}) {
     return (this.x * x) + (this.y * y)
   },
+  /**
+   * @instance
+   */
   equals: function ({
     x = 0,
     y = 0,
   } = {}) {
     return (this.x == x) && (this.y == y)
   },
+  /**
+   * @instance
+   */
   inverse: function () {
     return syngen.utility.vector2d.create({
       x: -this.x,
       y: -this.y,
     })
   },
+  /**
+   * @instance
+   */
   isZero: function () {
     return !this.x && !this.y
   },
+  /**
+   * @instance
+   */
   normalize: function () {
     const distance = this.distance()
 
@@ -2504,6 +3153,9 @@ syngen.utility.vector2d.prototype = {
 
     return this.scale(1 / distance)
   },
+  /**
+   * @instance
+   */
   rotate: function (angle = 0) {
     const cos = Math.cos(angle),
       sin = Math.sin(angle)
@@ -2513,12 +3165,18 @@ syngen.utility.vector2d.prototype = {
       y: (this.y * cos) + (this.x * sin),
     })
   },
+  /**
+   * @instance
+   */
   scale: function (scalar = 0) {
     return syngen.utility.vector2d.create({
       x: this.x * scalar,
       y: this.y * scalar,
     })
   },
+  /**
+   * @instance
+   */
   set: function ({
     x = 0,
     y = 0,
@@ -2527,6 +3185,9 @@ syngen.utility.vector2d.prototype = {
     this.y = y
     return this
   },
+  /**
+   * @instance
+   */
   subtract: function ({
     x = 0,
     y = 0,
@@ -2536,6 +3197,9 @@ syngen.utility.vector2d.prototype = {
       y: this.y - y,
     })
   },
+  /**
+   * @instance
+   */
   subtractRadius: function (radius = 0) {
     if (radius <= 0) {
       return syngen.utility.vector2d.create(this)
@@ -2551,25 +3215,43 @@ syngen.utility.vector2d.prototype = {
   },
 }
 
+/**
+ * @static
+ */
 syngen.utility.vector2d.unitX = function () {
   return Object.create(this.prototype).construct({
     x: 1,
   })
 }
 
+/**
+ * @static
+ */
 syngen.utility.vector2d.unitY = function () {
   return Object.create(this.prototype).construct({
     y: 1,
   })
 }
 
+/**
+ * @interface
+ * @property {Number} x
+ * @property {Number} y
+ * @property {Number} z
+ */
 syngen.utility.vector3d = {}
 
+/**
+ * @static
+ */
 syngen.utility.vector3d.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
 syngen.utility.vector3d.prototype = {
+  /**
+   * @instance
+   */
   add: function ({
     x = 0,
     y = 0,
@@ -2581,9 +3263,15 @@ syngen.utility.vector3d.prototype = {
       z: this.z + z,
     })
   },
+  /**
+   * @instance
+   */
   clone: function () {
     return syngen.utility.vector3d.create(this)
   },
+  /**
+   * @instance
+   */
   construct: function ({
     x = 0,
     y = 0,
@@ -2594,6 +3282,9 @@ syngen.utility.vector3d.prototype = {
     this.z = z
     return this
   },
+  /**
+   * @instance
+   */
   crossProduct: function ({
     x = 0,
     y = 0,
@@ -2605,6 +3296,9 @@ syngen.utility.vector3d.prototype = {
       z: (this.x * y) - (this.y * x),
     })
   },
+  /**
+   * @instance
+   */
   distance: function ({
     x = 0,
     y = 0,
@@ -2612,6 +3306,9 @@ syngen.utility.vector3d.prototype = {
   } = {}) {
     return Math.sqrt(((this.x - x) ** 2) + ((this.y - y) ** 2) + ((this.z - z) ** 2))
   },
+  /**
+   * @instance
+   */
   distance2: function ({
     x = 0,
     y = 0,
@@ -2619,6 +3316,9 @@ syngen.utility.vector3d.prototype = {
   } = {}) {
     return ((this.x - x) ** 2) + ((this.y - y) ** 2) + ((this.z - z) ** 2)
   },
+  /**
+   * @instance
+   */
   dotProduct: function ({
     x = 0,
     y = 0,
@@ -2626,6 +3326,9 @@ syngen.utility.vector3d.prototype = {
   } = {}) {
     return (this.x * x) + (this.y * y) + (this.z * z)
   },
+  /**
+   * @instance
+   */
   euler: function () {
     return syngen.utility.euler.create({
       pitch: this.z ? Math.atan2(this.z, Math.sqrt((this.x ** 2) + (this.y ** 2))) : 0,
@@ -2633,6 +3336,9 @@ syngen.utility.vector3d.prototype = {
       yaw: Math.atan2(this.y, this.x),
     })
   },
+  /**
+   * @instance
+   */
   eulerTo: function (vector, euler = undefined) {
     let relative = syngen.utility.vector3d.prototype.isPrototypeOf(vector)
       ? vector
@@ -2646,6 +3352,9 @@ syngen.utility.vector3d.prototype = {
 
     return relative.euler()
   },
+  /**
+   * @instance
+   */
   equals: function ({
     x = 0,
     y = 0,
@@ -2653,6 +3362,9 @@ syngen.utility.vector3d.prototype = {
   } = {}) {
     return (this.x == x) && (this.y == y) && (this.z == z)
   },
+  /**
+   * @instance
+   */
   inverse: function () {
     return syngen.utility.vector3d.create({
       x: -this.x,
@@ -2660,9 +3372,15 @@ syngen.utility.vector3d.prototype = {
       z: -this.z,
     })
   },
+  /**
+   * @instance
+   */
   isZero: function () {
     return !this.x && !this.y && !this.z
   },
+  /**
+   * @instance
+   */
   normalize: function () {
     const distance = this.distance()
 
@@ -2672,11 +3390,17 @@ syngen.utility.vector3d.prototype = {
 
     return this.scale(1 / distance)
   },
+  /**
+   * @instance
+   */
   rotateEuler: function (euler, sequence) {
     return this.rotateQuaternion(
       syngen.utility.quaternion.fromEuler(euler, sequence)
     )
   },
+  /**
+   * @instance
+   */
   rotateQuaternion: function (quaternion) {
     if (!syngen.utility.quaternion.prototype.isPrototypeOf(quaternion)) {
       quaternion = syngen.utility.quaternion.create(quaternion)
@@ -2694,6 +3418,9 @@ syngen.utility.vector3d.prototype = {
       )
     )
   },
+  /**
+   * @instance
+   */
   scale: function (scalar = 0) {
     return syngen.utility.vector3d.create({
       x: this.x * scalar,
@@ -2701,6 +3428,9 @@ syngen.utility.vector3d.prototype = {
       z: this.z * scalar,
     })
   },
+  /**
+   * @instance
+   */
   set: function ({
     x = 0,
     y = 0,
@@ -2711,6 +3441,9 @@ syngen.utility.vector3d.prototype = {
     this.z = z
     return this
   },
+  /**
+   * @instance
+   */
   subtract: function ({
     x = 0,
     y = 0,
@@ -2722,6 +3455,9 @@ syngen.utility.vector3d.prototype = {
       z: this.z - z,
     })
   },
+  /**
+   * @instance
+   */
   subtractRadius: function (radius = 0) {
     if (radius <= 0) {
       return syngen.utility.vector3d.create(this)
@@ -2737,83 +3473,210 @@ syngen.utility.vector3d.prototype = {
   },
 }
 
+/**
+ * @static
+ */
 syngen.utility.vector3d.unitX = function () {
   return Object.create(this.prototype).construct({
     x: 1,
   })
 }
 
+/**
+ * @static
+ */
 syngen.utility.vector3d.unitY = function () {
   return Object.create(this.prototype).construct({
     y: 1,
   })
 }
 
+/**
+ * @static
+ */
 syngen.utility.vector3d.unitZ = function () {
   return Object.create(this.prototype).construct({
     z: 1,
   })
 }
 
+/**
+ * @namespace
+ */
 syngen.const = {
+  /**
+    @type {Number}
+  */
   acousticShadowFrequency: 343 / 0.1524, // speedOfSound / binauralHeadWidth
+  /**
+    @type {Number}
+  */
   audioLookaheadTime: 0, // TODO: Improve support for non-zero values
+  /**
+    @type {Number}
+  */
   binauralHeadWidth: 0.1524, // m
+  /**
+    @type {Number}
+  */
   binauralShadowOffset: Math.PI / 4, // radian offset of each ear from +/- 90 deg
+  /**
+    @type {Number}
+  */
   binauralShadowRolloff: 1, // m
+  /**
+    @type {Number}
+  */
   distancePower: 2, // 1 / (d ** distancePower)
+  /**
+    @type {Number}
+  */
   distancePowerHorizon: false, // Whether to dropoff power calculations as a ratio of streamer radius
+  /**
+    @type {Number}
+  */
   distancePowerHorizonExponent: 0, // Speed of the distance dropoff
+  /**
+    @type {String}
+  */
   eulerToQuaternion: 'ZYX', // One of eight supported tuples, see syngen.utility.quaternion
+  /**
+    @type {Number}
+  */
   gravity: 9.8, // m/s
+  /**
+    @type {Number}
+  */
   idleDelta: 1/60, // s
+  /**
+    @type {Number}
+  */
   maxFrequency: 20000, // Hz
+  /**
+    @type {Number}
+  */
   maxSafeFloat: (2 ** 43) - 1, // Math.MAX_SAFE_INTEGER / (2 ** 10), or about 3 decimal places of precision
+  /**
+    @type {Number}
+  */
   midiReferenceFrequency: 440, // Hz
+  /**
+    @type {Number}
+  */
   midiReferenceNote: 69, // A4
+  /**
+    @type {Number}
+  */
   minFrequency: 20, // Hz
+  /**
+    @type {Number}
+  */
   positionRadius: 0.25, // m
+  /**
+    @type {Number}
+  */
   propFadeDuration: 0.005, // s
+  /**
+    @type {String}
+  */
   seedSeparator: '~', // separator for arrays used as syngen.utility.srand() seeds
+  /**
+    @type {Number}
+  */
   speedOfSound: 343, // m/s
+  /**
+    @type {Number}
+  */
   subFrequency: 60, // Hz
+  /**
+    @type {Number}
+  */
   tau: Math.PI * 2, // circle constant
+  /**
+    @type {Number}
+  */
   unit: 1, // 1D line segment
+  /**
+    @type {Number}
+  */
   unit2: Math.sqrt(2) / 2, // 2D unit circle
+  /**
+    @type {Number}
+  */
   unit3: Math.sqrt(3) / 3, // 3D unit sphere
+  /**
+    @type {Number}
+  */
   unit4: Math.sqrt(4) / 4, // 4D unit hypersphere
+  /**
+    @type {Number}
+  */
   zero: 10 ** -32, // Close enough to zero
+  /**
+    @type {Number}
+  */
   zeroDb: -96, // dB, close enough to silence
+  /**
+    @type {Number}
+  */
   zeroGain: syngen.utility.fromDb(-96), // syngen.utility.fromDb(zeroDb)
+  /**
+    @type {Number}
+  */
   zeroTime: 0.005, // s, close enough to instantaneous
 }
 
+/**
+ * @implements syngen.utility.pubsub
+ * @namespace
+ */
 syngen.state = syngen.utility.pubsub.decorate({
+  /**
+   * @memberof syngen.state
+   */
   export: function () {
     const data = {}
     this.emit('export', data)
     return data
   },
+  /**
+   * @memberof syngen.state
+   */
   import: function (data = {}) {
     this.reset()
     this.emit('import', data)
     return this
   },
+  /**
+   * @memberof syngen.state
+   */
   reset: function () {
     this.emit('reset')
     return this
   }
 })
 
+/**
+ * @namespace
+ */
 syngen.seed = (() => {
   let seed
 
   return {
+    /**
+     * @memberof syngen.seed
+     */
     get: () => seed,
+    /**
+     * @memberof syngen.seed
+     */
     set: function (value) {
       seed = value
       return this
     },
+    /**
+     * @memberof syngen.seed
+     */
     valueOf: () => seed,
   }
 })()
@@ -2822,33 +3685,68 @@ syngen.state.on('export', (data = {}) => data.seed = syngen.seed.get())
 syngen.state.on('import', (data = {}) => syngen.seed.set(data.seed))
 syngen.state.on('reset', () => syngen.seed.set())
 
+/**
+ * @namespace
+ */
 syngen.audio = (() => {
   const context = new AudioContext()
 
   return {
     buffer: {
+      /**
+       * @namespace syngen.audio.buffer.impulse
+       */
       impulse: {},
+      /**
+       * @namespace syngen.audio.buffer.noise
+       */
       noise: {},
     },
+    /**
+     * @memberof syngen.audio
+     */
     context: () => context,
+    /**
+     * @memberof syngen.audio
+     */
     nyquist: (coefficient = 1) => coefficient * context.sampleRate / 2,
     send: {},
+    /**
+     * @memberof syngen.audio
+     */
     start: function () {
       context.resume()
       return this
     },
+    /**
+     * @memberof syngen.audio
+     */
     time: (duration = 0) => context.currentTime + syngen.const.audioLookaheadTime + duration,
+    /**
+     * @memberof syngen.audio
+     */
     zeroTime: () => context.currentTime + syngen.const.audioLookaheadTime + syngen.const.zeroTime,
   }
 })()
 
+/**
+ * @interface
+ * @property {syngen.audio.binaural.monaural} left
+ * @property {syngen.audio.binaural.monaural} right
+ */
 syngen.audio.binaural = {}
 
+/**
+ * @static
+ */
 syngen.audio.binaural.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
 syngen.audio.binaural.prototype = {
+  /**
+   * @instance
+   */
   construct: function () {
     const context = syngen.audio.context()
 
@@ -2866,21 +3764,33 @@ syngen.audio.binaural.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function () {
     this.left.destroy()
     this.right.destroy()
     this.merger.disconnect()
     return this
   },
+  /**
+   * @instance
+   */
   from: function (input) {
     this.left.from(input)
     this.right.from(input)
     return this
   },
+  /**
+   * @instance
+   */
   to: function (output) {
     this.merger.connect(output)
     return this
   },
+  /**
+   * @instance
+   */
   update: function (...args) {
     this.left.update(...args)
     this.right.update(...args)
@@ -2888,9 +3798,15 @@ syngen.audio.binaural.prototype = {
   },
 }
 
+/**
+ * @namespace
+ */
 syngen.audio.circuit = {}
 
 // Multiplies input by -scale
+/**
+ * @static
+ */
 syngen.audio.circuit.invert = ({
   from,
   scale = 1,
@@ -2913,6 +3829,9 @@ syngen.audio.circuit.invert = ({
 }
 
 // Scales input [0,1] to [min,max], e.g. for controlling AudioParams via ConstantSourceNodes
+/**
+ * @static
+ */
 syngen.audio.circuit.lerp = ({
   chainStop, // syngen.audio.synth
   from, // ConstantSourceNode
@@ -2956,6 +3875,9 @@ syngen.audio.circuit.lerp = ({
 }
 
 // Scales input [fromMin,fromMax] to [toMin,toMax], e.g. for controlling AudioParams via ConstantSourceNodes
+/**
+ * @static
+ */
 syngen.audio.circuit.scale = ({
   chainStop, // syngen.audio.synth
   from, // ConstantSourceNode
@@ -3003,8 +3925,14 @@ syngen.audio.circuit.scale = ({
   return wrapper
 }
 
+/**
+ * @namespace
+ */
 syngen.audio.effect = {}
 
+/**
+ * @static
+ */
 syngen.audio.effect.createDubDelay = function ({
   filterFrequency = syngen.const.maxFrequency,
   filterType = 'lowpass',
@@ -3030,6 +3958,9 @@ syngen.audio.effect.createDubDelay = function ({
   return feedbackDelay
 }
 
+/**
+ * @static
+ */
 syngen.audio.effect.createFeedbackDelay = ({
   delay: delayAmount = 0.5,
   dry: dryAmount = 1,
@@ -3078,6 +4009,9 @@ syngen.audio.effect.createFeedbackDelay = ({
   }
 }
 
+/**
+ * @static
+ */
 syngen.audio.effect.createMultitapFeedbackDelay = ({
   dry: dryAmount = 1,
   tap: tapParams = [],
@@ -3165,6 +4099,9 @@ syngen.audio.effect.createMultitapFeedbackDelay = ({
 
 // This is not an out-of-the-box solution for phaser, chorus, or flange
 // Depth and rate values must be exact values, e.g. 20ms delayTime, 1ms depth, 1/2hz rate
+/**
+ * @static
+ */
 syngen.audio.effect.createPhaser = ({
   dry: dryAmount = 1/2,
   depth: depthAmount = 0.001,
@@ -3230,6 +4167,9 @@ syngen.audio.effect.createPhaser = ({
   }
 }
 
+/**
+ * @static
+ */
 syngen.audio.effect.createPingPongDelay = function (options) {
   const context = syngen.audio.context(),
     feedbackDelay = this.createFeedbackDelay(options),
@@ -3252,6 +4192,9 @@ syngen.audio.effect.createPingPongDelay = function (options) {
   return feedbackDelay
 }
 
+/**
+ * @static
+ */
 syngen.audio.effect.createShaper = ({
   curve = syngen.audio.shape.warm(),
   dry: dryAmount = 0,
@@ -3294,6 +4237,9 @@ syngen.audio.effect.createShaper = ({
   }
 }
 
+/**
+ * @static
+ */
 syngen.audio.effect.createTalkbox = ({
   dry: dryAmount = 0,
   formant0 = syngen.audio.formant.createU(),
@@ -3356,6 +4302,9 @@ syngen.audio.effect.createTalkbox = ({
   }
 }
 
+/**
+ * @static
+ */
 syngen.audio.export = ({
   duration = 0,
   input = syngen.audio.mixer.master.output,
@@ -3403,8 +4352,14 @@ syngen.audio.export = ({
 // SEE: https://www.reasonstudios.com/blog/thor-demystified-17-filters-pt-5-formant-filters
 // SEE: http://www.ipachart.com
 
+/**
+ * @namespace
+ */
 syngen.audio.formant = {}
 
+/**
+ * @static
+ */
 syngen.audio.formant.blend = (a, b, mix = 0) => {
   const getFrequency = (array, index) => (array[index] && array[index].frequency) || syngen.const.zero
   const getGain = (array, index) => (array[index] && array[index].gain) || syngen.const.zeroGain
@@ -3417,6 +4372,9 @@ syngen.audio.formant.blend = (a, b, mix = 0) => {
   }))
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.create = (frequencies = []) => {
   const context = syngen.audio.context()
 
@@ -3449,36 +4407,54 @@ syngen.audio.formant.create = (frequencies = []) => {
   }
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.createA = () => {
   return syngen.audio.formant.create(
     syngen.audio.formant.a()
   )
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.createE = () => {
   return syngen.audio.formant.create(
     syngen.audio.formant.e()
   )
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.createI = () => {
   return syngen.audio.formant.create(
     syngen.audio.formant.i()
   )
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.createO = () => {
   return syngen.audio.formant.create(
     syngen.audio.formant.o()
   )
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.createU = () => {
   return syngen.audio.formant.create(
     syngen.audio.formant.u()
   )
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.transition = function(formant, frequencies = [], duration) {
   formant.filters.forEach((filter, i) => {
     if (!frequencies[i]) {
@@ -3504,6 +4480,9 @@ syngen.audio.formant.transition = function(formant, frequencies = [], duration) 
   return syngen.utility.timing.promise(duration * 1000)
 }
 
+/**
+ * @static
+ */
 syngen.audio.formant.a = () => [
   {
     frequency: 599,
@@ -3527,6 +4506,9 @@ syngen.audio.formant.a = () => [
   },
 ]
 
+/**
+ * @static
+ */
 syngen.audio.formant.e = () => [
   {
     frequency: 469,
@@ -3550,6 +4532,9 @@ syngen.audio.formant.e = () => [
   },
 ]
 
+/**
+ * @static
+ */
 syngen.audio.formant.i = () => [
   {
     frequency: 274,
@@ -3573,6 +4558,9 @@ syngen.audio.formant.i = () => [
   },
 ]
 
+/**
+ * @static
+ */
 syngen.audio.formant.o = () => [
   {
     frequency: 411,
@@ -3596,6 +4584,9 @@ syngen.audio.formant.o = () => [
   },
 ]
 
+/**
+ * @static
+ */
 syngen.audio.formant.u = () => [
   {
     frequency: 290,
@@ -3619,6 +4610,9 @@ syngen.audio.formant.u = () => [
   },
 ]
 
+/**
+ * @namespace
+ */
 syngen.audio.mixer = (() => {
   const context = syngen.audio.context()
 
@@ -3667,7 +4661,14 @@ syngen.audio.mixer = (() => {
 
   return {
     auxiliary: {},
+    /**
+     * @memberof syngen.audio.mixer
+     * @namespace
+     */
     bus: {},
+    /**
+     * @memberof syngen.audio.mixer
+     */
     createAuxiliary: () => {
       const input = context.createGain(),
         output = context.createGain()
@@ -3679,11 +4680,32 @@ syngen.audio.mixer = (() => {
         output,
       }
     },
+    /**
+     * @memberof syngen.audio.mixer
+     */
     createBus: () => {
       const input = context.createGain()
       input.connect(masterInput)
       return input
     },
+    /**
+     * @memberof syngen.audio.mixer
+     * @property {GainNode} input
+     * @property {GainNode} output
+     * @property {Object} param
+     * @property {AudioParam} param.gain
+     * @property {Object} param.highpass
+     * @property {AudioParam} param.highpass.frequency
+     * @property {Object} param.limiter
+     * @property {AudioParam} param.limiter.attack
+     * @property {AudioParam} param.limiter.gain
+     * @property {AudioParam} param.limiter.knee
+     * @property {AudioParam} param.limiter.ratio
+     * @property {AudioParam} param.limiter.release
+     * @property {AudioParam} param.limiter.threshold
+     * @property {Object} param.lowpass
+     * @property {AudioParam} param.lowpass.frequency
+     */
     master: {
       input: masterInput,
       output: masterOutput,
@@ -3705,6 +4727,9 @@ syngen.audio.mixer = (() => {
         },
       },
     },
+    /**
+     * @memberof syngen.audio.mixer
+     */
     rebuildFilters: function () {
       destroyFilters()
       createFilters()
@@ -3717,8 +4742,14 @@ syngen.audio.mixer = (() => {
   }
 })()
 
+/**
+ * @namespace
+ */
 syngen.audio.ramp = {}
 
+/**
+ * @static
+ */
 syngen.audio.ramp.createMachine = function (audioParam, rampFn) {
   let timeout,
     state = false
@@ -3749,35 +4780,53 @@ syngen.audio.ramp.createMachine = function (audioParam, rampFn) {
   return container
 }
 
+/**
+ * @static
+ */
 syngen.audio.ramp.curve = function (audioParam, curve, duration = syngen.const.zeroTime) {
   audioParam.cancelScheduledValues(0)
   audioParam.setValueCurveAtTime(curve, syngen.audio.time(), syngen.audio.time(duration))
   return this
 }
 
+/**
+ * @static
+ */
 syngen.audio.ramp.exponential = function (audioParam, value, duration = syngen.const.zeroTime) {
   syngen.audio.ramp.hold(audioParam)
   audioParam.exponentialRampToValueAtTime(value, syngen.audio.time(duration))
   return this
 }
 
+/**
+ * @static
+ */
 syngen.audio.ramp.hold = function (audioParam) {
   audioParam.value = audioParam.value
   audioParam.cancelScheduledValues(0)
   return this
 }
 
+/**
+ * @static
+ */
 syngen.audio.ramp.linear = function (audioParam, value, duration = syngen.const.zeroTime) {
   syngen.audio.ramp.hold(audioParam)
   audioParam.linearRampToValueAtTime(value, syngen.audio.time(duration))
   return this
 }
 
+/**
+ * @static
+ */
 syngen.audio.ramp.set = function (audioParam, value) {
   syngen.audio.ramp.linear(audioParam, value, syngen.performance.delta())
   return this
 }
 
+/**
+ * @namespace
+ */
 syngen.audio.shape = (() => {
   const crush6 = createBitcrush(6),
     crush8 = createBitcrush(8),
@@ -3816,6 +4865,9 @@ syngen.audio.shape = (() => {
     square[i] = i < square.length / 2 ? -1 : 1
   }
 
+  /**
+   * @memberof syngen.audio.shape
+   */
   function createBitcrush(depth = 16, samples = 2 ** 16) {
     const factor = 2 ** (depth - 1),
       shape = new Float32Array(samples)
@@ -3830,6 +4882,9 @@ syngen.audio.shape = (() => {
     return shape
   }
 
+  /**
+   * @memberof syngen.audio.shape
+   */
   function createNoise(variance = 2, samples = 2 ** 16) {
     const shape = new Float32Array(samples),
       srand = syngen.utility.srand('syngen.audio.shape.createNoise')
@@ -3847,6 +4902,9 @@ syngen.audio.shape = (() => {
     return shape
   }
 
+  /**
+   * @memberof syngen.audio.shape
+   */
   function createRandom(samples = 2, seed = '') {
     const shape = new Float32Array(samples),
       srand = syngen.utility.srand('syngen.audio.shape.createRandom', seed)
@@ -3859,6 +4917,9 @@ syngen.audio.shape = (() => {
   }
 
   // NOTE: amount should be in radians
+  /**
+   * @memberof syngen.audio.shape
+   */
   function createSigmoid(amount = 0, samples = 2 ** 16) {
     const shape = new Float32Array(samples)
 
@@ -3870,6 +4931,9 @@ syngen.audio.shape = (() => {
     return shape
   }
 
+  /**
+   * @memberof syngen.audio.shape
+   */
   function createTuple(times = 1) {
     const samples = (times * 4) - 1,
       shape = new Float32Array(samples)
@@ -3891,6 +4955,9 @@ syngen.audio.shape = (() => {
     return shape
   }
 
+  /**
+   * @memberof syngen.audio.shape
+   */
   function createTuplePulse(times = 1) {
     const samples = times * 2,
       shape = new Float32Array(samples)
@@ -3910,41 +4977,137 @@ syngen.audio.shape = (() => {
     createTuple,
     createTuplePulse,
     crush12: () => crush12,
+    /**
+     * @memberof syngen.audio.shape
+     */
     crush6: () => crush6,
+    /**
+     * @memberof syngen.audio.shape
+     */
     crush8: () => crush8,
+    /**
+     * @memberof syngen.audio.shape
+     */
     distort: () => distort,
+    /**
+     * @memberof syngen.audio.shape
+     */
     double: () => double,
+    /**
+     * @memberof syngen.audio.shape
+     */
     doublePulse: () => doublePulse,
+    /**
+     * @memberof syngen.audio.shape
+     */
     equalFadeIn: () => equalFadeIn,
+    /**
+     * @memberof syngen.audio.shape
+     */
     equalFadeOut: () => equalFadeOut,
+    /**
+     * @memberof syngen.audio.shape
+     */
     hot: () => hot,
+    /**
+     * @memberof syngen.audio.shape
+     */
     invert: () => invert,
+    /**
+     * @memberof syngen.audio.shape
+     */
     invertShape: (shape) => new Float32Array([...shape].reverse()),
+    /**
+     * @memberof syngen.audio.shape
+     */
     linear: () => linear,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noise: () => noise,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noise2: () => noise2,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noise4: () => noise4,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noise8: () => noise8,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noise16: () => noise16,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noise32: () => noise32,
+    /**
+     * @memberof syngen.audio.shape
+     */
     noiseZero: () => noiseZero,
+    /**
+     * @memberof syngen.audio.shape
+     */
     offset: (offset = syngen.const.zeroGain) => new Float32Array([offset, offset]),
+    /**
+     * @memberof syngen.audio.shape
+     */
     offsetShape: (shape, offset = syngen.const.zeroGain) => shape.map((value) => value + offset),
+    /**
+     * @memberof syngen.audio.shape
+     */
     one: () => one,
+    /**
+     * @memberof syngen.audio.shape
+     */
     pulse: () => pulse,
+    /**
+     * @memberof syngen.audio.shape
+     */
     rectify: () => rectify,
+    /**
+     * @memberof syngen.audio.shape
+     */
     rectifyShape: (shape) => shape.map(Math.abs),
+    /**
+     * @memberof syngen.audio.shape
+     */
     reverseShape: (shape) => shape.slice().reverse(),
+    /**
+     * @memberof syngen.audio.shape
+     */
     square: () => square,
+    /**
+     * @memberof syngen.audio.shape
+     */
     triple: () => triple,
+    /**
+     * @memberof syngen.audio.shape
+     */
     triplePulse: () => triplePulse,
+    /**
+     * @memberof syngen.audio.shape
+     */
     warm: () => warm,
+    /**
+     * @memberof syngen.audio.shape
+     */
     zero: () => zero,
   }
 })()
 
+/**
+ * @namespace
+ */
 syngen.audio.synth = {}
 
+/**
+ * @static
+ */
 syngen.audio.synth.assign = function (synth, key, plugin) {
   synth[key] = plugin
   synth.param = synth.param || {}
@@ -3952,6 +5115,9 @@ syngen.audio.synth.assign = function (synth, key, plugin) {
   return synth
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.chain = function (synth, plugin) {
   const pluginInput = plugin.input || plugin,
     pluginOutput = plugin.output || plugin,
@@ -3984,11 +5150,17 @@ syngen.audio.synth.chain = function (synth, plugin) {
   return synth
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.chainAssign = function (synth, key, plugin) {
   this.assign(synth, key, plugin)
   return this.chain(synth, plugin)
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.chainStop = function (synth, plugin) {
   const pluginStop = plugin.stop,
     synthStop = synth.stop
@@ -4010,6 +5182,9 @@ syngen.audio.synth.chainStop = function (synth, plugin) {
   return synth
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createAdditive = ({
   detune,
   frequency,
@@ -4096,6 +5271,9 @@ syngen.audio.synth.createAdditive = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createAm = ({
   carrierDetune,
   carrierFrequency,
@@ -4165,6 +5343,9 @@ syngen.audio.synth.createAm = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createAmBuffer = ({
   buffer,
   carrierGain: carrierGainAmount,
@@ -4246,6 +5427,9 @@ syngen.audio.synth.createAmBuffer = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createBuffer = ({
   buffer,
   detune,
@@ -4301,6 +5485,9 @@ syngen.audio.synth.createBuffer = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createFm = ({
   carrierDetune,
   carrierFrequency,
@@ -4364,6 +5551,9 @@ syngen.audio.synth.createFm = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createLfo = ({
   depth: depthAmount,
   detune,
@@ -4406,6 +5596,9 @@ syngen.audio.synth.createLfo = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createMod = ({
   amodDepth: amodDepthAmount = syngen.const.zeroGain,
   amodDetune,
@@ -4496,6 +5689,9 @@ syngen.audio.synth.createMod = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createPwm = ({
   detune,
   frequency,
@@ -4555,6 +5751,9 @@ syngen.audio.synth.createPwm = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.createSimple = ({
   detune,
   frequency,
@@ -4597,10 +5796,16 @@ syngen.audio.synth.createSimple = ({
   })
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.decorate = (synth = {}) => {
   return Object.setPrototypeOf(synth, syngen.audio.synth.decoration)
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.decoration = {
   assign: function (...args) {
     return syngen.audio.synth.assign(this, ...args)
@@ -4638,6 +5843,9 @@ syngen.audio.synth.decoration = {
   },
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.filtered = function (synth, {
   detune,
   gain,
@@ -4659,6 +5867,9 @@ syngen.audio.synth.filtered = function (synth, {
   return this.chainAssign(synth, 'filter', filter)
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.setAudioParams = function (...params) {
   for (const [param, value] of params) {
     if (param instanceof AudioParam) {
@@ -4671,12 +5882,18 @@ syngen.audio.synth.setAudioParams = function (...params) {
   return this
 }
 
+/**
+ * @static
+ */
 syngen.audio.synth.shaped = function (synth, curve) {
   const shaper = syngen.audio.context().createWaveShaper()
   shaper.curve = curve
   return this.chainAssign(synth, 'shaper', shaper)
 }
 
+/**
+ * @static
+ */
 syngen.audio.buffer.impulse.large = (() => {
   const context = syngen.audio.context()
 
@@ -4696,6 +5913,9 @@ syngen.audio.buffer.impulse.large = (() => {
   return () => buffer
 })()
 
+/**
+ * @static
+ */
 syngen.audio.buffer.impulse.medium = (() => {
   const context = syngen.audio.context()
 
@@ -4715,6 +5935,9 @@ syngen.audio.buffer.impulse.medium = (() => {
   return () => buffer
 })()
 
+/**
+ * @static
+ */
 syngen.audio.buffer.impulse.small = (() => {
   const context = syngen.audio.context()
 
@@ -4734,6 +5957,9 @@ syngen.audio.buffer.impulse.small = (() => {
   return () => buffer
 })()
 
+/**
+ * @static
+ */
 syngen.audio.buffer.noise.brown = (() => {
   const context = syngen.audio.context()
 
@@ -4758,6 +5984,9 @@ syngen.audio.buffer.noise.brown = (() => {
   return () => buffer
 })()
 
+/**
+ * @static
+ */
 syngen.audio.buffer.noise.pink = (() => {
   const context = syngen.audio.context()
 
@@ -4794,6 +6023,9 @@ syngen.audio.buffer.noise.pink = (() => {
   return () => buffer
 })()
 
+/**
+ * @static
+ */
 syngen.audio.buffer.noise.white = (() => {
   const context = syngen.audio.context()
 
@@ -4810,6 +6042,18 @@ syngen.audio.buffer.noise.white = (() => {
   return () => buffer
 })()
 
+/**
+ * @static
+ */
+syngen.audio.mixer.bus.props = (() => {
+  const bus = syngen.audio.mixer.createBus()
+  return () => bus
+})()
+
+/**
+ * @implements syngen.utility.pubsub
+ * @namespace
+ */
 syngen.audio.mixer.auxiliary.reverb = (() => {
   const context = syngen.audio.context(),
     input = context.createGain(),
@@ -4827,13 +6071,25 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
   convolver.connect(output)
 
   return syngen.utility.pubsub.decorate({
+    /**
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     */
     createSend: () => {
       const gain = context.createGain()
       gain.connect(input)
       return gain
     },
+    /**
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     */
     isActive: () => active,
+    /**
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     */
     output: () => output,
+    /**
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     */
     setActive: function (state) {
       if (active == state) {
         return this
@@ -4851,10 +6107,16 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     */
     setGain: function (gain, duration) {
       syngen.audio.ramp.linear(output.gain, gain, duration)
       return this
     },
+    /**
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     */
     setImpulse: function (buffer) {
       input.disconnect()
 
@@ -4871,18 +6133,22 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
   }, pubsub)
 })()
 
-syngen.audio.mixer.bus.props = (() => {
-  const bus = syngen.audio.mixer.createBus()
-  return () => bus
-})()
-
+/**
+ * @interface
+ */
 syngen.audio.binaural.monaural = {}
 
+/**
+ * @static
+ */
 syngen.audio.binaural.monaural.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
 syngen.audio.binaural.monaural.prototype = {
+  /**
+   * @instance
+   */
   construct: function ({
     pan = 0,
   }) {
@@ -4903,18 +6169,30 @@ syngen.audio.binaural.monaural.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function () {
     this.filter.disconnect()
     return this
   },
+  /**
+   * @instance
+   */
   from: function (input, ...args) {
     input.connect(this.gain, ...args)
     return this
   },
+  /**
+   * @instance
+   */
   to: function (output, ...args) {
     this.filter.connect(output, ...args)
     return this
   },
+  /**
+   * @instance
+   */
   update: function ({
     x = 0,
     y = 0,
@@ -4957,13 +6235,22 @@ syngen.audio.binaural.monaural.prototype = {
   },
 }
 
+/**
+ * @interface
+ */
 syngen.audio.send.reverb = {}
 
+/**
+ * @static
+ */
 syngen.audio.send.reverb.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
 syngen.audio.send.reverb.prototype = {
+  /**
+   * @instance
+   */
   construct: function () {
     const context = syngen.audio.context()
 
@@ -4987,27 +6274,42 @@ syngen.audio.send.reverb.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function () {
     syngen.audio.mixer.auxiliary.reverb.off('activate', this.onSendActivate)
     syngen.audio.mixer.auxiliary.reverb.off('deactivate', this.onSendDeactivate)
     this.send.disconnect()
     return this
   },
+  /**
+   * @instance
+   */
   from: function (input) {
     input.connect(this.input)
     return this
   },
+  /**
+   * @instance
+   */
   onSendActivate: function () {
     this.update(this.relative)
     this.input.connect(this.delay)
     this.delay.connect(this.send)
     return this
   },
+  /**
+   * @instance
+   */
   onSendDeactivate: function () {
     this.input.disconnect()
     this.delay.disconnect()
     return this
   },
+  /**
+   * @instance
+   */
   update: function ({
     x = 0,
     y = 0,
@@ -5041,6 +6343,10 @@ syngen.audio.send.reverb.prototype = {
   },
 }
 
+/**
+ * @implements syngen.utility.pubsub
+ * @namespace
+ */
 syngen.loop = (() => {
   const pubsub = syngen.utility.pubsub.create()
 
@@ -5111,10 +6417,25 @@ syngen.loop = (() => {
   })
 
   return syngen.utility.pubsub.decorate({
+    /**
+     * @memberof syngen.loop
+     */
     delta: () => delta,
+    /**
+     * @memberof syngen.loop
+     */
     frame: () => frameCount,
+    /**
+     * @memberof syngen.loop
+     */
     isPaused: () => isPaused,
+    /**
+     * @memberof syngen.loop
+     */
     isRunning: () => isRunning,
+    /**
+     * @memberof syngen.loop
+     */
     pause: function () {
       if (isPaused) {
         return this
@@ -5125,6 +6446,9 @@ syngen.loop = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.loop
+     */
     resume: function () {
       if (!isPaused) {
         return this
@@ -5135,6 +6459,9 @@ syngen.loop = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.loop
+     */
     start: function () {
       if (isRunning) {
         return this
@@ -5148,6 +6475,9 @@ syngen.loop = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.loop
+     */
     stop: function () {
       if (!isRunning) {
         return this
@@ -5165,10 +6495,16 @@ syngen.loop = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.loop
+     */
     time: () => time,
   }, pubsub)
 })()
 
+/**
+ * @namespace
+ */
 syngen.input.gamepad = (() => {
   let deadzone = 0.1875
 
@@ -5187,7 +6523,13 @@ syngen.input.gamepad = (() => {
   }
 
   return {
+    /**
+     * @memberof syngen.input.gamepad
+     */
     get: () => ({...state}),
+    /**
+     * @memberof syngen.input.gamepad
+     */
     getAnalog: function (key, invert = false) {
       const value = state.analog[key] || 0
 
@@ -5197,6 +6539,9 @@ syngen.input.gamepad = (() => {
 
       return value
     },
+    /**
+     * @memberof syngen.input.gamepad
+     */
     getAxis: function (key, invert = false) {
       const value = state.axis[key] || 0
 
@@ -5206,6 +6551,9 @@ syngen.input.gamepad = (() => {
 
       return value
     },
+    /**
+     * @memberof syngen.input.gamepad
+     */
     hasAxis: function (...keys) {
       for (const key of keys) {
         if (!(key in state.axis)) {
@@ -5215,7 +6563,13 @@ syngen.input.gamepad = (() => {
 
       return true
     },
+    /**
+     * @memberof syngen.input.gamepad
+     */
     isDigital: (key) => Boolean(state.digital[key]),
+    /**
+     * @memberof syngen.input.gamepad
+     */
     reset: function () {
       state = {
         analog: {},
@@ -5225,10 +6579,16 @@ syngen.input.gamepad = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.input.gamepad
+     */
     setDeadzone: function (value = 0) {
       deadzone = Number(value) || 0
       return this
     },
+    /**
+     * @memberof syngen.input.gamepad
+     */
     update: function () {
       const gamepads = navigator.getGamepads()
 
@@ -5266,6 +6626,9 @@ syngen.input.gamepad = (() => {
 
 syngen.loop.on('frame', () => syngen.input.gamepad.update())
 
+/**
+ * @namespace
+ */
 syngen.input.keyboard = (() => {
   let state = {}
 
@@ -5285,8 +6648,17 @@ syngen.input.keyboard = (() => {
   }
 
   return {
+    /**
+     * @memberof syngen.input.keyboard
+     */
     get: () => ({...state}),
+    /**
+     * @memberof syngen.input.keyboard
+     */
     is: (key) => state[key] || false,
+    /**
+     * @memberof syngen.input.keyboard
+     */
     reset: function () {
       state = {}
       return this
@@ -5294,6 +6666,9 @@ syngen.input.keyboard = (() => {
   }
 })()
 
+/**
+ * @namespace
+ */
 syngen.input.mouse = (() => {
   let state = {
     button: {},
@@ -5329,13 +6704,37 @@ syngen.input.mouse = (() => {
   }
 
   return {
+    /**
+     * @memberof syngen.input.mouse
+     */
     get: () => ({...state}),
+    /**
+     * @memberof syngen.input.mouse
+     */
     getMoveX: state.moveX || 0,
+    /**
+     * @memberof syngen.input.mouse
+     */
     getMoveY: state.moveY || 0,
+    /**
+     * @memberof syngen.input.mouse
+     */
     getWheelX: state.wheelX || 0,
+    /**
+     * @memberof syngen.input.mouse
+     */
     getWheelY: state.wheelY || 0,
+    /**
+     * @memberof syngen.input.mouse
+     */
     getWheelZ: state.wheelZ || 0,
+    /**
+     * @memberof syngen.input.mouse
+     */
     isButton: (key) => state.button[key] || false,
+    /**
+     * @memberof syngen.input.mouse
+     */
     reset: function () {
       state = {
         button: {},
@@ -5348,6 +6747,9 @@ syngen.input.mouse = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.input.mouse
+     */
     update: function () {
       // XXX: Reset between frames
       setTimeout(() => {
@@ -5366,6 +6768,9 @@ syngen.input.mouse = (() => {
 
 syngen.loop.on('frame', () => syngen.input.mouse.update())
 
+/**
+ * @namespace
+ */
 syngen.performance = (() => {
   const deltas = [],
     maxFrames = 30
@@ -5375,8 +6780,17 @@ syngen.performance = (() => {
     medianFps = 0
 
   return {
+    /**
+     * @memberof syngen.performance
+     */
     delta: () => medianDelta,
+    /**
+     * @memberof syngen.performance
+     */
     fps: () => medianFps,
+    /**
+     * @memberof syngen.performance
+     */
     update: function ({delta}) {
       deltas[index] = delta
 
@@ -5398,10 +6812,16 @@ syngen.performance = (() => {
 
 syngen.loop.on('frame', (e) => syngen.performance.update(e))
 
+/**
+ * @namespace
+ */
 syngen.position = (() => {
   const proxy = syngen.utility.physical.decorate({})
 
   return {
+    /**
+     * @memberof syngen.position
+     */
     export: () => ({
       quaternion: {
         w: proxy.quaternion.w,
@@ -5413,12 +6833,33 @@ syngen.position = (() => {
       y: proxy.y,
       z: proxy.z,
     }),
+    /**
+     * @memberof syngen.position
+     */
     getAngularVelocity: () => proxy.angularVelocity.clone(),
+    /**
+     * @memberof syngen.position
+     */
     getAngularVelocityEuler: () => syngen.utility.euler.fromQuaternion(proxy.angularVelocity),
+    /**
+     * @memberof syngen.position
+     */
     getEuler: () => proxy.euler(),
+    /**
+     * @memberof syngen.position
+     */
     getQuaternion: () => proxy.quaternion.clone(),
+    /**
+     * @memberof syngen.position
+     */
     getVector: () => proxy.vector(),
+    /**
+     * @memberof syngen.position
+     */
     getVelocity: () => proxy.velocity.clone(),
+    /**
+     * @memberof syngen.position
+     */
     import: function ({
       quaternion = {w: 1},
       x = 0,
@@ -5434,6 +6875,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     rect: () => ({
       depth: syngen.const.positionRadius * 2,
       height: syngen.const.positionRadius * 2,
@@ -5442,9 +6886,15 @@ syngen.position = (() => {
       y: proxy.y - syngen.const.positionRadius,
       z: proxy.z - syngen.const.positionRadius,
     }),
+    /**
+     * @memberof syngen.position
+     */
     reset: function () {
       return this.import()
     },
+    /**
+     * @memberof syngen.position
+     */
     setAngularVelocity: function ({
       w = 0,
       x = 0,
@@ -5460,6 +6910,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     setAngularVelocityEuler: function ({
       pitch = 0,
       roll = 0,
@@ -5475,6 +6928,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     setEuler: function ({
       pitch = 0,
       roll = 0,
@@ -5490,6 +6946,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     setQuaternion: function ({
       w = 0,
       x = 0,
@@ -5505,6 +6964,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     setVector: function ({
       x = 0,
       y = 0,
@@ -5516,6 +6978,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     setVelocity: function ({
       x = 0,
       y = 0,
@@ -5529,6 +6994,9 @@ syngen.position = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.position
+     */
     update: function () {
       proxy.updatePhysics()
       return this
@@ -5548,9 +7016,28 @@ syngen.state.on('export', (data = {}) => data.position = syngen.position.export(
 syngen.state.on('import', (data = {}) => syngen.position.import(data.position))
 syngen.state.on('reset', () => syngen.position.reset())
 
+/**
+ * @interface
+ * @property {String} name
+ * @property {Number} radius
+ * @property {String} token
+ * @property {Number} x
+ * @property {Number} y
+ * @property {Number} z
+ */
 syngen.prop.base = {
   name: 'base',
   radius: 0,
+  /**
+   * @method
+   * @param {Object} [options]
+   * @param {AudioDestinationNode|GainNode} [options.destination=syngen.audio.mixer.bus.props]
+   * @param {Number} [options.radius=0]
+   * @param {String} [options.token]
+   * @param {Number} [options.x=0]
+   * @param {Number} [options.y=0]
+   * @param {Number} [options.z=0]
+   */
   construct: function ({
     destination = syngen.audio.mixer.bus.props(),
     radius,
@@ -5589,6 +7076,9 @@ syngen.prop.base = {
 
     return this
   },
+  /**
+   * @method
+   */
   destroy: function () {
     syngen.audio.ramp.linear(this.output.gain, syngen.const.zeroGain, syngen.const.propFadeDuration)
 
@@ -5601,6 +7091,9 @@ syngen.prop.base = {
 
     return this
   },
+  /**
+   * @method
+   */
   invent: function (definition = {}) {
     if (typeof definition == 'function') {
       definition = definition(this)
@@ -5608,6 +7101,9 @@ syngen.prop.base = {
 
     return Object.setPrototypeOf({...definition}, this)
   },
+  /**
+   * @method
+   */
   handlePeriodic: function ({
     delay = () => 0,
     key = '',
@@ -5641,18 +7137,39 @@ syngen.prop.base = {
 
     return this
   },
+  /**
+   * @method
+   */
   hasPeriodic: function (key) {
     return key in this.periodic
   },
+  /**
+   * @method
+   */
   isPeriodicActive: function (key) {
     return this.periodic[key] && this.periodic[key].active
   },
+  /**
+   * @method
+   */
   isPeriodicPending: function (key) {
     return this.periodic[key] && !this.periodic[key].active
   },
+  /**
+   * @method
+   */
   onConstruct: () => {},
+  /**
+   * @method
+   */
   onDestroy: () => {},
+  /**
+   * @method
+   */
   onUpdate: () => {},
+  /**
+   * @method
+   */
   recalculate: function () {
     const positionQuaternion = syngen.position.getQuaternion(),
       positionVector = syngen.position.getVector()
@@ -5671,6 +7188,9 @@ syngen.prop.base = {
 
     return this
   },
+  /**
+   * @method
+   */
   rect: function () {
     return {
       height: this.radius * 2,
@@ -5679,10 +7199,16 @@ syngen.prop.base = {
       y: this.y - this.radius,
     }
   },
+  /**
+   * @method
+   */
   resetPeriodic: function (key) {
     delete this.periodic[key]
     return this
   },
+  /**
+   * @method
+   */
   update: function ({
     paused,
   } = {}) {
@@ -5698,10 +7224,17 @@ syngen.prop.base = {
   },
 }
 
+/**
+ * @implements syngen.prop.base
+ * @interface
+ */
 syngen.prop.null = syngen.prop.base.invent({
   name: 'null',
 })
 
+/**
+ * @namespace
+ */
 syngen.props = (() => {
   const pool = new Set()
 
@@ -5710,6 +7243,9 @@ syngen.props = (() => {
   }
 
   return {
+    /**
+     * @memberof syngen.props
+     */
     add: function (...props) {
       for (const prop of props) {
         if (isValidPrototype(prop)) {
@@ -5719,6 +7255,9 @@ syngen.props = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.props
+     */
     create: function (prototype, options) {
       if (!isValidPrototype(prototype)) {
         prototype = syngen.prop.null
@@ -5729,6 +7268,9 @@ syngen.props = (() => {
 
       return prop
     },
+    /**
+     * @memberof syngen.props
+     */
     destroy: function (...props) {
       for (const prop of props) {
         if (prop.destroy) {
@@ -5740,12 +7282,21 @@ syngen.props = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.props
+     */
     get: () => [...pool],
+    /**
+     * @memberof syngen.props
+     */
     reset: function () {
       pool.forEach((prop) => prop.destroy())
       pool.clear()
       return this
     },
+    /**
+     * @memberof syngen.props
+     */
     update: function ({delta, paused}) {
       pool.forEach((prop) => prop.update({delta, paused}))
       return this
@@ -5756,6 +7307,9 @@ syngen.props = (() => {
 syngen.loop.on('frame', (e) => syngen.props.update(e))
 syngen.state.on('reset', () => syngen.props.reset())
 
+/**
+ * @namespace
+ */
 syngen.streamer = (() => {
   const registry = new Map(),
     registryTree = syngen.utility.octree.create(),
@@ -5828,15 +7382,9 @@ syngen.streamer = (() => {
   }
 
   return {
-    cullProp: function (token) {
-      const prop = streamed.get(token)
-
-      if (prop) {
-        prop.willCull = true
-      }
-
-      return this
-    },
+    /**
+     * @memberof syngen.streamer
+     */
     deregisterProp: function(token) {
       const registeredProp = registry.get(token)
 
@@ -5849,18 +7397,48 @@ syngen.streamer = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     destroyStreamedProp: function (token) {
       destroyStreamedProp(token)
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     getLimit: () => limit,
+    /**
+     * @memberof syngen.streamer
+     */
     getRadius: () => radius,
+    /**
+     * @memberof syngen.streamer
+     */
     getRegisteredProp: (token) => registry.get(token),
-    getRegisteredProps: () => registry.values(),
+    /**
+     * @memberof syngen.streamer
+     */
+    getRegisteredProps: () => [...registry.values()],
+    /**
+     * @memberof syngen.streamer
+     */
     getStreamedProp: (token) => streamed.get(token),
-    getStreamedProps: () => streamed.values(),
+    /**
+     * @memberof syngen.streamer
+     */
+    getStreamedProps: () => [...streamed.values()],
+    /**
+     * @memberof syngen.streamer
+     */
     hasRegisteredProp: (token) => registry.has(token),
+    /**
+     * @memberof syngen.streamer
+     */
     hasStreamedProp: (token) => streamed.has(token),
+    /**
+     * @memberof syngen.streamer
+     */
     registerProp: function(prototype, options = {}) {
       const token = generateToken()
 
@@ -5883,6 +7461,9 @@ syngen.streamer = (() => {
 
       return token
     },
+    /**
+     * @memberof syngen.streamer
+     */
     reset: function() {
       registry.clear()
       registryTree.clear()
@@ -5894,6 +7475,9 @@ syngen.streamer = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     setLimit: function (value) {
       if (value > 0) {
         limit = Number(value) || Infinity
@@ -5901,11 +7485,17 @@ syngen.streamer = (() => {
       }
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     setRadius: function (value) {
       radius = Number(value) || 0
       shouldForce = true
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     setSort: function (value) {
       if (typeof sort == 'function') {
         sort = value
@@ -5913,6 +7503,9 @@ syngen.streamer = (() => {
       }
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     update: function (force = false) {
       const positionVector = syngen.position.getVector()
 
@@ -5941,6 +7534,9 @@ syngen.streamer = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     updateRegisteredProp: function (token, options = {}) {
       const registeredProp = propRegistry.get(token)
 

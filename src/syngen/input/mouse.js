@@ -1,3 +1,6 @@
+/**
+ * @namespace
+ */
 syngen.input.mouse = (() => {
   let state = {
     button: {},
@@ -33,13 +36,37 @@ syngen.input.mouse = (() => {
   }
 
   return {
+    /**
+     * @memberof syngen.input.mouse
+     */
     get: () => ({...state}),
+    /**
+     * @memberof syngen.input.mouse
+     */
     getMoveX: state.moveX || 0,
+    /**
+     * @memberof syngen.input.mouse
+     */
     getMoveY: state.moveY || 0,
+    /**
+     * @memberof syngen.input.mouse
+     */
     getWheelX: state.wheelX || 0,
+    /**
+     * @memberof syngen.input.mouse
+     */
     getWheelY: state.wheelY || 0,
+    /**
+     * @memberof syngen.input.mouse
+     */
     getWheelZ: state.wheelZ || 0,
+    /**
+     * @memberof syngen.input.mouse
+     */
     isButton: (key) => state.button[key] || false,
+    /**
+     * @memberof syngen.input.mouse
+     */
     reset: function () {
       state = {
         button: {},
@@ -52,6 +79,9 @@ syngen.input.mouse = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.input.mouse
+     */
     update: function () {
       // XXX: Reset between frames
       setTimeout(() => {

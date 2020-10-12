@@ -1,3 +1,6 @@
+/**
+ * @static
+ */
 syngen.audio.buffer.noise.pink = (() => {
   const context = syngen.audio.context()
 

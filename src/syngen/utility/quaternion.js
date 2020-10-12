@@ -1,9 +1,22 @@
+/**
+ * @interface
+ * @property {Number} w
+ * @property {Number} x
+ * @property {Number} y
+ * @property {Number} z
+ */
 syngen.utility.quaternion = {}
 
+/**
+ * @static
+ */
 syngen.utility.quaternion.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
+/**
+ * @static
+ */
 syngen.utility.quaternion.fromEuler = function ({
   pitch = 0,
   roll = 0,
@@ -69,7 +82,13 @@ syngen.utility.quaternion.fromEuler = function ({
   }
 }
 
+/**
+ * @interface
+ */
 syngen.utility.quaternion.prototype = {
+  /**
+   * @instance
+   */
   add: function ({
     w = 0,
     x = 0,
@@ -83,9 +102,15 @@ syngen.utility.quaternion.prototype = {
       z: this.z + z,
     })
   },
+  /**
+   * @instance
+   */
   clone: function () {
     return syngen.utility.quaternion.create(this)
   },
+  /**
+   * @instance
+   */
   conjugate: function () {
     return syngen.utility.quaternion.create({
       w: this.w,
@@ -94,6 +119,9 @@ syngen.utility.quaternion.prototype = {
       z: -this.z,
     })
   },
+  /**
+   * @instance
+   */
   construct: function ({
     w = 1,
     x = 0,
@@ -106,6 +134,9 @@ syngen.utility.quaternion.prototype = {
     this.z = z
     return this
   },
+  /**
+   * @instance
+   */
   distance: function ({
     w = 0,
     x = 0,
@@ -114,6 +145,9 @@ syngen.utility.quaternion.prototype = {
   } = {}) {
     return Math.sqrt(((this.w - w) ** 2) + ((this.x - x) ** 2) + ((this.y - y) ** 2) + ((this.z - z) ** 2))
   },
+  /**
+   * @instance
+   */
   distance2: function ({
     w = 0,
     x = 0,
@@ -122,6 +156,9 @@ syngen.utility.quaternion.prototype = {
   } = {}) {
     return ((this.w - w) ** 2) + ((this.x - x) ** 2) + ((this.y - y) ** 2) + ((this.z - z) ** 2)
   },
+  /**
+   * @instance
+   */
   divide: function (divisor) {
     if (!syngen.utility.quaternion.prototype.isPrototypeOf(divisor)) {
       divisor = syngen.utility.quaternion.create(divisor)
@@ -129,6 +166,9 @@ syngen.utility.quaternion.prototype = {
 
     return this.multiply(divisor.inverse())
   },
+  /**
+   * @instance
+   */
   equals: function ({
     w = 0,
     x = 0,
@@ -137,9 +177,15 @@ syngen.utility.quaternion.prototype = {
   } = {}) {
     return (this.w == w) && (this.x == x) && (this.y == y) && (this.z == z)
   },
+  /**
+   * @instance
+   */
   forward: function () {
     return syngen.utility.vector3d.unitX().rotateQuaternion(this)
   },
+  /**
+   * @instance
+   */
   inverse: function () {
     const scalar = 1 / this.distance2()
 
@@ -149,9 +195,15 @@ syngen.utility.quaternion.prototype = {
 
     return this.conjugate().scale(scalar)
   },
+  /**
+   * @instance
+   */
   isZero: function () {
     return !this.x && !this.y && !this.z
   },
+  /**
+   * @instance
+   */
   lerpFrom: function ({
     w = 0,
     x = 0,
@@ -165,6 +217,9 @@ syngen.utility.quaternion.prototype = {
       z: syngen.utility.lerp(z, this.z, value),
     })
   },
+  /**
+   * @instance
+   */
   lerpTo: function ({
     w = 0,
     x = 0,
@@ -178,6 +233,9 @@ syngen.utility.quaternion.prototype = {
       z: syngen.utility.lerp(this.z, z, value),
     })
   },
+  /**
+   * @instance
+   */
   multiply: function ({
     w = 0,
     x = 0,
@@ -191,6 +249,9 @@ syngen.utility.quaternion.prototype = {
       z: (this.w * z) + (this.z * w) + (this.x * y) - (this.y * x),
     })
   },
+  /**
+   * @instance
+   */
   normalize: function () {
     const distance = this.distance()
 
@@ -200,9 +261,15 @@ syngen.utility.quaternion.prototype = {
 
     return this.scale(1 / distance)
   },
+  /**
+   * @instance
+   */
   right: function () {
     return syngen.utility.vector3d.unitY().rotateQuaternion(this)
   },
+  /**
+   * @instance
+   */
   scale: function (scalar = 0) {
     return syngen.utility.quaternion.create({
       w: this.w * scalar,
@@ -211,6 +278,9 @@ syngen.utility.quaternion.prototype = {
       z: this.z * scalar,
     })
   },
+  /**
+   * @instance
+   */
   set: function ({
     w = 0,
     x = 0,
@@ -223,6 +293,9 @@ syngen.utility.quaternion.prototype = {
     this.z = z
     return this
   },
+  /**
+   * @instance
+   */
   subtract: function ({
     w = 0,
     x = 0,
@@ -236,11 +309,17 @@ syngen.utility.quaternion.prototype = {
       z: this.z - z,
     })
   },
+  /**
+   * @instance
+   */
   up: function () {
     return syngen.utility.vector3d.unitZ().rotateQuaternion(this)
   },
 }
 
+/**
+ * @static
+ */
 syngen.utility.quaternion.identity = function () {
   return Object.create(this.prototype).construct({
     w: 1,

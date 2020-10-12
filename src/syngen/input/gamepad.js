@@ -1,3 +1,6 @@
+/**
+ * @namespace
+ */
 syngen.input.gamepad = (() => {
   let deadzone = 0.1875
 
@@ -16,7 +19,13 @@ syngen.input.gamepad = (() => {
   }
 
   return {
+    /**
+     * @memberof syngen.input.gamepad
+     */
     get: () => ({...state}),
+    /**
+     * @memberof syngen.input.gamepad
+     */
     getAnalog: function (key, invert = false) {
       const value = state.analog[key] || 0
 
@@ -26,6 +35,9 @@ syngen.input.gamepad = (() => {
 
       return value
     },
+    /**
+     * @memberof syngen.input.gamepad
+     */
     getAxis: function (key, invert = false) {
       const value = state.axis[key] || 0
 
@@ -35,6 +47,9 @@ syngen.input.gamepad = (() => {
 
       return value
     },
+    /**
+     * @memberof syngen.input.gamepad
+     */
     hasAxis: function (...keys) {
       for (const key of keys) {
         if (!(key in state.axis)) {
@@ -44,7 +59,13 @@ syngen.input.gamepad = (() => {
 
       return true
     },
+    /**
+     * @memberof syngen.input.gamepad
+     */
     isDigital: (key) => Boolean(state.digital[key]),
+    /**
+     * @memberof syngen.input.gamepad
+     */
     reset: function () {
       state = {
         analog: {},
@@ -54,10 +75,16 @@ syngen.input.gamepad = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.input.gamepad
+     */
     setDeadzone: function (value = 0) {
       deadzone = Number(value) || 0
       return this
     },
+    /**
+     * @memberof syngen.input.gamepad
+     */
     update: function () {
       const gamepads = navigator.getGamepads()
 

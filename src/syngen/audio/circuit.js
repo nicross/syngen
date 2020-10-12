@@ -1,6 +1,12 @@
+/**
+ * @namespace
+ */
 syngen.audio.circuit = {}
 
 // Multiplies input by -scale
+/**
+ * @static
+ */
 syngen.audio.circuit.invert = ({
   from,
   scale = 1,
@@ -23,6 +29,9 @@ syngen.audio.circuit.invert = ({
 }
 
 // Scales input [0,1] to [min,max], e.g. for controlling AudioParams via ConstantSourceNodes
+/**
+ * @static
+ */
 syngen.audio.circuit.lerp = ({
   chainStop, // syngen.audio.synth
   from, // ConstantSourceNode
@@ -66,6 +75,9 @@ syngen.audio.circuit.lerp = ({
 }
 
 // Scales input [fromMin,fromMax] to [toMin,toMax], e.g. for controlling AudioParams via ConstantSourceNodes
+/**
+ * @static
+ */
 syngen.audio.circuit.scale = ({
   chainStop, // syngen.audio.synth
   from, // ConstantSourceNode

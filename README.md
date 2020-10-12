@@ -55,12 +55,22 @@ npm install
 ### Common tasks
 Common tasks have been automated with [Gulp](https://gulpjs.com):
 
-#### Build once
+#### Build distributables only
+```sh
+gulp dist
+```
+
+#### Build documentation only
+```sh
+gulp docs
+```
+
+#### Build everything once
 ```sh
 gulp build
 ```
 
-#### Build continuously
+#### Build everything continuously
 ```sh
 gulp watch
 ```

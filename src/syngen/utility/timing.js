@@ -1,5 +1,11 @@
+/**
+ * @namespace
+ */
 syngen.utility.timing = {}
 
+/**
+ * @method
+ */
 syngen.utility.timing.cancelablePromise = (duration) => {
   const scope = {}
 
@@ -21,4 +27,7 @@ syngen.utility.timing.cancelablePromise = (duration) => {
   return promise
 }
 
+/**
+ * @method
+ */
 syngen.utility.timing.promise = (duration) => new Promise((resolve) => setTimeout(resolve, duration))

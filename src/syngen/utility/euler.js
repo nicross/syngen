@@ -1,9 +1,21 @@
+/**
+ * @interface
+ * @property {Number} pitch
+ * @property {Number} roll
+ * @property {Number} yaw
+ */
 syngen.utility.euler = {}
 
+/**
+ * @static
+ */
 syngen.utility.euler.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
+/**
+ * @static
+ */
 syngen.utility.euler.fromQuaternion = function ({
   w = 0,
   x = 0,
@@ -63,9 +75,15 @@ syngen.utility.euler.fromQuaternion = function ({
 }
 
 syngen.utility.euler.prototype = {
+  /**
+   * @instance
+   */
   clone: function () {
     return syngen.utility.euler.create(this)
   },
+  /**
+   * @instance
+   */
   construct: function ({
     pitch = 0,
     roll = 0,
@@ -76,15 +94,27 @@ syngen.utility.euler.prototype = {
     this.yaw = yaw
     return this
   },
+  /**
+   * @instance
+   */
   forward: function () {
     return syngen.utility.vector3d.unitX().rotateEuler(this)
   },
+  /**
+   * @instance
+   */
   isZero: function () {
     return !this.pitch && !this.roll && !this.yaw
   },
+  /**
+   * @instance
+   */
   right: function () {
     return syngen.utility.vector3d.unitY().rotateEuler(this)
   },
+  /**
+   * @instance
+   */
   scale: function (scalar = 0) {
     return syngen.utility.euler.create({
       pitch: this.pitch * scalar,
@@ -92,6 +122,9 @@ syngen.utility.euler.prototype = {
       yaw: this.yaw * scalar,
     })
   },
+  /**
+   * @instance
+   */
   set: function ({
     pitch = 0,
     roll = 0,
@@ -102,6 +135,9 @@ syngen.utility.euler.prototype = {
     this.yaw = yaw
     return this
   },
+  /**
+   * @instance
+   */
   up: function () {
     return syngen.utility.vector3d.unitZ().rotateEuler(this)
   },

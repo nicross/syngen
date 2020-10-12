@@ -1,3 +1,6 @@
+/**
+ * @namespace
+ */
 syngen.performance = (() => {
   const deltas = [],
     maxFrames = 30
@@ -7,8 +10,17 @@ syngen.performance = (() => {
     medianFps = 0
 
   return {
+    /**
+     * @memberof syngen.performance
+     */
     delta: () => medianDelta,
+    /**
+     * @memberof syngen.performance
+     */
     fps: () => medianFps,
+    /**
+     * @memberof syngen.performance
+     */
     update: function ({delta}) {
       deltas[index] = delta
 

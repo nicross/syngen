@@ -1,3 +1,6 @@
+/**
+ * @namespace
+ */
 syngen.audio.mixer = (() => {
   const context = syngen.audio.context()
 
@@ -46,7 +49,14 @@ syngen.audio.mixer = (() => {
 
   return {
     auxiliary: {},
+    /**
+     * @memberof syngen.audio.mixer
+     * @namespace
+     */
     bus: {},
+    /**
+     * @memberof syngen.audio.mixer
+     */
     createAuxiliary: () => {
       const input = context.createGain(),
         output = context.createGain()
@@ -58,11 +68,32 @@ syngen.audio.mixer = (() => {
         output,
       }
     },
+    /**
+     * @memberof syngen.audio.mixer
+     */
     createBus: () => {
       const input = context.createGain()
       input.connect(masterInput)
       return input
     },
+    /**
+     * @memberof syngen.audio.mixer
+     * @property {GainNode} input
+     * @property {GainNode} output
+     * @property {Object} param
+     * @property {AudioParam} param.gain
+     * @property {Object} param.highpass
+     * @property {AudioParam} param.highpass.frequency
+     * @property {Object} param.limiter
+     * @property {AudioParam} param.limiter.attack
+     * @property {AudioParam} param.limiter.gain
+     * @property {AudioParam} param.limiter.knee
+     * @property {AudioParam} param.limiter.ratio
+     * @property {AudioParam} param.limiter.release
+     * @property {AudioParam} param.limiter.threshold
+     * @property {Object} param.lowpass
+     * @property {AudioParam} param.lowpass.frequency
+     */
     master: {
       input: masterInput,
       output: masterOutput,
@@ -84,6 +115,9 @@ syngen.audio.mixer = (() => {
         },
       },
     },
+    /**
+     * @memberof syngen.audio.mixer
+     */
     rebuildFilters: function () {
       destroyFilters()
       createFilters()

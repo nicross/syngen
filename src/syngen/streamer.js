@@ -1,3 +1,6 @@
+/**
+ * @namespace
+ */
 syngen.streamer = (() => {
   const registry = new Map(),
     registryTree = syngen.utility.octree.create(),
@@ -70,15 +73,9 @@ syngen.streamer = (() => {
   }
 
   return {
-    cullProp: function (token) {
-      const prop = streamed.get(token)
-
-      if (prop) {
-        prop.willCull = true
-      }
-
-      return this
-    },
+    /**
+     * @memberof syngen.streamer
+     */
     deregisterProp: function(token) {
       const registeredProp = registry.get(token)
 
@@ -91,18 +88,48 @@ syngen.streamer = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     destroyStreamedProp: function (token) {
       destroyStreamedProp(token)
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     getLimit: () => limit,
+    /**
+     * @memberof syngen.streamer
+     */
     getRadius: () => radius,
+    /**
+     * @memberof syngen.streamer
+     */
     getRegisteredProp: (token) => registry.get(token),
-    getRegisteredProps: () => registry.values(),
+    /**
+     * @memberof syngen.streamer
+     */
+    getRegisteredProps: () => [...registry.values()],
+    /**
+     * @memberof syngen.streamer
+     */
     getStreamedProp: (token) => streamed.get(token),
-    getStreamedProps: () => streamed.values(),
+    /**
+     * @memberof syngen.streamer
+     */
+    getStreamedProps: () => [...streamed.values()],
+    /**
+     * @memberof syngen.streamer
+     */
     hasRegisteredProp: (token) => registry.has(token),
+    /**
+     * @memberof syngen.streamer
+     */
     hasStreamedProp: (token) => streamed.has(token),
+    /**
+     * @memberof syngen.streamer
+     */
     registerProp: function(prototype, options = {}) {
       const token = generateToken()
 
@@ -125,6 +152,9 @@ syngen.streamer = (() => {
 
       return token
     },
+    /**
+     * @memberof syngen.streamer
+     */
     reset: function() {
       registry.clear()
       registryTree.clear()
@@ -136,6 +166,9 @@ syngen.streamer = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     setLimit: function (value) {
       if (value > 0) {
         limit = Number(value) || Infinity
@@ -143,11 +176,17 @@ syngen.streamer = (() => {
       }
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     setRadius: function (value) {
       radius = Number(value) || 0
       shouldForce = true
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     setSort: function (value) {
       if (typeof sort == 'function') {
         sort = value
@@ -155,6 +194,9 @@ syngen.streamer = (() => {
       }
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     update: function (force = false) {
       const positionVector = syngen.position.getVector()
 
@@ -183,6 +225,9 @@ syngen.streamer = (() => {
 
       return this
     },
+    /**
+     * @memberof syngen.streamer
+     */
     updateRegisteredProp: function (token, options = {}) {
       const registeredProp = propRegistry.get(token)
 

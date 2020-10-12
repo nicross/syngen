@@ -1,9 +1,18 @@
+/**
+ * @interface
+ */
 syngen.utility.quadtree = {}
 
+/**
+ * @static
+ */
 syngen.utility.quadtree.create = function (...args) {
   return Object.create(this.prototype).construct(...args)
 }
 
+/**
+ * @static
+ */
 syngen.utility.quadtree.from = function (items = [], options = {}) {
   const tree = this.create(options)
 
@@ -15,11 +24,17 @@ syngen.utility.quadtree.from = function (items = [], options = {}) {
 }
 
 syngen.utility.quadtree.prototype = {
+  /**
+   * @instance
+   */
   clear: function () {
     this.items.length = 0
     this.nodes.length = 0
     return this
   },
+  /**
+   * @instance
+   */
   construct: function ({
     height = syngen.const.maxSafeFloat * 2,
     maxItems = 12,
@@ -37,9 +52,15 @@ syngen.utility.quadtree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   destroy: function () {
     return this.clear()
   },
+  /**
+   * @instance
+   */
   find: function (query = {}, radius = Infinity) {
     // NOTE: Assumes query.x and query.y exist
 
@@ -103,6 +124,9 @@ syngen.utility.quadtree.prototype = {
 
     return result
   },
+  /**
+   * @instance
+   */
   getIndex: function ({
     x = 0,
     y = 0,
@@ -128,6 +152,9 @@ syngen.utility.quadtree.prototype = {
 
     return 3
   },
+  /**
+   * @instance
+   */
   insert: function (item = {}) {
     // XXX: Assumes item.x and item.y exist
 
@@ -147,9 +174,15 @@ syngen.utility.quadtree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   intersects: function (rect) {
     return syngen.utility.intersects(this, rect)
   },
+  /**
+   * @instance
+   */
   remove: function (item) {
     if (this.nodes.length) {
       const index = this.getIndex(item)
@@ -165,6 +198,9 @@ syngen.utility.quadtree.prototype = {
 
     return this
   },
+  /**
+   * @instance
+   */
   retrieve: function ({
     height = 0,
     width = 0,
@@ -196,6 +232,9 @@ syngen.utility.quadtree.prototype = {
 
     return items
   },
+  /**
+   * @instance
+   */
   split: function () {
     if (this.nodes.length) {
       return this
