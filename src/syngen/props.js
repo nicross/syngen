@@ -1,8 +1,10 @@
 /**
+ * Provides a helper for instantiating, destroying, and updating all props each frame.
+ * Implementations are encouraged to use this for handling these tasks.
  * @namespace
  */
 syngen.props = (() => {
-  const pool = new Set()
+  const props = new Set()
 
   function isValidPrototype(prototype) {
     return syngen.prop.base.isPrototypeOf(prototype)
@@ -10,32 +12,25 @@ syngen.props = (() => {
 
   return {
     /**
+     * Instantiates a prop of `prototype` with `options`.
      * @memberof syngen.props
+     * @param {syngen.prop.base} prototype
+     * @param {Object} [options]
      */
-    add: function (...props) {
-      for (const prop of props) {
-        if (isValidPrototype(prop)) {
-          pool.add(prop)
-        }
-      }
-
-      return this
-    },
-    /**
-     * @memberof syngen.props
-     */
-    create: function (prototype, options) {
+    create: function (prototype, options = {}) {
       if (!isValidPrototype(prototype)) {
         prototype = syngen.prop.null
       }
 
       const prop = Object.create(prototype).construct(options)
-      pool.add(prop)
+      props.add(prop)
 
       return prop
     },
     /**
+     * Destroys the passed prop(s).
      * @memberof syngen.props
+     * @param {...syngen.prop.base} ...props
      */
     destroy: function (...props) {
       for (const prop of props) {
@@ -43,28 +38,34 @@ syngen.props = (() => {
           prop.destroy()
         }
 
-        pool.delete(prop)
+        props.delete(prop)
       }
 
       return this
     },
     /**
+     * Returns all props.
      * @memberof syngen.props
+     * @returns {syngen.prop.base[]}
      */
-    get: () => [...pool],
+    get: () => [...props],
     /**
+     * Destroys all props.
+     * @listens syngen.state#event:reset
      * @memberof syngen.props
      */
     reset: function () {
-      pool.forEach((prop) => prop.destroy())
-      pool.clear()
+      props.forEach((prop) => prop.destroy())
+      props.clear()
       return this
     },
     /**
+     * Updates all props.
+     * @listens syngen.loop#event:frame
      * @memberof syngen.props
      */
-    update: function ({delta, paused}) {
-      pool.forEach((prop) => prop.update({delta, paused}))
+    update: function ({...options} = {}) {
+      props.forEach((prop) => prop.update({...options}))
       return this
     },
   }

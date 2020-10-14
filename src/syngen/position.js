@@ -1,4 +1,7 @@
 /**
+ * Maintains the coordinates, orientation, and velocities of the observer.
+ * The observer is a physical object that has volume and can be applied lateral and angular forces.
+ * Its position affects the relative positioning of props and can be used to influence other systems.
  * @namespace
  */
 syngen.position = (() => {
@@ -6,7 +9,11 @@ syngen.position = (() => {
 
   return {
     /**
+     * Returns the inner state.
+     * The inverse of {@link syngen.position.import|import()}.
+     * @listens syngen.state#event:export
      * @memberof syngen.position
+     * @returns {Object}
      */
     export: () => ({
       quaternion: {
@@ -20,34 +27,56 @@ syngen.position = (() => {
       z: proxy.z,
     }),
     /**
+     * Returns the angular velocity.
      * @memberof syngen.position
+     * @returns {syngen.utility.quaternion}
      */
     getAngularVelocity: () => proxy.angularVelocity.clone(),
     /**
+     * Returns the angular velocity.
+     * Beware that this is less performant than using quaternions and can result in gimbal lock.
      * @memberof syngen.position
+     * @returns {syngen.utility.euler}
      */
     getAngularVelocityEuler: () => syngen.utility.euler.fromQuaternion(proxy.angularVelocity),
     /**
+     * Returns the orientation.
+     * Beware that this is less performant than using quaternions and can result in gimbal lock.
      * @memberof syngen.position
+     * @returns {syngen.utility.euler}
      */
     getEuler: () => proxy.euler(),
     /**
+     * Returns the oriantation.
      * @memberof syngen.position
+     * @returns {syngen.utility.quaternion}
      */
     getQuaternion: () => proxy.quaternion.clone(),
     /**
+     * Returns the coordinates.
      * @memberof syngen.position
+     * @returns {syngen.utility.vector3d}
      */
     getVector: () => proxy.vector(),
     /**
+     * Returns the velocity.
      * @memberof syngen.position
+     * @returns {syngen.utility.vector3d}
      */
     getVelocity: () => proxy.velocity.clone(),
     /**
+     * Sets the inner state.
+     * The inverse of {@link syngen.position.export|export()}.
+     * @listens syngen.state#event:import
      * @memberof syngen.position
+     * @param {Object} [options]
+     * @param {syngen.utility.quaternion} [options.quaternion]
+     * @param {Number} [options.x=0]
+     * @param {Number} [options.y=0]
+     * @param {Number} [options.z=0]
      */
     import: function ({
-      quaternion = {w: 1},
+      quaternion = syngen.utility.quaternion.identity(),
       x = 0,
       y = 0,
       z = 0,
@@ -62,7 +91,9 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Returns the rectangular prism surrounding the observer.
      * @memberof syngen.position
+     * @returns {Object}
      */
     rect: () => ({
       depth: syngen.const.positionRadius * 2,
@@ -73,20 +104,24 @@ syngen.position = (() => {
       z: proxy.z - syngen.const.positionRadius,
     }),
     /**
+     * Resets all attributes to zero.
+     * @listens syngen.state#event:reset
      * @memberof syngen.position
      */
     reset: function () {
       return this.import()
     },
     /**
+     * Sets the angular velocity.
      * @memberof syngen.position
+     * @param {syngen.utility.quaternion} [options]
      */
     setAngularVelocity: function ({
       w = 0,
       x = 0,
       y = 0,
       z = 0,
-    } = {}) {
+    } = syngen.utility.quaternion.identity()) {
       proxy.angularVelocity.set({
         w,
         x,
@@ -97,7 +132,10 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Sets the angular velocity.
+     * Beware that this is less performant than using quaternions and can result in gimbal lock.
      * @memberof syngen.position
+     * @param {syngen.utility.euler}
      */
     setAngularVelocityEuler: function ({
       pitch = 0,
@@ -115,7 +153,10 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Sets the orientation.
+     * Beware that this is less performant than using quaternions and can result in gimbal lock.
      * @memberof syngen.position
+     * @param {syngen.utility.euler} [options]
      */
     setEuler: function ({
       pitch = 0,
@@ -133,14 +174,16 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Sets the orientation
      * @memberof syngen.position
+     * @param {syngen.utility.quaternion} [options]
      */
     setQuaternion: function ({
       w = 0,
       x = 0,
       y = 0,
       z = 0,
-    } = {}) {
+    } = syngen.utility.quaternion.identity()) {
       proxy.quaternion.set({
         w,
         x,
@@ -151,7 +194,9 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Sets the coordinates.
      * @memberof syngen.position
+     * @param {syngen.utility.vector3d} [options]
      */
     setVector: function ({
       x = 0,
@@ -165,7 +210,9 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Sets the velocity.
      * @memberof syngen.position
+     * @param {syngen.utility.vector3d} [options]
      */
     setVelocity: function ({
       x = 0,
@@ -181,6 +228,8 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Applies physics to the inner state.
+     * @listens syngen.loop#event:frame
      * @memberof syngen.position
      */
     update: function () {

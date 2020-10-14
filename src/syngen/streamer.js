@@ -1,4 +1,8 @@
 /**
+ * Provides a helper for conserving resources by only streaming eligible props.
+ * Systems can register and deregister props for streaming.
+ * Props are dynamically instantiated and destroyed based on their eligibility.
+ * Eligibility is determined by a configurable maximum distance from the observer, sorting, and limits.
  * @namespace
  */
 syngen.streamer = (() => {
@@ -74,7 +78,10 @@ syngen.streamer = (() => {
 
   return {
     /**
+     * Deregisters the streamed prop with `token`.
+     * Beware that it isn't destroyed.
      * @memberof syngen.streamer
+     * @param {String} token
      */
     deregisterProp: function(token) {
       const registeredProp = registry.get(token)
@@ -89,46 +96,73 @@ syngen.streamer = (() => {
       return this
     },
     /**
+     * Destroys the streamed prop with `token`.
+     * Beware that it isn't deregistered.
      * @memberof syngen.streamer
+     * @param {String} token
      */
     destroyStreamedProp: function (token) {
       destroyStreamedProp(token)
       return this
     },
     /**
+     * Returns the streaming prop limit, if any.
      * @memberof syngen.streamer
+     * @returns {Number|Infinity}
      */
     getLimit: () => limit,
     /**
+     * Returns the streaming radius, if any.
      * @memberof syngen.streamer
+     * @returns {Number|Infinity}
      */
     getRadius: () => radius,
     /**
+     * Returns the definition for the prop registered with `token`, if one exists.
      * @memberof syngen.streamer
+     * @param {String} token
+     * @returns {Object|undefined}
      */
     getRegisteredProp: (token) => registry.get(token),
     /**
+     * Returns the definitions for all registered props.
      * @memberof syngen.streamer
+     * @returns {Object[]}
      */
     getRegisteredProps: () => [...registry.values()],
     /**
+     * Returns the prop with `token`, if one is streaming.
      * @memberof syngen.streamer
+     * @param {String} token
+     * @returns {syngen.prop.base|undefined}
      */
     getStreamedProp: (token) => streamed.get(token),
     /**
+     * Returns all streaming props.
      * @memberof syngen.streamer
+     * @returns {engine.prop.base[]}
      */
     getStreamedProps: () => [...streamed.values()],
     /**
+     * Returns whether a prop is registered for `token`.
      * @memberof syngen.streamer
+     * @param {String} token
+     * @returns {Boolean}
      */
     hasRegisteredProp: (token) => registry.has(token),
     /**
+     * Returns whether a prop is streaming with `token`.
      * @memberof syngen.streamer
+     * @param {String} token
+     * @returns {Boolean}
      */
     hasStreamedProp: (token) => streamed.has(token),
     /**
+     * Registers a prop with `prototype` and `options` and returns its token.
      * @memberof syngen.streamer
+     * @param {engine.prop.base} prototype
+     * @param {Object} [options]
+     * @returns {String}
      */
     registerProp: function(prototype, options = {}) {
       const token = generateToken()
@@ -153,6 +187,8 @@ syngen.streamer = (() => {
       return token
     },
     /**
+     * Clears and destroys all registered and streaming props.
+     * @listens syngen.state#event:reset
      * @memberof syngen.streamer
      */
     reset: function() {
@@ -167,7 +203,9 @@ syngen.streamer = (() => {
       return this
     },
     /**
+     * Sets the streaming prop limit.
      * @memberof syngen.streamer
+     * @param {Number} value
      */
     setLimit: function (value) {
       if (value > 0) {
@@ -177,7 +215,9 @@ syngen.streamer = (() => {
       return this
     },
     /**
+     * Sets the streaming radius.
      * @memberof syngen.streamer
+     * @param {Number} value
      */
     setRadius: function (value) {
       radius = Number(value) || 0
@@ -185,7 +225,9 @@ syngen.streamer = (() => {
       return this
     },
     /**
+     * Sets the sorting method.
      * @memberof syngen.streamer
+     * @param {Function} value
      */
     setSort: function (value) {
       if (typeof sort == 'function') {
@@ -195,7 +237,10 @@ syngen.streamer = (() => {
       return this
     },
     /**
+     * Updates the streamed props with respect to the observer's coordinates.
+     * @listens syngen.loop#event:frame
      * @memberof syngen.streamer
+     * @param {Boolean} [force=false]
      */
     update: function (force = false) {
       const positionVector = syngen.position.getVector()
@@ -226,7 +271,11 @@ syngen.streamer = (() => {
       return this
     },
     /**
+     * Updates the `options` for the prop registered with `token`.
+     * To change its prototype, its token must be deregistered.
      * @memberof syngen.streamer
+     * @param {String} token
+     * @param {Object} [options]
      */
     updateRegisteredProp: function (token, options = {}) {
       const registeredProp = propRegistry.get(token)

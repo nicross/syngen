@@ -6,7 +6,7 @@ This is experimental and under active development.
 Use at your own risk.
 
 ## Overview
-**syngen** provides a light wrapper around the [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) for building synths and positioning them as props on a three-dimensional stage.
+**syngen** provides a light wrapper around the [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) for building synths and positioning them as props on a three-dimensional binaural soundstage.
 Its event loop fires each frame to update props and core systems.
 Additional utilities provide tools for engineering custom systems that hook into its API to deliver rich experiences.
 
@@ -14,13 +14,13 @@ Additional utilities provide tools for engineering custom systems that hook into
 This library _must_ be used within a browser environment so it can access the `window` object.
 It can be imported or required as a UMD module, or accessed from the `syngen` global.
 
-This example demonstrates how to define a prop and instantiate one in the scene:
+This example demonstrates how to define a prop and instantiate one on the soundstage:
 
 ```js
 const prototype = syngen.prop.base.invent({
   onConstruct: function () {
     this.synth = syngen.audio.synth.createSimple({
-      frequency: syngen.utility.midiToFrequency(57),
+      frequency: syngen.utility.midiToFrequency(60),
       gain: syngen.utility.fromDb(-6),
     }).connect(this.output)
   },

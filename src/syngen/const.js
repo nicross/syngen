@@ -1,125 +1,174 @@
 /**
+ * A collection of useful constants used throughout the library.
+ * These can be overridden at runtime.
  * @namespace
  */
 syngen.const = {
   /**
-    @type {Number}
+   * Lowpass frequency of the acoustic shadow, in Hertz.
+   * Typically this value is the speed of sound divided by the width of the head.
+   * @todo Move to syngen.audio.binaural.model
+   * @type {Number}
   */
   acousticShadowFrequency: 343 / 0.1524, // speedOfSound / binauralHeadWidth
   /**
-    @type {Number}
+   * Latency added to calculated times, in seconds.
+   * @todo Improve support for nonzero values
+   * @type {Number}
   */
-  audioLookaheadTime: 0, // TODO: Improve support for non-zero values
+  audioLookaheadTime: 0,
   /**
-    @type {Number}
+   * Width of head, in meters.
+   * @todo Move to syngen.audio.binaural.model
+   * @type {Number}
   */
-  binauralHeadWidth: 0.1524, // m
+  binauralHeadWidth: 0.1524,
   /**
-    @type {Number}
+   * Offset that ears point away from +/- 90 degrees, in radians.
+   * @todo Move to syngen.audio.binaural.model
+   * @type {Number}
   */
-  binauralShadowOffset: Math.PI / 4, // radian offset of each ear from +/- 90 deg
+  binauralShadowOffset: Math.PI / 4,
   /**
-    @type {Number}
+   * Upper bound where acoustic shadow gradually increases in strength, in meters.
+   * @todo Move to syngen.audio.binaural.model
+   * @type {Number}
   */
-  binauralShadowRolloff: 1, // m
+  binauralShadowRolloff: 1,
   /**
-    @type {Number}
+   * The rolloff applied to
+   * Typically in physical space this value is derived from the distance-square law and is exactly two.
+   * @todo Move to dedicated distance models
+   * @type {Number}
   */
-  distancePower: 2, // 1 / (d ** distancePower)
+  distancePower: 2,
   /**
-    @type {Number}
+   * Whether to multiply calculated gains by the ratio between distance and the horizon defined by syngen.streamer.
+   * This allows sounds to gradually fade out around the edges of the streamed area.
+   * @todo Move to dedicated distance models
+   * @type {Boolean}
   */
-  distancePowerHorizon: false, // Whether to dropoff power calculations as a ratio of streamer radius
+  distancePowerHorizon: false,
   /**
-    @type {Number}
+   * Speed of the gain dropoff applied when the horizon is enabled.
+   * @todo Move to dedicated distance models
+   * @type {Number}
   */
-  distancePowerHorizonExponent: 0, // Speed of the distance dropoff
+  distancePowerHorizonExponent: 0,
   /**
-    @type {String}
+   * Rotation sequence when converting Euler angles to quaternions. Valid values include:
+   * - XYZ
+   * - XZY
+   * - YXZ
+   * - YZX
+   * - ZXY
+   * - ZYX
+   * @type {String}
   */
-  eulerToQuaternion: 'ZYX', // One of eight supported tuples, see syngen.utility.quaternion
+  eulerToQuaternion: 'ZYX',
   /**
-    @type {Number}
+   * Acceleration due to gravity, in meters per second per second.
+   * @type {Number}
   */
-  gravity: 9.8, // m/s
+  gravity: 9.8,
   /**
-    @type {Number}
+   * Duration that the loop should ideally run when the window is blurred, in seconds.
+   * @todo Move to syngen.loop
+   * @type {Number}
   */
-  idleDelta: 1/60, // s
+  idleDelta: 1/60,
   /**
-    @type {Number}
+   * Upper bound of perceptible frequencies, in Hertz.
+   * @type {Number}
   */
-  maxFrequency: 20000, // Hz
+  maxFrequency: 20000,
   /**
-    @type {Number}
+   * The largest float before precision loss becomes problematic.
+   * This value is derived from `Number.MAX_SAFE_INTEGER / (2 ** 10)` to deliver about three decimal places of precision, which is suitable for most purposes.
+   * @type {Number}
   */
-  maxSafeFloat: (2 ** 43) - 1, // Math.MAX_SAFE_INTEGER / (2 ** 10), or about 3 decimal places of precision
+  maxSafeFloat: (2 ** 43) - 1,
   /**
-    @type {Number}
+   * Frequency of the MIDI reference note, in Hertz.
+   * @type {Number}
   */
-  midiReferenceFrequency: 440, // Hz
+  midiReferenceFrequency: 440,
   /**
-    @type {Number}
+   * Reference note number used when converting MIDI notes to frequencies.
+   * @type {Number}
   */
-  midiReferenceNote: 69, // A4
+  midiReferenceNote: 69,
   /**
-    @type {Number}
+   * Lower bound of perceptible frequencies, in Hertz.
+   * @type {Number}
   */
   minFrequency: 20, // Hz
   /**
-    @type {Number}
+   * Radius of the observer, in meters.
+   * @todo Move into syngen.position
+   * @type {Number}
   */
-  positionRadius: 0.25, // m
+  positionRadius: 0.25,
   /**
-    @type {Number}
+   * Duration, in seconds, that props fade in and out when instantiated and destroyed.
+   * @todo Move into syngen.prop.base
+   * @type {Number}
   */
-  propFadeDuration: 0.005, // s
+  propFadeDuration: 0.005,
   /**
-    @type {String}
+   * Separator used when joining array seeds.
+   * @todo Move into syngen.seed
+   * @type {String}
   */
-  seedSeparator: '~', // separator for arrays used as syngen.utility.srand() seeds
+  seedSeparator: '~',
   /**
-    @type {Number}
+   * The speed of sound, in meters per second.
+   * @type {Number}
   */
-  speedOfSound: 343, // m/s
+  speedOfSound: 343,
   /**
-    @type {Number}
+   * Upper bound for sub-bass frequencies, in Hertz.
+   * @type {Number}
   */
-  subFrequency: 60, // Hz
+  subFrequency: 65.4064,
   /**
-    @type {Number}
+   * The circle constant, i.e. 2π.
+   * @type {Number}
   */
-  tau: Math.PI * 2, // circle constant
+  tau: Math.PI * 2,
   /**
-    @type {Number}
+   * Length that satisfies `x=y` for a 2D unit circle.
+   * @type {Number}
   */
-  unit: 1, // 1D line segment
+  unit2: Math.sqrt(2) / 2,
   /**
-    @type {Number}
+   * Length that satisfies `x=y=z` for a 3D unit sphere.
+   * @type {Number}
   */
-  unit2: Math.sqrt(2) / 2, // 2D unit circle
+  unit3: Math.sqrt(3) / 3,
   /**
-    @type {Number}
+   * Length that satisfies `w=x=y=z` for a 4D unit hypersphere.
+   * @type {Number}
   */
-  unit3: Math.sqrt(3) / 3, // 3D unit sphere
+  unit4: Math.sqrt(4) / 4,
   /**
-    @type {Number}
+   * Close enough to zero for
+   * @type {Number}
   */
-  unit4: Math.sqrt(4) / 4, // 4D unit hypersphere
+  zero: 10 ** -32,
   /**
-    @type {Number}
+   * Value in decibels that, for most purposes, is perceptibly silent.
+   * @type {Number}
   */
-  zero: 10 ** -32, // Close enough to zero
+  zeroDb: -96,
   /**
-    @type {Number}
-  */
-  zeroDb: -96, // dB, close enough to silence
-  /**
-    @type {Number}
+   * Value in gain that, for most purposes, is perceptibly silent.
+   * @type {Number}
   */
   zeroGain: syngen.utility.fromDb(-96), // syngen.utility.fromDb(zeroDb)
   /**
-    @type {Number}
+   * Length of time that, for most purposes, is perceptibly instantaneous.
+   * @type {Number}
   */
-  zeroTime: 0.005, // s, close enough to instantaneous
+  zeroTime: 0.005,
 }

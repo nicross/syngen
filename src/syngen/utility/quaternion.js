@@ -89,22 +89,6 @@ syngen.utility.quaternion.prototype = {
   /**
    * @instance
    */
-  add: function ({
-    w = 0,
-    x = 0,
-    y = 0,
-    z = 0,
-  } = {}) {
-    return syngen.utility.quaternion.create({
-      w: this.w + w,
-      x: this.x + x,
-      y: this.y + y,
-      z: this.z + z,
-    })
-  },
-  /**
-   * @instance
-   */
   clone: function () {
     return syngen.utility.quaternion.create(this)
   },
@@ -292,22 +276,6 @@ syngen.utility.quaternion.prototype = {
     this.y = y
     this.z = z
     return this
-  },
-  /**
-   * @instance
-   */
-  subtract: function ({
-    w = 0,
-    x = 0,
-    y = 0,
-    z = 0,
-  } = {}) {
-    return syngen.utility.quaternion.create({
-      w: this.w - w,
-      x: this.x - x,
-      y: this.y - y,
-      z: this.z - z,
-    })
   },
   /**
    * @instance

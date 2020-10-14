@@ -1,5 +1,7 @@
 /**
- * @static
+ * Returns brown noise with equal intensity at all frequencies.
+ * @method
+ * @returns {AudioBuffer}
  */
 syngen.audio.buffer.noise.white = (() => {
   const context = syngen.audio.context()

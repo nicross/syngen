@@ -1,4 +1,5 @@
 /**
+ * Queries gamepad input once per frame and exposes its state.
  * @namespace
  */
 syngen.input.gamepad = (() => {
@@ -20,14 +21,40 @@ syngen.input.gamepad = (() => {
 
   return {
     /**
+     * Returns the gamepad state.
      * @memberof syngen.input.gamepad
+     * @returns {Object}
      */
-    get: () => ({...state}),
+    get: () => ({
+      analog: {...state.analog},
+      axis: {...state.axis},
+      digital: {...state.digital},
+    }),
     /**
+     * Returns the analog input for `button`.
      * @memberof syngen.input.gamepad
+     * @param {Number} button
+     * @param {Boolean} [invert=false]
+     * @returns {Number}
      */
-    getAnalog: function (key, invert = false) {
-      const value = state.analog[key] || 0
+    getAnalog: function (button, invert = false) {
+      const value = state.analog[button] || 0
+
+      if (invert && value) {
+        return 1 - value
+      }
+
+      return value
+    },
+    /**
+     * Returns the analog input for `axis`.
+     * @memberof syngen.input.gamepad
+     * @param {Number} axis
+     * @param {Boolean} [invert=false]
+     * @returns {Number}
+     */
+    getAxis: function (axis, invert = false) {
+      const value = state.axis[axis] || 0
 
       if (invert && value) {
         return -1 * value
@@ -36,23 +63,14 @@ syngen.input.gamepad = (() => {
       return value
     },
     /**
+     * Returns whether one or more `axes` exist.
      * @memberof syngen.input.gamepad
+     * @param {...Number} ...axes
+     * @returns {Number}
      */
-    getAxis: function (key, invert = false) {
-      const value = state.axis[key] || 0
-
-      if (invert && value) {
-        return -1 * value
-      }
-
-      return value
-    },
-    /**
-     * @memberof syngen.input.gamepad
-     */
-    hasAxis: function (...keys) {
-      for (const key of keys) {
-        if (!(key in state.axis)) {
+    hasAxis: function (...axes) {
+      for (const axis of axes) {
+        if (!(axis in state.axis)) {
           return false
         }
       }
@@ -60,10 +78,14 @@ syngen.input.gamepad = (() => {
       return true
     },
     /**
+     * Returns whether `button` is pressed.
      * @memberof syngen.input.gamepad
+     * @param {Number} button
+     * @returns {Number}
      */
-    isDigital: (key) => Boolean(state.digital[key]),
+    isDigital: (button) => Boolean(state.digital[button]),
     /**
+     * Resets the gamepad state.
      * @memberof syngen.input.gamepad
      */
     reset: function () {
@@ -76,13 +98,19 @@ syngen.input.gamepad = (() => {
       return this
     },
     /**
+     * Sets the deadzone for axis input under which smaller values are considered zero.
      * @memberof syngen.input.gamepad
+     * @param {Number} [value=0]
+     *   Float within `[0, 1]`.
+     *   For best results use a small configurable value.
      */
     setDeadzone: function (value = 0) {
       deadzone = Number(value) || 0
       return this
     },
     /**
+     * Queries the gamepad state.
+     * @listens syngen.loop#event:frame
      * @memberof syngen.input.gamepad
      */
     update: function () {

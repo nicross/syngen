@@ -1,4 +1,5 @@
 /**
+ * Exposes mouse movement, scrolling, and buttons pressed.
  * @namespace
  */
 syngen.input.mouse = (() => {
@@ -37,34 +38,60 @@ syngen.input.mouse = (() => {
 
   return {
     /**
+     * Returns the mouse state.
      * @memberof syngen.input.mouse
+     * @returns {Object}
      */
-    get: () => ({...state}),
+    get: () => ({
+      ...state,
+      button: {...state.button},
+    }),
     /**
+     * Returns any movement along the x-axis during the previous frame, in pixels.
      * @memberof syngen.input.mouse
+     * @returns {Number}
      */
-    getMoveX: state.moveX || 0,
+    getMoveX: () => state.moveX || 0,
     /**
+     * Returns any movement along the y-axis during the previous frame, in pixels.
      * @memberof syngen.input.mouse
+     * @returns {Number}
      */
-    getMoveY: state.moveY || 0,
+    getMoveY: () => state.moveY || 0,
     /**
+     * Returns any scrolling along the x-axis during the previous frame.
+     * Beware that this is unitless.
      * @memberof syngen.input.mouse
+     * @returns {Number}
+     * @todo Consider {@link https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent/deltaMode|WheelEvent.deltaMode} to normalize values across devices
      */
-    getWheelX: state.wheelX || 0,
+    getWheelX: () => state.wheelX || 0,
     /**
+     * Returns any scrolling along the y-axis during the previous frame.
+     * Beware that this is unitless.
      * @memberof syngen.input.mouse
+     * @returns {Number}
+     * @todo Consider {@link https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent/deltaMode|WheelEvent.deltaMode} to normalize values across devices
      */
-    getWheelY: state.wheelY || 0,
+    getWheelY: () => state.wheelY || 0,
     /**
+     * Returns any scrolling along the z-axis during the previous frame.
+     * Beware that this is unitless.
      * @memberof syngen.input.mouse
+     * @returns {Number}
+     * @todo Consider {@link https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent/deltaMode|WheelEvent.deltaMode} to normalize values across devices
      */
-    getWheelZ: state.wheelZ || 0,
+    getWheelZ: () => state.wheelZ || 0,
     /**
+     * Returns whether `button` is pressed.
      * @memberof syngen.input.mouse
+     * @param {Number} button
+     * @returns {boolean}
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button
      */
-    isButton: (key) => state.button[key] || false,
+    isButton: (button) => state.button[button] || false,
     /**
+     * Resets the mouse state.
      * @memberof syngen.input.mouse
      */
     reset: function () {
@@ -80,10 +107,12 @@ syngen.input.mouse = (() => {
       return this
     },
     /**
+     * Resets scrolling and movement at the next JavaScript event loop.
+     * This allows {@link syngen.loop#event:frame} listeners to query these values before they reset between frames.
+     * @listens syngen.loop#event:frame
      * @memberof syngen.input.mouse
      */
     update: function () {
-      // XXX: Reset between frames
       setTimeout(() => {
         state.moveX = 0
         state.moveY = 0

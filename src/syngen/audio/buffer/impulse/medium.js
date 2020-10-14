@@ -1,5 +1,7 @@
 /**
- * @static
+ * Returns a medium reverb impulse.
+ * @method
+ * @returns {AudioBuffer}
  */
 syngen.audio.buffer.impulse.medium = (() => {
   const context = syngen.audio.context()

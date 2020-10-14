@@ -1,10 +1,15 @@
 /**
+ * Provides methods that simplify working with timers.
  * @namespace
  */
 syngen.utility.timing = {}
 
 /**
- * @method
+ * Returns a cancelable promise that resolves after `duration` milliseconds.
+ * @param {Number} duration
+ * @returns {Promise}
+ *   Has a `cancel` method that can reject itself prematurely.
+ * @static
  */
 syngen.utility.timing.cancelablePromise = (duration) => {
   const scope = {}
@@ -28,6 +33,9 @@ syngen.utility.timing.cancelablePromise = (duration) => {
 }
 
 /**
- * @method
+ * Returns a promise that resolves after `duration` milliseconds.
+ * @param {Number} duration
+ * @returns {Promise}
+ * @static
  */
 syngen.utility.timing.promise = (duration) => new Promise((resolve) => setTimeout(resolve, duration))

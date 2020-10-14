@@ -41,6 +41,7 @@ gulp.task('docs', (done) => {
       allowUnknownTags: true,
     },
     templates: {
+      monospaceLinks: true,
       default: {
         useLongnameInNav: true,
       },

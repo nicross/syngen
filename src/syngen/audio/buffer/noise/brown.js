@@ -1,5 +1,7 @@
 /**
- * @static
+ * Returns Brownian noise with intensity inversely proportional to the frequency squared.
+ * @method
+ * @returns {AudioBuffer}
  */
 syngen.audio.buffer.noise.brown = (() => {
   const context = syngen.audio.context()

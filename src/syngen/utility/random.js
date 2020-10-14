@@ -1,17 +1,26 @@
 /**
+ * Provides methods for producing random values.
  * @namespace
  */
 syngen.utility.random = {}
 
 /**
- * @method
+ * Returns a random float between `min` and `max`.
+ * @param {Number} [min=0]
+ * @param {Number} [max=1]
+ * @returns {Number}
+ * @static
  */
 syngen.utility.random.float = (min = 0, max = 1) => {
   return min + (Math.random() * (max - min))
 }
 
 /**
- * @method
+ * Returns a random integer between `min` and `max`.
+ * @param {Number} [min=0]
+ * @param {Number} [max=1]
+ * @returns {Number}
+ * @static
  */
 syngen.utility.random.integer = function (min = 0, max = 1) {
   return Math.round(
@@ -20,25 +29,44 @@ syngen.utility.random.integer = function (min = 0, max = 1) {
 }
 
 /**
- * @method
+ * Returns a random sign as a positive or negative `1`.
+ * @returns {Number}
+ * @static
  */
-syngen.utility.random.sign = (bias = 0.5) => Math.random() < bias ? 1 : -1
+syngen.utility.random.sign = () => Math.random() < 0.5 ? 1 : -1
 
 /**
- * @method
+ * Returns a random key in `bag`.
+ * @param {Array|Map|Object} bag
+ * @returns {String}
+ * @static
  */
 syngen.utility.random.key = function (bag) {
-  const keys = Object.keys(bag)
+  const keys = bag instanceof Map
+    ? [...bag.keys()]
+    : Object.keys(bag)
+
   return keys[
     this.integer(0, keys.length - 1)
   ]
 }
 
 /**
- * @method
+ * Returns a random value in `bag`.
+ * @param {Array|Map|Object|Set} bag
+ * @returns {*}
+ * @static
  */
 syngen.utility.random.value = function (bag) {
-  return bag[
-    this.key(bag)
-  ]
+  if (bag instanceof Set) {
+    bag = [...bag.values()]
+  }
+
+  const key = this.key(bag)
+
+  if (bag instanceof Map) {
+    return bag.get(key)
+  }
+
+  return bag[key]
 }

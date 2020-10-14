@@ -3,6 +3,7 @@
 'use strict'
 
 /**
+ * The global point of entry and default export for the library.
  * @namespace
  */
 const syngen = (() => {
@@ -11,11 +12,22 @@ const syngen = (() => {
   })
 
   return {
+    /**
+     * Exposes input across various devices.
+     * @memberof syngen
+     * @namespace
+     */
     input: {},
+    /**
+     * Objects that can be positioned on the soundstage.
+     * @memberof syngen
+     * @namespace
+     */
     prop: {},
     /**
+     * Returns a promise that resolves when the document has finished loading.
      * @memberof syngen
-     * @param {Function} [callback]
+     * @param {Function} [callback] - Called when resolved
      * @returns {Promise}
      */
     ready: (callback) => {
@@ -27,21 +39,36 @@ const syngen = (() => {
 })()
 
 /**
+ * A collection of useful utility methods.
  * @namespace
  */
 syngen.utility = {}
 
 /**
+ * Adds a musical `interval` to a `frequency`, in Hertz.
+ * @param {Number} frequency
+ * @param {Number} interval
+ *   Each integer multiple represents an octave.
+ *   For example, `2` raises the frequency by two octaves.
+ *   Likewise, `-1/12` lowers by one half-step, whereas `-1/100` lowers by one cent.
  * @static
  */
 syngen.utility.addInterval = (frequency, interval) => frequency * (2 ** interval)
 
 /**
+ * Returns whether `value` is between `min` and `max` (inclusive).
+ * @param {Number} value
+ * @param {Number} min
+ * @param {Number} max
+ * @returns {Boolean}
  * @static
  */
 syngen.utility.between = (value, min, max) => value >= min && value <= max
 
 /**
+ * Calculates the geometric center of variadic vectors or vector-likes.
+ * @param {syngen.utility.vector3d[]|syngen.utility.vector2d[]|Object[]} vectors
+ * @returns {syngen.utility.vector3d}
  * @static
  */
 syngen.utility.centroid = (vectors = []) => {
@@ -68,6 +95,11 @@ syngen.utility.centroid = (vectors = []) => {
 }
 
 /**
+ * Returns the element of `options` at the index determined by percentage `value`.
+ * @param {Array} options
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @returns {*}
  * @static
  */
 syngen.utility.choose = (options = [], value = 0) => {
@@ -78,10 +110,15 @@ syngen.utility.choose = (options = [], value = 0) => {
 }
 
 /**
+ * Splices and returns the element of `options` at the index determined by percentage `value`.
+ * Beward that this mutates the passed array.
+ * @param {Array} options
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @returns {*}
  * @static
  */
 syngen.utility.chooseSplice = (options = [], value = 0) => {
-  // NOTE: Mutates options
   value = syngen.utility.clamp(value, 0, 1)
 
   const index = Math.round(value * (options.length - 1))
@@ -89,6 +126,14 @@ syngen.utility.chooseSplice = (options = [], value = 0) => {
 }
 
 /**
+ * Returns the element of `options` at the index determined by weighted percentage `value`.
+ * @param {Array} options
+ *   Each element is expected to have a `weight` key which is a positive number.
+ *   Higher weights are more likely to be chosen.
+ *   Beware that elements are not sorted by weight before selection.
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @returns {*}
  * @static
  */
 syngen.utility.chooseWeighted = (options = [], value = 0) => {
@@ -96,13 +141,13 @@ syngen.utility.chooseWeighted = (options = [], value = 0) => {
   value = syngen.utility.clamp(value, 0, 1)
 
   const totalWeight = options.reduce((total, option) => {
-    return total + option.weight
+    return total + (option.weight || 0)
   }, 0)
 
   let weight = value * totalWeight
 
   for (const option of options) {
-    weight -= option.weight
+    weight -= option.weight || 0
 
     if (weight <= 0) {
       return option
@@ -111,21 +156,31 @@ syngen.utility.chooseWeighted = (options = [], value = 0) => {
 }
 
 /**
+ * Returns `value` clamped between `min` and `max`.
+ * @param {Number} value
+ * @param {Number} min
+ * @param {Number} max
+ * @returns {Number}
  * @static
  */
-syngen.utility.clamp = (x, min, max) => {
-  if (x > max) {
+syngen.utility.clamp = (value, min, max) => {
+  if (value > max) {
     return max
   }
 
-  if (x < min) {
+  if (value < min) {
     return min
   }
 
-  return x
+  return value
 }
 
 /**
+ * Returns whichever value, `a` or `b`, that is closer to `x`.
+ * @param {Number} x
+ * @param {Number} a
+ * @param {Number} b
+ * @returns {Number}
  * @static
  */
 syngen.utility.closer = (x, a, b) => {
@@ -133,27 +188,38 @@ syngen.utility.closer = (x, a, b) => {
 }
 
 /**
+ * Returns the closest value to `x` in the array `values`.
+ * @param {Number} x
+ * @param {Number[]} values
+ * @returns {Number}
  * @static
+ * @todo Improve performance with a version for pre-sorted arrays
  */
-syngen.utility.closest = function (x, bag) {
-  // TODO: This could be improved with a version for sorted arrays
-  return bag.reduce((closest, value) => syngen.utility.closer(x, closest, value))
+syngen.utility.closest = function (x, values = []) {
+  return values.reduce((closest, value) => syngen.utility.closer(x, closest, value))
 }
 
 /**
+ * Instantiates `octaves` Perlin noise generators of `type` with `seed` and returns a wrapper object that calculates their combined values.
+ * @param {syngen.utility.perlin1d|syngen.utility.perlin2d|syngen.utility.perlin3d|syngen.utility.perlin4d} type
+ *   Must be a Perlin noise utility, and not a factory method or an instance.
+ * @param {*} seed
+ * @param {Number} [octaves=2]
+ * @returns {Object}
  * @static
+ * @todo Port into individual perlin utilities for clarity
  */
 syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
   const compensation = 1 / (1 - (2 ** -octaves)),
     perlins = []
 
-  if (Array.isArray(seed)) {
-    seed = seed.join(syngen.const.seedSeparator)
+  if (!Array.isArray(seed)) {
+    seed = [seed]
   }
 
   for (let i = 0; i < octaves; i += 1) {
     perlins.push(
-      type.create(seed, 'octave', i)
+      type.create(...seed, 'octave', i)
     )
   }
 
@@ -184,21 +250,39 @@ syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
 }
 
 /**
+ * Converts `degrees` to radians.
+ * @param {Number} degrees
+ * @returns {Number}
  * @static
  */
 syngen.utility.degreesToRadians = (degrees) => degrees * Math.PI / 180
 
 /**
+ * Adds a musical interval to `frequency` in `cents`.
+ * @param {Number} frequency
+ * @param {Number} [cents=0]
+ *   Every 1200 represents an octave.
+ *   For example, `2400` raises the frequency by two octaves.
+ *   Likewise, `-100` lowers by one half-step, whereas `-1` lowers by one cent.
+ * @returns {Number}
  * @static
  */
-syngen.utility.detune = (f, cents = 0) => f * (2 ** (cents / 1200))
+syngen.utility.detune = (frequency, cents = 0) => frequency * (2 ** (cents / 1200))
 
 /**
+ * Calculates the distance between two vectors or vector-likes.
+ * @param {syngen.utility.vector2d|syngen.utility.vector3d|Object} a
+ * @param {syngen.utility.vector2d|syngen.utility.vector3d|Object} b
+ * @returns {Number}
  * @static
  */
 syngen.utility.distance = (a, b) => Math.sqrt(syngen.utility.distance2(a, b))
 
 /**
+ * Calculates the squared distance between two vectors or vector-likes.
+ * @param {syngen.utility.vector2d|syngen.utility.vector3d|Object} a
+ * @param {syngen.utility.vector2d|syngen.utility.vector3d|Object} b
+ * @returns {Number}
  * @static
  */
 syngen.utility.distance2 = ({
@@ -212,9 +296,19 @@ syngen.utility.distance2 = ({
 } = {}) => ((x2 - x1) ** 2) + ((y2 - y1) ** 2) + ((z2 - z1) ** 2)
 
 /**
+ * Calculated the gain for a sound source `distance` meters away, normalized to zero decibels.
+ * The distance model is determined by the values of several constants.
+ * Importantly, it is a combination of inverse-squared and linear functions.
+ * @param {Number} [distance=0]
+ * @returns {Number}
+ * @see syngen.const.distancePower
+ * @see syngen.const.distancePowerHorizon
+ * @see syngen.const.distancePowerHorizonExponent
+ * @see syngen.streamer.getRadius
  * @static
+ * @todo Move to dedicated distance models
  */
-syngen.utility.distanceToPower = (distance) => {
+syngen.utility.distanceToPower = (distance = 0) => {
   // XXX: One is added so all distances yield sensible values
   distance = Math.max(1, distance + 1)
 
@@ -232,20 +326,33 @@ syngen.utility.distanceToPower = (distance) => {
 }
 
 /**
+ * Converts `frequency`, in Hertz, to its corresponding MIDI note number.
+ * The returned value is not rounded.
+ * @param {Number} frequency
+ * @returns {Number}
+ * @see syngen.const.midiReferenceFrequency
+ * @see syngen.const.midiReferenceNote
  * @static
  */
 syngen.utility.frequencyToMidi = (frequency) => (Math.log2(frequency / syngen.const.midiReferenceFrequency) * 12) + syngen.const.midiReferenceNote
 
 /**
+ * Converts `decibels` to its equivalent gain value.
+ * @param {Number} decibels
+ * @returns {Number}
  * @static
  */
-syngen.utility.fromDb = (value) => 10 ** (value / 10)
+syngen.utility.fromDb = (decibels) => 10 ** (decibels / 10)
 
 /**
+ * Converts `value` to an integer via the Jenkins hash function.
+ * @param {String} value
+ * @returns {Number}
  * @static
  */
 syngen.utility.hash = (value) => {
-  // SEE: https://en.wikipedia.org/wiki/Jenkins_hash_function
+  value = String(value)
+
   let hash = 0,
     i = value.length
 
@@ -263,51 +370,104 @@ syngen.utility.hash = (value) => {
 }
 
 /**
+ * Adds a random value to `baseValue` within the range of negative to positive `amount`.
+ * @param {Number} baseValue
+ * @param {Number} amount
+ * @returns {Number}
  * @static
  */
-syngen.utility.humanize = (value = 1, amount = 0) => {
-  return value + syngen.utility.random.float(-amount, amount)
+syngen.utility.humanize = (baseValue = 1, amount = 0) => {
+  return baseValue + syngen.utility.random.float(-amount, amount)
 }
 
 /**
+ * Adds a random gain to `baseGain` within the range of negative to positive `decibels`, first converted to gain.
+ * @param {Number} baseGain
+ * @param {Number} decibels
+ * @returns {Number}
  * @static
  */
-syngen.utility.humanizeDb = (value = 1, db = 0) => {
-  const gain = syngen.utility.fromDb(db)
-  return value * syngen.utility.random.float(1 - gain, 1 + gain)
+syngen.utility.humanizeDb = (baseGain = 1, decibels = 0) => {
+  const amount = syngen.utility.fromDb(decibels)
+  return baseGain * syngen.utility.random.float(1 - amount, 1 + amount)
 }
 
 /**
+ * Returns whether rectangular prisms `a` and `b` intersect.
+ * A rectangular prism has a bottom-left vertex with coordinates `(x, y, z)` and `width`, `height`, and `depth` along those axes respectively.
+ * An intersection occurs if their faces intersect, they share vertices, or one is contained within the other.
+ * This function works for one- and two-dimensional shapes as well.
+ * @param {Object} a
+ * @param {Object} b
+ * @returns {Boolean}
  * @static
+ * @todo Define a rectangular prism utility or type
  */
-syngen.utility.intersects = (a, b) => {
+syngen.utility.intersects = ({
+  depth: depth1 = 0,
+  height: height1 = 0,
+  width: width1 = 0,
+  x: x1 = 0,
+  y: y1 = 0,
+  z: z1 = 0,
+} = {}, {
+  depth: depth2 = 0,
+  height: height2 = 0,
+  width: width2 = 0,
+  x: x2 = 0,
+  y: y2 = 0,
+  z: z2 = 0,
+} = {}) => {
   const between = syngen.utility.between
 
-  const xOverlap = between(a.x, b.x, b.x + b.width)
-    || between(b.x, a.x, a.x + a.width)
+  const xOverlap = between(x1, x2, x2 + width2)
+    || between(x2, x1, x1 + width1)
 
-  const yOverlap = between(a.y, b.y, b.y + b.height)
-    || between(b.y, a.y, a.y + a.height)
+  const yOverlap = between(y1, y2, y2 + height2)
+    || between(y2, y1, y1 + height1)
 
-  const zOverlap = between(a.z, b.z, b.z + b.depth)
-    || between(b.z, a.z, a.z + a.depth)
+  const zOverlap = between(z1, z2, z2 + depth2)
+    || between(z2, z1, z1 + depth1)
 
   return xOverlap && yOverlap && zOverlap
 }
 
 /**
+ * Linearly interpolates between `min` and `max` with `value`.
+ * @param {Number} min
+ * @param {Number} max
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @returns {Number}
  * @static
  */
-syngen.utility.lerp = (min, max, value) => (min * (1 - value)) + (max * value)
+syngen.utility.lerp = (min, max, value = 0) => (min * (1 - value)) + (max * value)
 
 /**
+ * Linearly interpolates between `min` and `max` with `value` raised to `power`.
+ * @param {Number} min
+ * @param {Number} max
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @param {Number} [power=2]
+ * @returns {Number}
  * @static
  */
-syngen.utility.lerpExp = (min, max, value, power = 2) => {
+syngen.utility.lerpExp = (min, max, value = 0, power = 2) => {
   return syngen.utility.lerp(min, max, value ** power)
 }
 
 /**
+ * Returns a random value within the range where the lower bound is the interpolated value within `[lowMin, highMin]`, the upper bound is the interpolated value within `[lowMax, highMax]`.
+ * Values are interpolated with {@link syngen.utility.lerpExpRandom|lerpExpRandom}.
+ * @param {Number[]} lowRange
+ *   Expects `[lowMin, lowMax]`.
+ * @param {Number[]} highRange
+ *   Expects `[highMin, highMax]`.
+ * @param {Number} [value]
+ * @param {Number} [power]
+ * @returns {Number}
+ * @see syngen.utility.lerpExp
  * @static
  */
 syngen.utility.lerpExpRandom = ([lowMin, lowMax], [highMin, highMax], value, power) => {
@@ -318,32 +478,48 @@ syngen.utility.lerpExpRandom = ([lowMin, lowMax], [highMin, highMax], value, pow
 }
 
 /**
+ * Linearly interpolates between `min` and `max` with `value` logarithmically with `base`.
+ * @param {Number} min
+ * @param {Number} max
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @param {Number} [base=2]
+ * @returns {Number}
  * @static
  */
-syngen.utility.lerpLog = (min, max, value, base = 2) => {
+syngen.utility.lerpLog = (min, max, value = 0, base = 2) => {
   value *= base - 1
   return syngen.utility.lerp(min, max, Math.log(1 + value) / Math.log(base))
 }
 
 /**
- * @static
- */
-syngen.utility.lerpLogRandom = ([lowMin, lowMax], [highMin, highMax], value) => {
-  return syngen.utility.random.float(
-    syngen.utility.lerpLog(lowMin, highMin, value),
-    syngen.utility.lerpLog(lowMax, highMax, value),
-  )
-}
-
-/**
+ * Linearly interpolates between `min` and `max` with `value` logarithmically with `base`.
+ * This function is shorthand for `{@link syngen.utility.lerpLog|lerpLog}(min, max, 1 - value, 1 / base)` which results in curve that inversely favors larger values.
+ * This is similar to but distinct from {@link syngen.utility.lerpExp|lerpExp}.
+ * @param {Number} min
+ * @param {Number} max
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @param {Number} [base=2]
+ * @returns {Number}
+ * @see syngen.utility.lerpLog
  * @static
  */
 syngen.utility.lerpLogi = (min, max, value, base) => {
-  // Equivalent to syngen.utility.lerpLog(min, max, value, 1 / base)
   return syngen.utility.lerpLog(max, min, 1 - value, base)
 }
 
 /**
+ * Returns a random value within the range where the lower bound is the interpolated value within `[lowMin, highMin]`, the upper bound is the interpolated value within `[lowMax, highMax]`.
+ * Values are interpolated with {@link syngen.utility.lerpLogi|lerpLogi}.
+ * @param {Number[]} lowRange
+ *   Expects `[lowMin, lowMax]`.
+ * @param {Number[]} highRange
+ *   Expects `[highMin, highMax]`.
+ * @param {Number} [value]
+ * @param {Number} [power]
+ * @returns {Number}
+ * @see syngen.utility.lerpLogi
  * @static
  */
 syngen.utility.lerpLogiRandom = ([lowMin, lowMax], [highMin, highMax], value) => {
@@ -354,6 +530,36 @@ syngen.utility.lerpLogiRandom = ([lowMin, lowMax], [highMin, highMax], value) =>
 }
 
 /**
+ * Returns a random value within the range where the lower bound is the interpolated value within `[lowMin, highMin]`, the upper bound is the interpolated value within `[lowMax, highMax]`.
+ * Values are interpolated with {@link syngen.utility.lerpLog|lerpLog}.
+ * @param {Number[]} lowRange
+ *   Expects `[lowMin, lowMax]`.
+ * @param {Number[]} highRange
+ *   Expects `[highMin, highMax]`.
+ * @param {Number} [value]
+ * @param {Number} [base]
+ * @returns {Number}
+ * @see syngen.utility.lerpLog
+ * @static
+ */
+syngen.utility.lerpLogRandom = ([lowMin, lowMax], [highMin, highMax], value, base) => {
+  return syngen.utility.random.float(
+    syngen.utility.lerpLog(lowMin, highMin, value, base),
+    syngen.utility.lerpLog(lowMax, highMax, value, base),
+  )
+}
+
+/**
+ * Returns a random value within the range where the lower bound is the interpolated value within `[lowMin, highMin]`, the upper bound is the interpolated value within `[lowMax, highMax]`.
+ * Values are interpolated with {@link syngen.utility.lerp|lerp}.
+ * @param {Number[]} lowRange
+ *   Expects `[lowMin, lowMax]`.
+ * @param {Number[]} highRange
+ *   Expects `[highMin, highMax]`.
+ * @param {Number} [value]
+ * @param {Number} [base]
+ * @returns {Number}
+ * @see syngen.utility.lerp
  * @static
  */
 syngen.utility.lerpRandom = ([lowMin, lowMax], [highMin, highMax], value) => {
@@ -364,6 +570,11 @@ syngen.utility.lerpRandom = ([lowMin, lowMax], [highMin, highMax], value) => {
 }
 
 /**
+ * Converts a MIDI `note` number to its frequency, in Hertz.
+ * @param {Number} note
+ * @returns {Number}
+ * @see syngen.const.midiReferenceFrequency
+ * @see syngen.const.midiReferenceNote
  * @static
  */
 syngen.utility.midiToFrequency = (note) => {
@@ -371,9 +582,12 @@ syngen.utility.midiToFrequency = (note) => {
 }
 
 /**
+ * Normalizes `angle` within therange of `[0, 2π]`.
+ * @param {Number} angle
+ * @returns {Number}
  * @static
  */
-syngen.utility.normalizeAngle = (angle) => {
+syngen.utility.normalizeAngle = (angle = 0) => {
   const tau = Math.PI * 2
 
   if (angle > tau) {
@@ -387,6 +601,9 @@ syngen.utility.normalizeAngle = (angle) => {
 }
 
 /**
+ * Normalizes `angle` within the range of `[-π, +π]`.
+ * @param {Number} angle
+ * @returns {Number}
  * @static
  */
 syngen.utility.normalizeAngleSigned = (angle) => {
@@ -406,6 +623,12 @@ syngen.utility.normalizeAngleSigned = (angle) => {
 }
 
 /**
+ * Calculates the real solutions to the quadratic equation with coefficients `a`, `b`, and `c`.
+ * @param {Number} a
+ * @param {Number} b
+ * @param {Number} c
+ * @returns {Number[]}
+ *   Typically there are two real solutions; however, implementations must check for imaginary solutions with {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/isNaN|isNaN}.
  * @static
  */
 syngen.utility.quadratic = (a, b, c) => {
@@ -416,34 +639,52 @@ syngen.utility.quadratic = (a, b, c) => {
 }
 
 /**
+ * Converts `radians` to degrees.
+ * @param {Number} radians
+ * @returns {Number}
  * @static
  */
 syngen.utility.radiansToDegrees = (radians) => radians * 180 / Math.PI
 
 /**
+ * Calculates the interior angle of a regular polygon with `sides`.
+ * @param {Number} sides
+ * @returns {Number}
  * @static
  */
 syngen.utility.regularPolygonInteriorAngle = (sides) => (sides - 2) * Math.PI / sides
 
 /**
+ * Rounds `value` to `precision` places.
+ * Beward that `precision` is an inverse power of ten.
+ * For example, `3` rounds to the nearest thousandth, whereas `-3` rounds to the nearest thousand.
+ * @param {Number} value
+ * @param {Number} precision
+ * @returns {Number}
  * @static
  */
-syngen.utility.round = (x, precision = 0) => {
+syngen.utility.round = (value, precision = 0) => {
   precision = 10 ** precision
-  return Math.round(x * precision) / precision
+  return Math.round(value * precision) / precision
 }
 
-syngen.utility.rotatePoint = (x, y, theta) => ({
-  x: (x * Math.cos(theta)) + (y * Math.sin(theta)),
-  y: (y * Math.cos(theta)) - (x * Math.sin(theta)),
-})
-
 /**
+ * Scales `value` within the range `[min, max]` to an equivalent value between `[a, b]`.
+ * @param {Number} value
+ * @param {Number} min
+ * @param {Number} max
+ * @param {Number} a
+ * @param {Number} b
+ * @returns {Number}
  * @static
  */
 syngen.utility.scale = (value, min, max, a, b) => ((b - a) * (value - min) / (max - min)) + a
 
 /**
+ * Returns a shuffled shallow copy of `array` using `random` algorithm.
+ * For example, implementations could leverage {@link syngen.utility.srand|srand()} to produce the same results each time given the same seed value.
+ * @param {Array} array
+ * @param {Function} [random=Math.random]
  * @static
  */
 syngen.utility.shuffle = (array, random = Math.random) => {
@@ -458,14 +699,18 @@ syngen.utility.shuffle = (array, random = Math.random) => {
 }
 
 /**
+ * Returns the sign of `value` as positive or negative `1`.
+ * @param {Number} value
+ * @returns {Number}
  * @static
  */
 syngen.utility.sign = (value) => value >= 0 ? 1 : -1
 
-// SEE: https://stackoverflow.com/a/47593316
-// SEE: https://github.com/micro-js/srand
-// SEE: https://en.wikipedia.org/wiki/Linear_congruential_generator
 /**
+ * Returns a pseudo-random, linear congruential, seeded random number generator with variadic `seeds`.
+ * Seeds are prepended with the global {@link syngen.seed} and concatenated with {@link syngen.const.seedSeparator}.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.srandGenerator}
  * @static
  */
 syngen.utility.srand = (...seeds) => {
@@ -483,31 +728,53 @@ syngen.utility.srand = (...seeds) => {
 
   seed = rotate(seed)
 
-  return (min = 0, max = 1) => {
+  /**
+   * A pseudo-random, linear congruential, seeded random number generator that returns a value within `[min, max]`.
+   * @param {Number} [min=0]
+   * @param {Number} [max=1]
+   * @returns {Number}
+   * @type {Function}
+   * @typedef syngen.utility.srandGenerator
+   */
+  const generator = (min = 0, max = 1) => {
     seed = rotate(seed)
     return min + ((seed / modulus) * (max - min))
   }
+
+  return generator
 }
 
 /**
+ * Calculates the musical interval between two frequencies, in cents.
+ * @param {Number} a
+ * @param {Number} b
+ * @returns {Number}
  * @static
  */
-syngen.utility.toCents = (f1, f2) => (f2 - f1) / f1 * 1200
+syngen.utility.toCents = (a, b) => (b - a) / a * 1200
 
 /**
+ * Converts `gain` to its equivalent decibel value.
+ * @param {Number} gain
+ * @returns {Number}
  * @static
  */
-syngen.utility.toDb = (value) => 10 * Math.log10(value)
+syngen.utility.toDb = (gain) => 10 * Math.log10(gain)
 
 /**
+ * Scales `frequency` by integer multiples so it's an audible frequency within the sub-bass range.
+ * @param {Number} frequency
+ * @param {Number} [subFrequency={@link syngen.const.subFrequency}]
+ * @param {Number} [minFrequency={@link syngen.const.minFrequency}]
+ * @returns {Number}
  * @static
  */
-syngen.utility.toSubFrequency = (frequency, sub = syngen.const.subFrequency) => {
-  while (frequency > sub) {
+syngen.utility.toSubFrequency = (frequency, subFrequency = syngen.const.subFrequency, minFrequency = syngen.const.minFrequency) => {
+  while (frequency > subFrequency) {
     frequency /= 2
   }
 
-  while (frequency < syngen.const.minFrequency) {
+  while (frequency < minFrequency) {
     frequency *= 2
   }
 
@@ -515,6 +782,8 @@ syngen.utility.toSubFrequency = (frequency, sub = syngen.const.subFrequency) => 
 }
 
 /**
+ * Generates a universally unique identifier.
+ * @returns {String}
  * @static
  */
 syngen.utility.uuid = () => {
@@ -525,10 +794,16 @@ syngen.utility.uuid = () => {
 }
 
 /**
+ * Wraps `value` around the range `[min, max)` with modular arithmetic.
+ * Beware that `min` is congruent to `max`, so returned values will approach the limit of `max` before wrapping back to `min`.
+ * A way to visualize this operation is that the range repeats along the number line.
+ * @param {Number} value
+ * @param {Number} [min=0]
+ * @param {Number} [max=1]
+ * @returns {Number}
  * @static
  */
 syngen.utility.wrap = (value, min = 0, max = 1) => {
-  // Treats min and max as the same value, e.g. [min, max)
   const range = max - min
 
   if (value >= max) {
@@ -543,10 +818,15 @@ syngen.utility.wrap = (value, min = 0, max = 1) => {
 }
 
 /**
+ * Maps `value` to an alternating oscillation of the range `[min, max]`.
+ * A way to visualize this operation is that the range repeats alternately along the number line, such that `min` goes to `max` back to `min`.
+ * @param {Number} value
+ * @param {Number} [min=0]
+ * @param {Number} [max=1]
+ * @returns {Number}
  * @static
  */
 syngen.utility.wrapAlternate = (value, min = 0, max = 1) => {
-  // Scales values to an oscillation between [min, max]
   const range = max - min
   const period = range * 2
 
@@ -2126,17 +2406,16 @@ syngen.utility.perlin4d.prototype = {
 }
 
 /**
+ * Provides properties and methods to orient and move objects through three-dimensional space.
+ * The static {@link syngen.utility.physical.decorate|decorate} method grants objects these qualities.
  * @mixin
- * @property {syngen.utility.quaternion} angularVelocity
- * @property {syngen.utility.quaternion} quaternion
- * @property {syngen.utility.vector3d} velocity
- * @property {Number} x
- * @property {Number} y
- * @property {Number} z
+ * @todo Improve clarity and proximity of documentation and source
  */
 syngen.utility.physical = {}
 
 /**
+ * Decorates the `target` object with physical properties and methods.
+ * @param {Object} target
  * @static
  */
 syngen.utility.physical.decorate = function (target = {}) {
@@ -2168,12 +2447,15 @@ syngen.utility.physical.decorate = function (target = {}) {
  */
 syngen.utility.physical.decoration = {
   /**
+   * Returns the orientation as an Euler angle.
    * @instance
+   * @returns {syngen.utility.euler}
    */
   euler: function () {
     return syngen.utility.euler.fromQuaternion(this.quaternion)
   },
   /**
+   * Resets angular and lateral velocities to zero.
    * @instance
    */
   resetPhysics: function () {
@@ -2182,10 +2464,14 @@ syngen.utility.physical.decoration = {
     return this
   },
   /**
+   * Updates the coordinates and orientation due to angular and lateral velocities.
    * @instance
+   * @param {Number} [delta={@link syngen.loop.delta|syngen.loop.delta()}]
    */
-  updatePhysics: function () {
-    const delta = syngen.loop.delta()
+  updatePhysics: function (delta = syngen.loop.delta()) {
+    if (delta <= 0 || isNaN(delta) || !isFinite(delta)) {
+      return this
+    }
 
     if (!this.angularVelocity.isZero()) {
       this.quaternion = this.quaternion.multiply(
@@ -2198,14 +2484,49 @@ syngen.utility.physical.decoration = {
       this.y += this.velocity.y * delta
       this.z += this.velocity.z * delta
     }
+
+    return this
   },
   /**
+   * Returns the coordinates as a vector.
    * @instance
+   * @returns {syngen.utility.vector3d}
    */
   vector: function () {
     return syngen.utility.vector3d.create(this)
   },
 }
+
+/**
+ * Angular velocity, in radians per second.
+ * @name syngen.utility.physical#angularVelocity
+ * @type {syngen.utility.quaternion}
+ */
+/**
+ * Orientation with respect to the coordinate system.
+ * @name syngen.utility.physical#quaternion
+ * @type {syngen.utility.quaternion}
+ */
+/**
+ * Lateral velocity, in meters per second.
+ * @name syngen.utility.physical#velocity
+ * @type {syngen.utility.vector3d}
+ */
+/**
+ * Position along the x-axis, in meters.
+ * @name syngen.utility.physical#x
+ * @type {Number}
+ */
+/**
+ * Position along the y-axis, in meters.
+ * @name syngen.utility.physical#y
+ * @type {Number}
+ */
+/**
+ * Position along the z-axis, in meters.
+ * @name syngen.utility.physical#z
+ * @type {Number}
+ */
 
 /**
  * @interface
@@ -2699,22 +3020,6 @@ syngen.utility.quaternion.prototype = {
   /**
    * @instance
    */
-  add: function ({
-    w = 0,
-    x = 0,
-    y = 0,
-    z = 0,
-  } = {}) {
-    return syngen.utility.quaternion.create({
-      w: this.w + w,
-      x: this.x + x,
-      y: this.y + y,
-      z: this.z + z,
-    })
-  },
-  /**
-   * @instance
-   */
   clone: function () {
     return syngen.utility.quaternion.create(this)
   },
@@ -2906,22 +3211,6 @@ syngen.utility.quaternion.prototype = {
   /**
    * @instance
    */
-  subtract: function ({
-    w = 0,
-    x = 0,
-    y = 0,
-    z = 0,
-  } = {}) {
-    return syngen.utility.quaternion.create({
-      w: this.w - w,
-      x: this.x - x,
-      y: this.y - y,
-      z: this.z - z,
-    })
-  },
-  /**
-   * @instance
-   */
   up: function () {
     return syngen.utility.vector3d.unitZ().rotateQuaternion(this)
   },
@@ -2937,19 +3226,28 @@ syngen.utility.quaternion.identity = function () {
 }
 
 /**
+ * Provides methods for producing random values.
  * @namespace
  */
 syngen.utility.random = {}
 
 /**
- * @method
+ * Returns a random float between `min` and `max`.
+ * @param {Number} [min=0]
+ * @param {Number} [max=1]
+ * @returns {Number}
+ * @static
  */
 syngen.utility.random.float = (min = 0, max = 1) => {
   return min + (Math.random() * (max - min))
 }
 
 /**
- * @method
+ * Returns a random integer between `min` and `max`.
+ * @param {Number} [min=0]
+ * @param {Number} [max=1]
+ * @returns {Number}
+ * @static
  */
 syngen.utility.random.integer = function (min = 0, max = 1) {
   return Math.round(
@@ -2958,36 +3256,60 @@ syngen.utility.random.integer = function (min = 0, max = 1) {
 }
 
 /**
- * @method
+ * Returns a random sign as a positive or negative `1`.
+ * @returns {Number}
+ * @static
  */
-syngen.utility.random.sign = (bias = 0.5) => Math.random() < bias ? 1 : -1
+syngen.utility.random.sign = () => Math.random() < 0.5 ? 1 : -1
 
 /**
- * @method
+ * Returns a random key in `bag`.
+ * @param {Array|Map|Object} bag
+ * @returns {String}
+ * @static
  */
 syngen.utility.random.key = function (bag) {
-  const keys = Object.keys(bag)
+  const keys = bag instanceof Map
+    ? [...bag.keys()]
+    : Object.keys(bag)
+
   return keys[
     this.integer(0, keys.length - 1)
   ]
 }
 
 /**
- * @method
+ * Returns a random value in `bag`.
+ * @param {Array|Map|Object|Set} bag
+ * @returns {*}
+ * @static
  */
 syngen.utility.random.value = function (bag) {
-  return bag[
-    this.key(bag)
-  ]
+  if (bag instanceof Set) {
+    bag = [...bag.values()]
+  }
+
+  const key = this.key(bag)
+
+  if (bag instanceof Map) {
+    return bag.get(key)
+  }
+
+  return bag[key]
 }
 
 /**
+ * Provides methods that simplify working with timers.
  * @namespace
  */
 syngen.utility.timing = {}
 
 /**
- * @method
+ * Returns a cancelable promise that resolves after `duration` milliseconds.
+ * @param {Number} duration
+ * @returns {Promise}
+ *   Has a `cancel` method that can reject itself prematurely.
+ * @static
  */
 syngen.utility.timing.cancelablePromise = (duration) => {
   const scope = {}
@@ -3011,7 +3333,10 @@ syngen.utility.timing.cancelablePromise = (duration) => {
 }
 
 /**
- * @method
+ * Returns a promise that resolves after `duration` milliseconds.
+ * @param {Number} duration
+ * @returns {Promise}
+ * @static
  */
 syngen.utility.timing.promise = (duration) => new Promise((resolve) => setTimeout(resolve, duration))
 
@@ -3501,162 +3826,247 @@ syngen.utility.vector3d.unitZ = function () {
 }
 
 /**
+ * A collection of useful constants used throughout the library.
+ * These can be overridden at runtime.
  * @namespace
  */
 syngen.const = {
   /**
-    @type {Number}
+   * Lowpass frequency of the acoustic shadow, in Hertz.
+   * Typically this value is the speed of sound divided by the width of the head.
+   * @todo Move to syngen.audio.binaural.model
+   * @type {Number}
   */
   acousticShadowFrequency: 343 / 0.1524, // speedOfSound / binauralHeadWidth
   /**
-    @type {Number}
+   * Latency added to calculated times, in seconds.
+   * @todo Improve support for nonzero values
+   * @type {Number}
   */
-  audioLookaheadTime: 0, // TODO: Improve support for non-zero values
+  audioLookaheadTime: 0,
   /**
-    @type {Number}
+   * Width of head, in meters.
+   * @todo Move to syngen.audio.binaural.model
+   * @type {Number}
   */
-  binauralHeadWidth: 0.1524, // m
+  binauralHeadWidth: 0.1524,
   /**
-    @type {Number}
+   * Offset that ears point away from +/- 90 degrees, in radians.
+   * @todo Move to syngen.audio.binaural.model
+   * @type {Number}
   */
-  binauralShadowOffset: Math.PI / 4, // radian offset of each ear from +/- 90 deg
+  binauralShadowOffset: Math.PI / 4,
   /**
-    @type {Number}
+   * Upper bound where acoustic shadow gradually increases in strength, in meters.
+   * @todo Move to syngen.audio.binaural.model
+   * @type {Number}
   */
-  binauralShadowRolloff: 1, // m
+  binauralShadowRolloff: 1,
   /**
-    @type {Number}
+   * The rolloff applied to
+   * Typically in physical space this value is derived from the distance-square law and is exactly two.
+   * @todo Move to dedicated distance models
+   * @type {Number}
   */
-  distancePower: 2, // 1 / (d ** distancePower)
+  distancePower: 2,
   /**
-    @type {Number}
+   * Whether to multiply calculated gains by the ratio between distance and the horizon defined by syngen.streamer.
+   * This allows sounds to gradually fade out around the edges of the streamed area.
+   * @todo Move to dedicated distance models
+   * @type {Boolean}
   */
-  distancePowerHorizon: false, // Whether to dropoff power calculations as a ratio of streamer radius
+  distancePowerHorizon: false,
   /**
-    @type {Number}
+   * Speed of the gain dropoff applied when the horizon is enabled.
+   * @todo Move to dedicated distance models
+   * @type {Number}
   */
-  distancePowerHorizonExponent: 0, // Speed of the distance dropoff
+  distancePowerHorizonExponent: 0,
   /**
-    @type {String}
+   * Rotation sequence when converting Euler angles to quaternions. Valid values include:
+   * - XYZ
+   * - XZY
+   * - YXZ
+   * - YZX
+   * - ZXY
+   * - ZYX
+   * @type {String}
   */
-  eulerToQuaternion: 'ZYX', // One of eight supported tuples, see syngen.utility.quaternion
+  eulerToQuaternion: 'ZYX',
   /**
-    @type {Number}
+   * Acceleration due to gravity, in meters per second per second.
+   * @type {Number}
   */
-  gravity: 9.8, // m/s
+  gravity: 9.8,
   /**
-    @type {Number}
+   * Duration that the loop should ideally run when the window is blurred, in seconds.
+   * @todo Move to syngen.loop
+   * @type {Number}
   */
-  idleDelta: 1/60, // s
+  idleDelta: 1/60,
   /**
-    @type {Number}
+   * Upper bound of perceptible frequencies, in Hertz.
+   * @type {Number}
   */
-  maxFrequency: 20000, // Hz
+  maxFrequency: 20000,
   /**
-    @type {Number}
+   * The largest float before precision loss becomes problematic.
+   * This value is derived from `Number.MAX_SAFE_INTEGER / (2 ** 10)` to deliver about three decimal places of precision, which is suitable for most purposes.
+   * @type {Number}
   */
-  maxSafeFloat: (2 ** 43) - 1, // Math.MAX_SAFE_INTEGER / (2 ** 10), or about 3 decimal places of precision
+  maxSafeFloat: (2 ** 43) - 1,
   /**
-    @type {Number}
+   * Frequency of the MIDI reference note, in Hertz.
+   * @type {Number}
   */
-  midiReferenceFrequency: 440, // Hz
+  midiReferenceFrequency: 440,
   /**
-    @type {Number}
+   * Reference note number used when converting MIDI notes to frequencies.
+   * @type {Number}
   */
-  midiReferenceNote: 69, // A4
+  midiReferenceNote: 69,
   /**
-    @type {Number}
+   * Lower bound of perceptible frequencies, in Hertz.
+   * @type {Number}
   */
   minFrequency: 20, // Hz
   /**
-    @type {Number}
+   * Radius of the observer, in meters.
+   * @todo Move into syngen.position
+   * @type {Number}
   */
-  positionRadius: 0.25, // m
+  positionRadius: 0.25,
   /**
-    @type {Number}
+   * Duration, in seconds, that props fade in and out when instantiated and destroyed.
+   * @todo Move into syngen.prop.base
+   * @type {Number}
   */
-  propFadeDuration: 0.005, // s
+  propFadeDuration: 0.005,
   /**
-    @type {String}
+   * Separator used when joining array seeds.
+   * @todo Move into syngen.seed
+   * @type {String}
   */
-  seedSeparator: '~', // separator for arrays used as syngen.utility.srand() seeds
+  seedSeparator: '~',
   /**
-    @type {Number}
+   * The speed of sound, in meters per second.
+   * @type {Number}
   */
-  speedOfSound: 343, // m/s
+  speedOfSound: 343,
   /**
-    @type {Number}
+   * Upper bound for sub-bass frequencies, in Hertz.
+   * @type {Number}
   */
-  subFrequency: 60, // Hz
+  subFrequency: 65.4064,
   /**
-    @type {Number}
+   * The circle constant, i.e. 2π.
+   * @type {Number}
   */
-  tau: Math.PI * 2, // circle constant
+  tau: Math.PI * 2,
   /**
-    @type {Number}
+   * Length that satisfies `x=y` for a 2D unit circle.
+   * @type {Number}
   */
-  unit: 1, // 1D line segment
+  unit2: Math.sqrt(2) / 2,
   /**
-    @type {Number}
+   * Length that satisfies `x=y=z` for a 3D unit sphere.
+   * @type {Number}
   */
-  unit2: Math.sqrt(2) / 2, // 2D unit circle
+  unit3: Math.sqrt(3) / 3,
   /**
-    @type {Number}
+   * Length that satisfies `w=x=y=z` for a 4D unit hypersphere.
+   * @type {Number}
   */
-  unit3: Math.sqrt(3) / 3, // 3D unit sphere
+  unit4: Math.sqrt(4) / 4,
   /**
-    @type {Number}
+   * Close enough to zero for
+   * @type {Number}
   */
-  unit4: Math.sqrt(4) / 4, // 4D unit hypersphere
+  zero: 10 ** -32,
   /**
-    @type {Number}
+   * Value in decibels that, for most purposes, is perceptibly silent.
+   * @type {Number}
   */
-  zero: 10 ** -32, // Close enough to zero
+  zeroDb: -96,
   /**
-    @type {Number}
-  */
-  zeroDb: -96, // dB, close enough to silence
-  /**
-    @type {Number}
+   * Value in gain that, for most purposes, is perceptibly silent.
+   * @type {Number}
   */
   zeroGain: syngen.utility.fromDb(-96), // syngen.utility.fromDb(zeroDb)
   /**
-    @type {Number}
+   * Length of time that, for most purposes, is perceptibly instantaneous.
+   * @type {Number}
   */
-  zeroTime: 0.005, // s, close enough to instantaneous
+  zeroTime: 0.005,
 }
 
 /**
+ * Provides a helper for importing and exporting state.
+ * Systems can subscribe to its events to persist and load their inner states.
  * @implements syngen.utility.pubsub
  * @namespace
  */
 syngen.state = syngen.utility.pubsub.decorate({
   /**
+   * Exports the state.
+   * The inverse of {@link syngen.state.import}.
+   * @fires syngen.state#event:export
    * @memberof syngen.state
+   * @returns {Object}
    */
   export: function () {
-    const data = {}
-    this.emit('export', data)
-    return data
+    const state = {}
+
+    /**
+     * Fired when state is exported.
+     * Subscribers should add an entry to the passed object with their exported state.
+     * @event syngen.state#event:export
+     * @type {Object}
+     */
+    this.emit('export', state)
+
+    return state
   },
   /**
+   * Imports the state.
+   * The inverse of {@link syngen.state.export}.
+   * @fires syngen.state#event:import
    * @memberof syngen.state
+   * @param {Object} [state]
    */
-  import: function (data = {}) {
+  import: function (state = {}) {
     this.reset()
-    this.emit('import', data)
+
+    /**
+     * Fired when state is imported.
+     * Subscribers should consume the entry they added during export, if one exists.
+     * @event syngen.state#event:import
+     * @type {Object}
+     */
+    this.emit('import', state)
+
     return this
   },
   /**
+   * Resets to a blank state.
+   * @fires syngen.state#event:import
    * @memberof syngen.state
    */
   reset: function () {
+    /**
+     * Fired when state is reset.
+     * Subscribers should clear their internal state when fired.
+     * @event syngen.state#event:reset
+     */
     this.emit('reset')
     return this
   }
 })
 
 /**
+ * Provides a wrapper for the seed value.
+ * The seed primarily influences {@link syngen.utility.srand()} as well as any other systems and utilities that rely on it.
+ * It can be randomized to deliver unique experiences.
  * @namespace
  */
 syngen.seed = (() => {
@@ -3664,18 +4074,25 @@ syngen.seed = (() => {
 
   return {
     /**
+     * Returns the seed value.
+     * @listens syngen.state#event.import
      * @memberof syngen.seed
+     * @returns {String}
      */
     get: () => seed,
     /**
+     * Sets the seed value.
+     * @listens syngen.state#event:import
+     * @listens syngen.state#event:reset
      * @memberof syngen.seed
+     * @param {String} [value]
      */
     set: function (value) {
       seed = value
       return this
     },
     /**
-     * @memberof syngen.seed
+     * @ignore
      */
     valueOf: () => seed,
   }
@@ -3686,32 +4103,52 @@ syngen.state.on('import', (data = {}) => syngen.seed.set(data.seed))
 syngen.state.on('reset', () => syngen.seed.set())
 
 /**
+ * Wrapper for the main [AudioContext](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext) and umbrella for all [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)-related utilities.
  * @namespace
  */
 syngen.audio = (() => {
   const context = new AudioContext()
 
   return {
+    /**
+     * A collection of programmatically generated [AudioBuffers](https://developer.mozilla.org/en-US/docs/Web/API/AudioBuffer).
+     * @namespace syngen.audio.buffer
+     */
     buffer: {
       /**
+       * Programatically generated reverb impulses intended for use with [ConvolverNodes](https://developer.mozilla.org/en-US/docs/Web/API/ConvolverNode).
        * @namespace syngen.audio.buffer.impulse
        */
       impulse: {},
       /**
+       * Programmatically generated noise intended for use with [AudioBufferSourceNodes](https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode).
        * @namespace syngen.audio.buffer.noise
        */
       noise: {},
     },
     /**
+     * Returns the main `AudioContext`.
      * @memberof syngen.audio
+     * @returns {AudioContext}
      */
     context: () => context,
     /**
+     * Returns the Nyquist frequency for the current sample rate multiplied by an optional coefficient.
      * @memberof syngen.audio
+     * @param {Number} [coefficient=1]
+     * @returns {Number}
+     * @see https://en.wikipedia.org/wiki/Nyquist_frequency
      */
     nyquist: (coefficient = 1) => coefficient * context.sampleRate / 2,
+    /**
+     * A collection of circuits that send signals to auxiliary sends.
+     * @namespace syngen.audio.send
+     * @todo Move to syngen.audio.mixer.send
+     */
     send: {},
     /**
+     * Resumes the main `AudioContext`.
+     * Must be called after the first user gesture so playback works in all browsers.
      * @memberof syngen.audio
      */
     start: function () {
@@ -3719,11 +4156,27 @@ syngen.audio = (() => {
       return this
     },
     /**
+     * Suspends the main `AudioContext`.
      * @memberof syngen.audio
+     */
+    stop: function () {
+      context.suspend()
+      return this
+    },
+    /**
+     * Returns the `currentTime` for the main `AudioContext` plus an optional duration and lookahead time.
+     * @memberof syngen.audio
+     * @param {Number} [duration=0]
+     * @returns {Number}
+     * @see syngen.const.audioLookaheadTime
      */
     time: (duration = 0) => context.currentTime + syngen.const.audioLookaheadTime + duration,
     /**
+     * Returns the next appreciable timestamp.
      * @memberof syngen.audio
+     * @returns {Number}
+     * @see syngen.const.audioLookaheadTime
+     * @see syngen.const.zeroTime
      */
     zeroTime: () => context.currentTime + syngen.const.audioLookaheadTime + syngen.const.zeroTime,
   }
@@ -4303,6 +4756,13 @@ syngen.audio.effect.createTalkbox = ({
 }
 
 /**
+ * Records the output of the provided input and exports it as a WebM file.
+ * When no duration is passed, the [MediaRecorder](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder) _must_ be stopped to complete the export.
+ * @param {Object} [options]
+ * @param {Number} [options.duration=0]
+ * @param {AudioNode} [options.input=syngen.audio.mixer.master.output]
+ * @param {String} [options.name=export.webm]
+ * @returns {MediaRecorder}
  * @static
  */
 syngen.audio.export = ({
@@ -5892,7 +6352,9 @@ syngen.audio.synth.shaped = function (synth, curve) {
 }
 
 /**
- * @static
+ * Returns a large reverb impulse.
+ * @method
+ * @returns {AudioBuffer}
  */
 syngen.audio.buffer.impulse.large = (() => {
   const context = syngen.audio.context()
@@ -5914,7 +6376,9 @@ syngen.audio.buffer.impulse.large = (() => {
 })()
 
 /**
- * @static
+ * Returns a medium reverb impulse.
+ * @method
+ * @returns {AudioBuffer}
  */
 syngen.audio.buffer.impulse.medium = (() => {
   const context = syngen.audio.context()
@@ -5936,7 +6400,9 @@ syngen.audio.buffer.impulse.medium = (() => {
 })()
 
 /**
- * @static
+ * Returns a small reverb impulse.
+ * @method
+ * @returns {AudioBuffer}
  */
 syngen.audio.buffer.impulse.small = (() => {
   const context = syngen.audio.context()
@@ -5958,7 +6424,9 @@ syngen.audio.buffer.impulse.small = (() => {
 })()
 
 /**
- * @static
+ * Returns Brownian noise with intensity inversely proportional to the frequency squared.
+ * @method
+ * @returns {AudioBuffer}
  */
 syngen.audio.buffer.noise.brown = (() => {
   const context = syngen.audio.context()
@@ -5985,7 +6453,9 @@ syngen.audio.buffer.noise.brown = (() => {
 })()
 
 /**
- * @static
+ * Returns pink noise with intensity inversely proportional to the frequency.
+ * @method
+ * @returns {AudioBuffer}
  */
 syngen.audio.buffer.noise.pink = (() => {
   const context = syngen.audio.context()
@@ -6024,7 +6494,9 @@ syngen.audio.buffer.noise.pink = (() => {
 })()
 
 /**
- * @static
+ * Returns brown noise with equal intensity at all frequencies.
+ * @method
+ * @returns {AudioBuffer}
  */
 syngen.audio.buffer.noise.white = (() => {
   const context = syngen.audio.context()
@@ -6040,14 +6512,6 @@ syngen.audio.buffer.noise.white = (() => {
   }
 
   return () => buffer
-})()
-
-/**
- * @static
- */
-syngen.audio.mixer.bus.props = (() => {
-  const bus = syngen.audio.mixer.createBus()
-  return () => bus
 })()
 
 /**
@@ -6131,6 +6595,14 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
       return this
     },
   }, pubsub)
+})()
+
+/**
+ * @static
+ */
+syngen.audio.mixer.bus.props = (() => {
+  const bus = syngen.audio.mixer.createBus()
+  return () => bus
 })()
 
 /**
@@ -6344,6 +6816,9 @@ syngen.audio.send.reverb.prototype = {
 }
 
 /**
+ * Provides an event-driven main loop for the application.
+ * Systems can subscribe to each frame and respond to state changes.
+ * Beware that the loop remains running while paused, which they must choose to respect.
  * @implements syngen.utility.pubsub
  * @namespace
  */
@@ -6354,7 +6829,6 @@ syngen.loop = (() => {
     delta = 0,
     frameCount = 0,
     idleRequest,
-    isPaused = false,
     isRunning = false,
     lastFrame = 0,
     time = 0
@@ -6389,11 +6863,20 @@ syngen.loop = (() => {
     frameCount += 1
     time += delta
 
+    /**
+     * Fired every loop frame.
+     * @event syngen.loop#event:frame
+     * @property {Number} delta - Time elapsed since last frame
+     * @property {Number} frame - Current frame count of loop
+     * @property {Boolean} paused - Whether the loop is paused
+     * @property {Number} time - Total elapsed time of loop
+     * @type {Object}
+     */
     pubsub.emit('frame', {
       delta,
       frame: frameCount,
+      paused: !isRunning,
       time,
-      paused: isPaused,
     })
 
     scheduleFrame()
@@ -6418,49 +6901,74 @@ syngen.loop = (() => {
 
   return syngen.utility.pubsub.decorate({
     /**
+     * Returns the time elapsed since the previous frame.
      * @memberof syngen.loop
+     * @returns {Number}
      */
     delta: () => delta,
     /**
+     * Returns the current frame number since the loop began.
      * @memberof syngen.loop
+     * @returns {Number}
      */
     frame: () => frameCount,
     /**
+     * Returns whether the loop is currently paused.
      * @memberof syngen.loop
+     * @returns {Boolean}
      */
-    isPaused: () => isPaused,
+    isPaused: () => !isRunning,
     /**
+     * Returns whether the loop is currently running.
      * @memberof syngen.loop
+     * @returns {Boolean}
      */
     isRunning: () => isRunning,
     /**
+     * Pauses the loop.
+     * @fires syngen.loop#event:pause
      * @memberof syngen.loop
      */
     pause: function () {
-      if (isPaused) {
+      if (!isRunning) {
         return this
       }
 
-      isPaused = true
+      isRunning = false
+
+      /**
+       * Fired when the loop is paused.
+       * @event syngen.loop#event:pause
+       */
       pubsub.emit('pause')
 
       return this
     },
     /**
+     * Resumes the loop.
+     * @fires syngen.loop#event:resume
      * @memberof syngen.loop
      */
     resume: function () {
-      if (!isPaused) {
+      if (isRunning) {
         return this
       }
 
-      isPaused = false
+      isRunning = true
+
+      /**
+       * Fired when the loop is resumed.
+       * @event syngen.loop#event:resume
+       */
       pubsub.emit('resume')
 
       return this
     },
     /**
+     * Starts the loop.
+     * @fires syngen.loop#event:start
      * @memberof syngen.loop
+     * @todo Deprecate and always leave running
      */
     start: function () {
       if (isRunning) {
@@ -6471,12 +6979,21 @@ syngen.loop = (() => {
       lastFrame = performance.now()
 
       scheduleFrame()
+
+      /**
+       * Fired when the loop starts.
+       * @event syngen.loop#event:start
+       * @todo Deprecate
+       */
       pubsub.emit('start')
 
       return this
     },
     /**
+     * Stops the loop.
+     * @fires syngen.loop#event:stop
      * @memberof syngen.loop
+     * @todo Deprecate and always leave running
      */
     stop: function () {
       if (!isRunning) {
@@ -6491,18 +7008,26 @@ syngen.loop = (() => {
       lastFrame = 0
       time = 0
 
+      /**
+       * Fired when the loop stops.
+       * @event syngen.loop#event:stop
+       * @todo Deprecate
+       */
       pubsub.emit('stop')
 
       return this
     },
     /**
+     * Returns the time elapsed since the loop began.
      * @memberof syngen.loop
+     * @returns {Number}
      */
     time: () => time,
   }, pubsub)
 })()
 
 /**
+ * Queries gamepad input once per frame and exposes its state.
  * @namespace
  */
 syngen.input.gamepad = (() => {
@@ -6524,14 +7049,40 @@ syngen.input.gamepad = (() => {
 
   return {
     /**
+     * Returns the gamepad state.
      * @memberof syngen.input.gamepad
+     * @returns {Object}
      */
-    get: () => ({...state}),
+    get: () => ({
+      analog: {...state.analog},
+      axis: {...state.axis},
+      digital: {...state.digital},
+    }),
     /**
+     * Returns the analog input for `button`.
      * @memberof syngen.input.gamepad
+     * @param {Number} button
+     * @param {Boolean} [invert=false]
+     * @returns {Number}
      */
-    getAnalog: function (key, invert = false) {
-      const value = state.analog[key] || 0
+    getAnalog: function (button, invert = false) {
+      const value = state.analog[button] || 0
+
+      if (invert && value) {
+        return 1 - value
+      }
+
+      return value
+    },
+    /**
+     * Returns the analog input for `axis`.
+     * @memberof syngen.input.gamepad
+     * @param {Number} axis
+     * @param {Boolean} [invert=false]
+     * @returns {Number}
+     */
+    getAxis: function (axis, invert = false) {
+      const value = state.axis[axis] || 0
 
       if (invert && value) {
         return -1 * value
@@ -6540,23 +7091,14 @@ syngen.input.gamepad = (() => {
       return value
     },
     /**
+     * Returns whether one or more `axes` exist.
      * @memberof syngen.input.gamepad
+     * @param {...Number} ...axes
+     * @returns {Number}
      */
-    getAxis: function (key, invert = false) {
-      const value = state.axis[key] || 0
-
-      if (invert && value) {
-        return -1 * value
-      }
-
-      return value
-    },
-    /**
-     * @memberof syngen.input.gamepad
-     */
-    hasAxis: function (...keys) {
-      for (const key of keys) {
-        if (!(key in state.axis)) {
+    hasAxis: function (...axes) {
+      for (const axis of axes) {
+        if (!(axis in state.axis)) {
           return false
         }
       }
@@ -6564,10 +7106,14 @@ syngen.input.gamepad = (() => {
       return true
     },
     /**
+     * Returns whether `button` is pressed.
      * @memberof syngen.input.gamepad
+     * @param {Number} button
+     * @returns {Number}
      */
-    isDigital: (key) => Boolean(state.digital[key]),
+    isDigital: (button) => Boolean(state.digital[button]),
     /**
+     * Resets the gamepad state.
      * @memberof syngen.input.gamepad
      */
     reset: function () {
@@ -6580,13 +7126,19 @@ syngen.input.gamepad = (() => {
       return this
     },
     /**
+     * Sets the deadzone for axis input under which smaller values are considered zero.
      * @memberof syngen.input.gamepad
+     * @param {Number} [value=0]
+     *   Float within `[0, 1]`.
+     *   For best results use a small configurable value.
      */
     setDeadzone: function (value = 0) {
       deadzone = Number(value) || 0
       return this
     },
     /**
+     * Queries the gamepad state.
+     * @listens syngen.loop#event:frame
      * @memberof syngen.input.gamepad
      */
     update: function () {
@@ -6627,7 +7179,9 @@ syngen.input.gamepad = (() => {
 syngen.loop.on('frame', () => syngen.input.gamepad.update())
 
 /**
+ * Exposes keypresses by their codes.
  * @namespace
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code
  */
 syngen.input.keyboard = (() => {
   let state = {}
@@ -6649,14 +7203,21 @@ syngen.input.keyboard = (() => {
 
   return {
     /**
+     * Returns a hash of all pressed keys, keyed by code.
+     * For example, if <kbd>F</kbd> is pressed, then `KeyF` is `true`.
      * @memberof syngen.input.keyboard
+     * @returns {Object}
      */
     get: () => ({...state}),
     /**
+     * Returns whether the key with `code` is pressed.
      * @memberof syngen.input.keyboard
+     * @param {String} code
+     * @returns {Boolean}
      */
-    is: (key) => state[key] || false,
+    is: (code) => state[code] || false,
     /**
+     * Resets all pressed keys.
      * @memberof syngen.input.keyboard
      */
     reset: function () {
@@ -6667,6 +7228,7 @@ syngen.input.keyboard = (() => {
 })()
 
 /**
+ * Exposes mouse movement, scrolling, and buttons pressed.
  * @namespace
  */
 syngen.input.mouse = (() => {
@@ -6705,34 +7267,60 @@ syngen.input.mouse = (() => {
 
   return {
     /**
+     * Returns the mouse state.
      * @memberof syngen.input.mouse
+     * @returns {Object}
      */
-    get: () => ({...state}),
+    get: () => ({
+      ...state,
+      button: {...state.button},
+    }),
     /**
+     * Returns any movement along the x-axis during the previous frame, in pixels.
      * @memberof syngen.input.mouse
+     * @returns {Number}
      */
-    getMoveX: state.moveX || 0,
+    getMoveX: () => state.moveX || 0,
     /**
+     * Returns any movement along the y-axis during the previous frame, in pixels.
      * @memberof syngen.input.mouse
+     * @returns {Number}
      */
-    getMoveY: state.moveY || 0,
+    getMoveY: () => state.moveY || 0,
     /**
+     * Returns any scrolling along the x-axis during the previous frame.
+     * Beware that this is unitless.
      * @memberof syngen.input.mouse
+     * @returns {Number}
+     * @todo Consider {@link https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent/deltaMode|WheelEvent.deltaMode} to normalize values across devices
      */
-    getWheelX: state.wheelX || 0,
+    getWheelX: () => state.wheelX || 0,
     /**
+     * Returns any scrolling along the y-axis during the previous frame.
+     * Beware that this is unitless.
      * @memberof syngen.input.mouse
+     * @returns {Number}
+     * @todo Consider {@link https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent/deltaMode|WheelEvent.deltaMode} to normalize values across devices
      */
-    getWheelY: state.wheelY || 0,
+    getWheelY: () => state.wheelY || 0,
     /**
+     * Returns any scrolling along the z-axis during the previous frame.
+     * Beware that this is unitless.
      * @memberof syngen.input.mouse
+     * @returns {Number}
+     * @todo Consider {@link https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent/deltaMode|WheelEvent.deltaMode} to normalize values across devices
      */
-    getWheelZ: state.wheelZ || 0,
+    getWheelZ: () => state.wheelZ || 0,
     /**
+     * Returns whether `button` is pressed.
      * @memberof syngen.input.mouse
+     * @param {Number} button
+     * @returns {boolean}
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button
      */
-    isButton: (key) => state.button[key] || false,
+    isButton: (button) => state.button[button] || false,
     /**
+     * Resets the mouse state.
      * @memberof syngen.input.mouse
      */
     reset: function () {
@@ -6748,10 +7336,12 @@ syngen.input.mouse = (() => {
       return this
     },
     /**
+     * Resets scrolling and movement at the next JavaScript event loop.
+     * This allows {@link syngen.loop#event:frame} listeners to query these values before they reset between frames.
+     * @listens syngen.loop#event:frame
      * @memberof syngen.input.mouse
      */
     update: function () {
-      // XXX: Reset between frames
       setTimeout(() => {
         state.moveX = 0
         state.moveY = 0
@@ -6769,6 +7359,7 @@ syngen.input.mouse = (() => {
 syngen.loop.on('frame', () => syngen.input.mouse.update())
 
 /**
+ * Calculates and exposes real-time performance metrics.
  * @namespace
  */
 syngen.performance = (() => {
@@ -6781,14 +7372,20 @@ syngen.performance = (() => {
 
   return {
     /**
+     * Returns the median duration of frames.
      * @memberof syngen.performance
+     * @returns {Number}
      */
     delta: () => medianDelta,
     /**
+     * Returns the average number of frames per second.
      * @memberof syngen.performance
+     * @returns {Number}
      */
     fps: () => medianFps,
     /**
+     * Recalculates performance metrics.
+     * @listens syngen.loop#event:frame
      * @memberof syngen.performance
      */
     update: function ({delta}) {
@@ -6813,6 +7410,9 @@ syngen.performance = (() => {
 syngen.loop.on('frame', (e) => syngen.performance.update(e))
 
 /**
+ * Maintains the coordinates, orientation, and velocities of the observer.
+ * The observer is a physical object that has volume and can be applied lateral and angular forces.
+ * Its position affects the relative positioning of props and can be used to influence other systems.
  * @namespace
  */
 syngen.position = (() => {
@@ -6820,7 +7420,11 @@ syngen.position = (() => {
 
   return {
     /**
+     * Returns the inner state.
+     * The inverse of {@link syngen.position.import|import()}.
+     * @listens syngen.state#event:export
      * @memberof syngen.position
+     * @returns {Object}
      */
     export: () => ({
       quaternion: {
@@ -6834,34 +7438,56 @@ syngen.position = (() => {
       z: proxy.z,
     }),
     /**
+     * Returns the angular velocity.
      * @memberof syngen.position
+     * @returns {syngen.utility.quaternion}
      */
     getAngularVelocity: () => proxy.angularVelocity.clone(),
     /**
+     * Returns the angular velocity.
+     * Beware that this is less performant than using quaternions and can result in gimbal lock.
      * @memberof syngen.position
+     * @returns {syngen.utility.euler}
      */
     getAngularVelocityEuler: () => syngen.utility.euler.fromQuaternion(proxy.angularVelocity),
     /**
+     * Returns the orientation.
+     * Beware that this is less performant than using quaternions and can result in gimbal lock.
      * @memberof syngen.position
+     * @returns {syngen.utility.euler}
      */
     getEuler: () => proxy.euler(),
     /**
+     * Returns the oriantation.
      * @memberof syngen.position
+     * @returns {syngen.utility.quaternion}
      */
     getQuaternion: () => proxy.quaternion.clone(),
     /**
+     * Returns the coordinates.
      * @memberof syngen.position
+     * @returns {syngen.utility.vector3d}
      */
     getVector: () => proxy.vector(),
     /**
+     * Returns the velocity.
      * @memberof syngen.position
+     * @returns {syngen.utility.vector3d}
      */
     getVelocity: () => proxy.velocity.clone(),
     /**
+     * Sets the inner state.
+     * The inverse of {@link syngen.position.export|export()}.
+     * @listens syngen.state#event:import
      * @memberof syngen.position
+     * @param {Object} [options]
+     * @param {syngen.utility.quaternion} [options.quaternion]
+     * @param {Number} [options.x=0]
+     * @param {Number} [options.y=0]
+     * @param {Number} [options.z=0]
      */
     import: function ({
-      quaternion = {w: 1},
+      quaternion = syngen.utility.quaternion.identity(),
       x = 0,
       y = 0,
       z = 0,
@@ -6876,7 +7502,9 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Returns the rectangular prism surrounding the observer.
      * @memberof syngen.position
+     * @returns {Object}
      */
     rect: () => ({
       depth: syngen.const.positionRadius * 2,
@@ -6887,20 +7515,24 @@ syngen.position = (() => {
       z: proxy.z - syngen.const.positionRadius,
     }),
     /**
+     * Resets all attributes to zero.
+     * @listens syngen.state#event:reset
      * @memberof syngen.position
      */
     reset: function () {
       return this.import()
     },
     /**
+     * Sets the angular velocity.
      * @memberof syngen.position
+     * @param {syngen.utility.quaternion} [options]
      */
     setAngularVelocity: function ({
       w = 0,
       x = 0,
       y = 0,
       z = 0,
-    } = {}) {
+    } = syngen.utility.quaternion.identity()) {
       proxy.angularVelocity.set({
         w,
         x,
@@ -6911,7 +7543,10 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Sets the angular velocity.
+     * Beware that this is less performant than using quaternions and can result in gimbal lock.
      * @memberof syngen.position
+     * @param {syngen.utility.euler}
      */
     setAngularVelocityEuler: function ({
       pitch = 0,
@@ -6929,7 +7564,10 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Sets the orientation.
+     * Beware that this is less performant than using quaternions and can result in gimbal lock.
      * @memberof syngen.position
+     * @param {syngen.utility.euler} [options]
      */
     setEuler: function ({
       pitch = 0,
@@ -6947,14 +7585,16 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Sets the orientation
      * @memberof syngen.position
+     * @param {syngen.utility.quaternion} [options]
      */
     setQuaternion: function ({
       w = 0,
       x = 0,
       y = 0,
       z = 0,
-    } = {}) {
+    } = syngen.utility.quaternion.identity()) {
       proxy.quaternion.set({
         w,
         x,
@@ -6965,7 +7605,9 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Sets the coordinates.
      * @memberof syngen.position
+     * @param {syngen.utility.vector3d} [options]
      */
     setVector: function ({
       x = 0,
@@ -6979,7 +7621,9 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Sets the velocity.
      * @memberof syngen.position
+     * @param {syngen.utility.vector3d} [options]
      */
     setVelocity: function ({
       x = 0,
@@ -6995,6 +7639,8 @@ syngen.position = (() => {
       return this
     },
     /**
+     * Applies physics to the inner state.
+     * @listens syngen.loop#event:frame
      * @memberof syngen.position
      */
     update: function () {
@@ -7017,31 +7663,42 @@ syngen.state.on('import', (data = {}) => syngen.position.import(data.position))
 syngen.state.on('reset', () => syngen.position.reset())
 
 /**
+ * The most basic prop that exists on the soundstage.
+ * With its {@link syngen.prop.base.invent|invent} method, implementations can extend and create a hierarchy of prototypes with a variety of sounds and behaviors.
+ * Instances must be created and destroyed via {@link syngen.props}.
+ * @augments syngen.utility.physical
  * @interface
- * @property {String} name
- * @property {Number} radius
- * @property {String} token
- * @property {Number} x
- * @property {Number} y
- * @property {Number} z
+ * @todo Allow reverb to be optional with a flag on the prototype
+ * @todo Move {@link syngen.const.propFadeDuration} to a static property
+ * @todo Remove periodic methods as they are specific to example projects
  */
 syngen.prop.base = {
-  name: 'base',
-  radius: 0,
   /**
-   * @method
+   * Binaural processor for the prop.
+   * @instance
+   * @type {syngen.audio.binaural}
+   */
+  binaural: undefined,
+  /**
+   * Instantiates the prop with `options` and fades in its volume.
+   * Derivative props are discouraged from overriding this method.
+   * Instead they should define an {@link syngen.prop.base#onConstruct|onConstruct} method.
+   * @instance
    * @param {Object} [options]
-   * @param {AudioDestinationNode|GainNode} [options.destination=syngen.audio.mixer.bus.props]
-   * @param {Number} [options.radius=0]
-   * @param {String} [options.token]
+   * @param {AudioDestinationNode|GainNode} [options.destination={@link syngen.audio.mixer.bus.props|syngen.audio.mixer.bus.props()}]
+   * @param {Number} [options.radius]
+   *   Defaults to the prototype's radius.
+   * @param {String} [options.token={@link syngen.utility.uuid|syngen.utility.uuid()}]
    * @param {Number} [options.x=0]
    * @param {Number} [options.y=0]
    * @param {Number} [options.z=0]
+   * @see syngen.prop.base#onConstruct
+   * @see syngen.props.create
    */
   construct: function ({
     destination = syngen.audio.mixer.bus.props(),
-    radius,
-    token,
+    radius = this.radius || 0,
+    token = syngen.utility.uuid(),
     x = 0,
     y = 0,
     z = 0,
@@ -7049,17 +7706,16 @@ syngen.prop.base = {
   } = {}) {
     const context = syngen.audio.context()
 
+    this.binaural = syngen.audio.binaural.create()
     this.instantiated = true
     this.periodic = {}
-    this.radius = radius || this.radius || 0
+    this.output = context.createGain()
+    this.radius = radius
+    this.reverb = syngen.audio.send.reverb.create()
     this.token = token
     this.x = x
     this.y = y
     this.z = z
-
-    this.binaural = syngen.audio.binaural.create()
-    this.output = context.createGain()
-    this.reverb = syngen.audio.send.reverb.create()
 
     this.binaural.from(this.output)
     this.binaural.to(destination)
@@ -7077,7 +7733,12 @@ syngen.prop.base = {
     return this
   },
   /**
-   * @method
+   * Prepares the prop for garbage collection and fades out its volume.
+   * Derivative props are discouraged from overriding this method.
+   * Instead they should define an {@link syngen.prop.base#onConstruct|onDestroy} method.
+   * @instance
+   * @see syngen.prop.base#onDestroy
+   * @see syngen.props.destroy
    */
   destroy: function () {
     syngen.audio.ramp.linear(this.output.gain, syngen.const.zeroGain, syngen.const.propFadeDuration)
@@ -7092,17 +7753,14 @@ syngen.prop.base = {
     return this
   },
   /**
-   * @method
+   * The distance of the prop relative to the observer's coordinates.
+   * @instance
+   * @type {Number}
    */
-  invent: function (definition = {}) {
-    if (typeof definition == 'function') {
-      definition = definition(this)
-    }
-
-    return Object.setPrototypeOf({...definition}, this)
-  },
+  distance: undefined,
   /**
-   * @method
+   * @deprecated
+   * @instance
    */
   handlePeriodic: function ({
     delay = () => 0,
@@ -7138,43 +7796,98 @@ syngen.prop.base = {
     return this
   },
   /**
-   * @method
+   * @deprecated
+   * @instance
    */
   hasPeriodic: function (key) {
     return key in this.periodic
   },
   /**
-   * @method
+   * Indicates whether the prop has been instantiated.
+   * @instance
+   * @type {Boolean}
+   */
+  instantiated: false,
+  /**
+   * Invents a new prototype with `definition` that inherits the prototype from this prop.
+   * @param {Object} definition
+   * @returns {syngen.prop.base}
+   * @static
+   */
+  invent: function (definition = {}) {
+    if (typeof definition == 'function') {
+      definition = definition(this)
+    }
+
+    return Object.setPrototypeOf({...definition}, this)
+  },
+  /**
+   * @deprecated
+   * @instance
    */
   isPeriodicActive: function (key) {
     return this.periodic[key] && this.periodic[key].active
   },
   /**
-   * @method
+   * @deprecated
+   * @instance
    */
   isPeriodicPending: function (key) {
     return this.periodic[key] && !this.periodic[key].active
   },
   /**
-   * @method
+   * Identifier of the prop type.
+   * Instances are discouraged from modifying this.
+   * @type {String}
+   */
+  name: 'base',
+  /**
+   * Called after a prop is instantiated.
+   * Props should define this method to perform setup tasks after being constructed.
+   * @instance
+   * @see syngen.prop.base#construct
    */
   onConstruct: () => {},
   /**
-   * @method
+   * Called before a prop is destroyed.
+   * Props should define this method to perform tear tasks before being destroyed.
+   * @instance
+   * @see syngen.prop.base#destroy
    */
   onDestroy: () => {},
   /**
-   * @method
+   * Called when a prop is updated.
+   * Props should define this method to perform tasks every frame.
+   * @instance
+   * @see syngen.prop.base#update
    */
   onUpdate: () => {},
   /**
-   * @method
+   * Main output for audio synthesis and playback.
+   * This is not connected directly to the main audio destination; rather, it's routed through the binaural and reverb sends.
+   * On creation and destruction its gain is ramped to fade in and out per {@link syngen.const.propFadeDuration}.
+   * It's not recommended to modify its gain directly.
+   * @instance
+   * @type {GainNode}
+   */
+  output: undefined,
+  /**
+   * Radius of the prop, in meters.
+   * @instance
+   * @type {Number}
+   */
+  radius: 0,
+  /**
+   * Recalculates the prop's relative coordinates and distance, binaural circuit, and reverb send.
+   * @instance
+   * @see syngen.prop.base#binaural
+   * @see syngen.prop.base#distance
+   * @see syngen.prop.base#relative
+   * @see syngen.prop.base#reverb
    */
   recalculate: function () {
     const positionQuaternion = syngen.position.getQuaternion(),
       positionVector = syngen.position.getVector()
-
-    this.updatePhysics()
 
     this.relative = this.vector()
       .subtract(positionVector)
@@ -7189,25 +7902,54 @@ syngen.prop.base = {
     return this
   },
   /**
-   * @method
+   * Returns the rectangular prism surrounding the prop.
+   * @instance
+   * @returns {Object}
    */
   rect: function () {
     return {
+      depth: this.radius * 2,
       height: this.radius * 2,
       width: this.radius * 2,
       x: this.x - this.radius,
       y: this.y - this.radius,
+      z: this.y - this.radius,
     }
   },
   /**
-   * @method
+   * The coordinates of the prop relative to the observer's coordinates and orientation.
+   * @instance
+   * @type {syngen.utility.vector3d}
+   */
+  relative: undefined,
+  /**
+   * @deprecated
+   * @instance
    */
   resetPeriodic: function (key) {
     delete this.periodic[key]
     return this
   },
   /**
-   * @method
+   * Reverb send for the prop.
+   * @instance
+   * @type {syngen.audio.send.reverb}
+   */
+  reverb: undefined,
+  /**
+   * Universally unique identifier provided during instantiation.
+   * @instance
+   * @name syngen.prop.base#token
+   * @type {String}
+   */
+   token: undefined,
+  /**
+   * Called every frame.
+   * Derivative props are discouraged from overriding this method.
+   * Instead they should define an {@link syngen.prop.base#onConstruct|onUpdate} method.
+   * @instance
+   * @see syngen.prop.base#onUpdate
+   * @see syngen.props.update
    */
   update: function ({
     paused,
@@ -7218,6 +7960,7 @@ syngen.prop.base = {
       return this
     }
 
+    this.updatePhysics()
     this.recalculate()
 
     return this
@@ -7225,6 +7968,7 @@ syngen.prop.base = {
 }
 
 /**
+ * A null prop model for use in exceptional cases.
  * @implements syngen.prop.base
  * @interface
  */
@@ -7233,10 +7977,12 @@ syngen.prop.null = syngen.prop.base.invent({
 })
 
 /**
+ * Provides a helper for instantiating, destroying, and updating all props each frame.
+ * Implementations are encouraged to use this for handling these tasks.
  * @namespace
  */
 syngen.props = (() => {
-  const pool = new Set()
+  const props = new Set()
 
   function isValidPrototype(prototype) {
     return syngen.prop.base.isPrototypeOf(prototype)
@@ -7244,32 +7990,25 @@ syngen.props = (() => {
 
   return {
     /**
+     * Instantiates a prop of `prototype` with `options`.
      * @memberof syngen.props
+     * @param {syngen.prop.base} prototype
+     * @param {Object} [options]
      */
-    add: function (...props) {
-      for (const prop of props) {
-        if (isValidPrototype(prop)) {
-          pool.add(prop)
-        }
-      }
-
-      return this
-    },
-    /**
-     * @memberof syngen.props
-     */
-    create: function (prototype, options) {
+    create: function (prototype, options = {}) {
       if (!isValidPrototype(prototype)) {
         prototype = syngen.prop.null
       }
 
       const prop = Object.create(prototype).construct(options)
-      pool.add(prop)
+      props.add(prop)
 
       return prop
     },
     /**
+     * Destroys the passed prop(s).
      * @memberof syngen.props
+     * @param {...syngen.prop.base} ...props
      */
     destroy: function (...props) {
       for (const prop of props) {
@@ -7277,28 +8016,34 @@ syngen.props = (() => {
           prop.destroy()
         }
 
-        pool.delete(prop)
+        props.delete(prop)
       }
 
       return this
     },
     /**
+     * Returns all props.
      * @memberof syngen.props
+     * @returns {syngen.prop.base[]}
      */
-    get: () => [...pool],
+    get: () => [...props],
     /**
+     * Destroys all props.
+     * @listens syngen.state#event:reset
      * @memberof syngen.props
      */
     reset: function () {
-      pool.forEach((prop) => prop.destroy())
-      pool.clear()
+      props.forEach((prop) => prop.destroy())
+      props.clear()
       return this
     },
     /**
+     * Updates all props.
+     * @listens syngen.loop#event:frame
      * @memberof syngen.props
      */
-    update: function ({delta, paused}) {
-      pool.forEach((prop) => prop.update({delta, paused}))
+    update: function ({...options} = {}) {
+      props.forEach((prop) => prop.update({...options}))
       return this
     },
   }
@@ -7308,6 +8053,10 @@ syngen.loop.on('frame', (e) => syngen.props.update(e))
 syngen.state.on('reset', () => syngen.props.reset())
 
 /**
+ * Provides a helper for conserving resources by only streaming eligible props.
+ * Systems can register and deregister props for streaming.
+ * Props are dynamically instantiated and destroyed based on their eligibility.
+ * Eligibility is determined by a configurable maximum distance from the observer, sorting, and limits.
  * @namespace
  */
 syngen.streamer = (() => {
@@ -7383,7 +8132,10 @@ syngen.streamer = (() => {
 
   return {
     /**
+     * Deregisters the streamed prop with `token`.
+     * Beware that it isn't destroyed.
      * @memberof syngen.streamer
+     * @param {String} token
      */
     deregisterProp: function(token) {
       const registeredProp = registry.get(token)
@@ -7398,46 +8150,73 @@ syngen.streamer = (() => {
       return this
     },
     /**
+     * Destroys the streamed prop with `token`.
+     * Beware that it isn't deregistered.
      * @memberof syngen.streamer
+     * @param {String} token
      */
     destroyStreamedProp: function (token) {
       destroyStreamedProp(token)
       return this
     },
     /**
+     * Returns the streaming prop limit, if any.
      * @memberof syngen.streamer
+     * @returns {Number|Infinity}
      */
     getLimit: () => limit,
     /**
+     * Returns the streaming radius, if any.
      * @memberof syngen.streamer
+     * @returns {Number|Infinity}
      */
     getRadius: () => radius,
     /**
+     * Returns the definition for the prop registered with `token`, if one exists.
      * @memberof syngen.streamer
+     * @param {String} token
+     * @returns {Object|undefined}
      */
     getRegisteredProp: (token) => registry.get(token),
     /**
+     * Returns the definitions for all registered props.
      * @memberof syngen.streamer
+     * @returns {Object[]}
      */
     getRegisteredProps: () => [...registry.values()],
     /**
+     * Returns the prop with `token`, if one is streaming.
      * @memberof syngen.streamer
+     * @param {String} token
+     * @returns {syngen.prop.base|undefined}
      */
     getStreamedProp: (token) => streamed.get(token),
     /**
+     * Returns all streaming props.
      * @memberof syngen.streamer
+     * @returns {engine.prop.base[]}
      */
     getStreamedProps: () => [...streamed.values()],
     /**
+     * Returns whether a prop is registered for `token`.
      * @memberof syngen.streamer
+     * @param {String} token
+     * @returns {Boolean}
      */
     hasRegisteredProp: (token) => registry.has(token),
     /**
+     * Returns whether a prop is streaming with `token`.
      * @memberof syngen.streamer
+     * @param {String} token
+     * @returns {Boolean}
      */
     hasStreamedProp: (token) => streamed.has(token),
     /**
+     * Registers a prop with `prototype` and `options` and returns its token.
      * @memberof syngen.streamer
+     * @param {engine.prop.base} prototype
+     * @param {Object} [options]
+     * @returns {String}
      */
     registerProp: function(prototype, options = {}) {
       const token = generateToken()
@@ -7462,6 +8241,8 @@ syngen.streamer = (() => {
       return token
     },
     /**
+     * Clears and destroys all registered and streaming props.
+     * @listens syngen.state#event:reset
      * @memberof syngen.streamer
      */
     reset: function() {
@@ -7476,7 +8257,9 @@ syngen.streamer = (() => {
       return this
     },
     /**
+     * Sets the streaming prop limit.
      * @memberof syngen.streamer
+     * @param {Number} value
      */
     setLimit: function (value) {
       if (value > 0) {
@@ -7486,7 +8269,9 @@ syngen.streamer = (() => {
       return this
     },
     /**
+     * Sets the streaming radius.
      * @memberof syngen.streamer
+     * @param {Number} value
      */
     setRadius: function (value) {
       radius = Number(value) || 0
@@ -7494,7 +8279,9 @@ syngen.streamer = (() => {
       return this
     },
     /**
+     * Sets the sorting method.
      * @memberof syngen.streamer
+     * @param {Function} value
      */
     setSort: function (value) {
       if (typeof sort == 'function') {
@@ -7504,7 +8291,10 @@ syngen.streamer = (() => {
       return this
     },
     /**
+     * Updates the streamed props with respect to the observer's coordinates.
+     * @listens syngen.loop#event:frame
      * @memberof syngen.streamer
+     * @param {Boolean} [force=false]
      */
     update: function (force = false) {
       const positionVector = syngen.position.getVector()
@@ -7535,7 +8325,11 @@ syngen.streamer = (() => {
       return this
     },
     /**
+     * Updates the `options` for the prop registered with `token`.
+     * To change its prototype, its token must be deregistered.
      * @memberof syngen.streamer
+     * @param {String} token
+     * @param {Object} [options]
      */
     updateRegisteredProp: function (token, options = {}) {
       const registeredProp = propRegistry.get(token)

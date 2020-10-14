@@ -1,4 +1,5 @@
 /**
+ * Calculates and exposes real-time performance metrics.
  * @namespace
  */
 syngen.performance = (() => {
@@ -11,14 +12,20 @@ syngen.performance = (() => {
 
   return {
     /**
+     * Returns the median duration of frames.
      * @memberof syngen.performance
+     * @returns {Number}
      */
     delta: () => medianDelta,
     /**
+     * Returns the average number of frames per second.
      * @memberof syngen.performance
+     * @returns {Number}
      */
     fps: () => medianFps,
     /**
+     * Recalculates performance metrics.
+     * @listens syngen.loop#event:frame
      * @memberof syngen.performance
      */
     update: function ({delta}) {

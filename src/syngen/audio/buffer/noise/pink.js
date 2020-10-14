@@ -1,5 +1,7 @@
 /**
- * @static
+ * Returns pink noise with intensity inversely proportional to the frequency.
+ * @method
+ * @returns {AudioBuffer}
  */
 syngen.audio.buffer.noise.pink = (() => {
   const context = syngen.audio.context()
