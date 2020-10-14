@@ -1,74 +1,15 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>syngen example</title>
+    <title>syngen sandbox</title>
     <script src="../dist/syngen.js"></script>
   </head>
   <body>
-    <p>This example defines a configurable prop, creates three unique instances of it, and spins the observer to pan them regularly.</p>
+    <p>This example provides a sandbox. Use the console to write your own code.</p>
     <button type="button">Resume audio context</button>
 
     <script>
-      // Resume the audio context after a user gesture
       window.addEventListener('click', () => syngen.audio.start())
-
-      // Invent the prop, inherits from syngen.prop.base
-      const tone = syngen.prop.base.invent({
-        name: 'tone',
-        radius: 1,
-        onConstruct: function ({
-          color = 1,
-          frequency = 440,
-          gain = 1,
-          type = 'sine',
-        } = {}) {
-          this.synth = syngen.audio.synth.createSimple({
-            frequency,
-            gain,
-            type,
-          }).filtered({
-            frequency: frequency * color,
-          }).connect(this.output)
-        },
-        onDestroy: function () {
-          this.synth.stop()
-        },
-      })
-
-      // Instantiate props with options
-      syngen.props.create(tone, {
-        frequency: syngen.utility.midiToFrequency(57),
-        color: 8,
-        gain: syngen.utility.fromDb(-3),
-        type: 'triangle',
-        x: 5 * Math.cos(0),
-        y: 5 * Math.sin(0),
-      })
-
-      syngen.props.create(tone, {
-        frequency: syngen.utility.midiToFrequency(61),
-        color: 12,
-        gain: syngen.utility.fromDb(-4),
-        type: 'square',
-        x: 5 * Math.cos(Math.PI * 2/3),
-        y: 5 * Math.sin(Math.PI * 2/3),
-      })
-
-      syngen.props.create(tone, {
-        frequency: syngen.utility.midiToFrequency(64),
-        color: 16,
-        gain: syngen.utility.fromDb(-5),
-        type: 'sawtooth',
-        x: 5 * Math.cos(Math.PI * 4/3),
-        y: 5 * Math.sin(Math.PI * 4/3),
-      })
-
-      // Apply angular velocity to the observer
-      syngen.position.setAngularVelocityEuler({
-        yaw: Math.PI / 4,
-      })
-
-      // Start the main loop
       syngen.loop.start()
     </script>
   </body>

@@ -1,19 +1,31 @@
 /**
+ * Provides an interface for Euler angles.
+ * They express 3D orientations in space with pitch, roll, and yaw.
+ * Although they're explicitly easier to use, implementations should prefer {@linkplain syngen.utility.quaternion|quaternions} to avoid gimbal lock.
  * @interface
- * @property {Number} pitch
- * @property {Number} roll
- * @property {Number} yaw
+ * @see syngen.utility.euler.create
  */
 syngen.utility.euler = {}
 
 /**
+ * Instantiates a new Euler angle.
+ * @param {syngen.utility.euler|Object} [options={}]
+ * @param {Number} [options.pitch=0]
+ * @param {Number} [options.roll=0]
+ * @param {Number} [options.yaw=0]
+ * @returns {syngen.utility.euler}
  * @static
  */
-syngen.utility.euler.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.euler.create = function (options = {}) {
+  return Object.create(this.prototype).construct(options)
 }
 
 /**
+ * Converts a quaternion to an Euler angle.
+ * @param {syngen.utility.quaternion} quaternion
+ * @param {String} [sequence={@link syngen.const.eulerToQuaternion}]
+ * @returns {syngen.utility.euler}
+ * @see syngen.const.eulerToQuaternion
  * @static
  */
 syngen.utility.euler.fromQuaternion = function ({
@@ -76,13 +88,18 @@ syngen.utility.euler.fromQuaternion = function ({
 
 syngen.utility.euler.prototype = {
   /**
+   * Returns a new instance with the same properties.
    * @instance
+   * @returns {syngen.utility.euler}
    */
   clone: function () {
     return syngen.utility.euler.create(this)
   },
   /**
+   * Initializes the instance with `options`.
    * @instance
+   * @param {Object} [options={}]
+   * @private
    */
   construct: function ({
     pitch = 0,
@@ -95,25 +112,63 @@ syngen.utility.euler.prototype = {
     return this
   },
   /**
+   * Returns whether this is equal to `euler`.
    * @instance
+   * @param {syngen.utility.euler|Object} [euler]
+   * @returns {Boolean}
+   */
+  equals: function ({
+    pitch = 0,
+    roll = 0,
+    yaw = 0,
+  } = {}) {
+    return (this.pitch == pitch) && (this.roll == roll) && (this.yaw == yaw)
+  },
+  /**
+   * Returns the unit vector that's ahead of the orientation.
+   * The vector can be inverted to receive a vector behind.
+   * @instance
+   * @returns {syngen.utility.vector3d}
    */
   forward: function () {
     return syngen.utility.vector3d.unitX().rotateEuler(this)
   },
   /**
+   * Returns whether all properties are zero.
    * @instance
+   * @returns {Boolean}
    */
   isZero: function () {
     return !this.pitch && !this.roll && !this.yaw
   },
   /**
+   * Rotation along the y-axis.
+   * Normally within `[-π/2, π/2]`.
    * @instance
+   * @type {Number}
+   */
+  pitch: 0,
+  /**
+   * Returns the unit vector that's to the right of the orientation.
+   * The vector can be inverted to receive a vector to its left.
+   * @instance
+   * @returns {syngen.utility.vector3d}
    */
   right: function () {
     return syngen.utility.vector3d.unitY().rotateEuler(this)
   },
   /**
+   * Rotation along the x-axis.
+   * Normally within `[-π, π]`.
    * @instance
+   * @type {Number}
+   */
+  roll: 0,
+  /**
+   * Multiplies this by `scalar` and returns it as a new instance.
+   * @instance
+   * @param {Number} [scalar=0]
+   * @returns {syngen.utility.euler}
    */
   scale: function (scalar = 0) {
     return syngen.utility.euler.create({
@@ -123,7 +178,12 @@ syngen.utility.euler.prototype = {
     })
   },
   /**
+   * Sets all properties to `options`.
    * @instance
+   * @param {syngen.utility.euler|Object} [options]
+   * @param {Number} [options.pitch=0]
+   * @param {Number} [options.roll=0]
+   * @param {Number} [options.yaw=0]
    */
   set: function ({
     pitch = 0,
@@ -136,9 +196,19 @@ syngen.utility.euler.prototype = {
     return this
   },
   /**
+   * Returns the unit vector that's above of the orientation.
+   * The vector can be inverted to receive a vector below.
    * @instance
+   * @returns {syngen.utility.vector3d}
    */
   up: function () {
     return syngen.utility.vector3d.unitZ().rotateEuler(this)
   },
+  /**
+   * Rotation along the z-axis.
+   * Normally within `[-π, π]`.
+   * @instance
+   * @type {Number}
+   */
+  yaw: 0,
 }

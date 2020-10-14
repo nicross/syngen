@@ -1,20 +1,27 @@
 /**
+ * Provides an interface for generating seeded four-dimensional Perlin noise.
  * @interface
- * @property {Number} pruneThreshold=10**2
- * @property {Number} range=Math.sqrt(4/4)
+ * @see syngen.utility.perlin4d.create
+ * @todo Document private members
  */
 syngen.utility.perlin4d = {}
 
 /**
+ * Instantiates a four-dimensional Perlin noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.perlin4d}
  * @static
  */
-syngen.utility.perlin4d.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.perlin4d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
 }
 
 syngen.utility.perlin4d.prototype = {
   /**
+   * Initializes the instance with `...seeds`.
    * @instance
+   * @param {...String} [...seeds]
+   * @private
    */
   construct: function (...seeds) {
     this.gradient = new Map()
@@ -22,7 +29,13 @@ syngen.utility.perlin4d.prototype = {
     return this
   },
   /**
+   * Generates the value at `(x, y, z, t)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} t
+   * @private
    */
   generateGradient: function (x, y, z, t) {
     const srand = syngen.utility.srand('perlin', this.seed, x, y, z, t)
@@ -53,7 +66,15 @@ syngen.utility.perlin4d.prototype = {
     return this
   },
   /**
+   * Calculates the dot product between `(dx, dy, dz, dt)` and the value at `(xi, yi, zi, ti)`.
    * @instance
+   * @param {Number} xi
+   * @param {Number} yi
+   * @param {Number} zi
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @private
    */
   getDotProduct: function (xi, yi, zi, ti, x, y, z, t) {
     const dt = t - ti,
@@ -64,7 +85,12 @@ syngen.utility.perlin4d.prototype = {
     return (dt * this.getGradient(xi, yi, zi, ti, 3)) + (dx * this.getGradient(xi, yi, zi, ti, 0)) + (dy * this.getGradient(xi, yi, zi, ti, 1)) + (dz * this.getGradient(xi, yi, zi, ti, 2))
   },
   /**
+   * Retrieves the value at `(x, y, z, t)` and index `i`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   * @returns {Number}
    */
   getGradient: function (x, y, z, t, i) {
     if (!this.hasGradient(x, y, z, t)) {
@@ -75,7 +101,14 @@ syngen.utility.perlin4d.prototype = {
     return this.gradient.get(x).get(y).get(z).get(t)[i]
   },
   /**
+   * Returns whether a value exists for `(x, y, z, t)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} t
+   * @private
+   * @returns {Boolean}
    */
   hasGradient: function (x, y, z, t) {
     const xMap = this.gradient.get(x)
@@ -99,7 +132,10 @@ syngen.utility.perlin4d.prototype = {
     return zMap.has(t)
   },
   /**
+   * Frees memory when usage exceeds the prune threshold.
    * @instance
+   * @private
+   * @see syngen.utility.perlin4d#pruneThreshold
    */
   prune: function () {
     this.gradient.forEach((xMap, x) => {
@@ -128,9 +164,22 @@ syngen.utility.perlin4d.prototype = {
 
     return this
   },
+  /**
+   * The maximum vertex count before they must be pruned.
+   * @instance
+   * @private
+   */
   pruneThreshold: 10 ** 2,
   /**
+   * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.
    * @instance
+   * @private
+   */
+  range: Math.sqrt(4/4),
+  /**
+   * Requests a pruning.
+   * @instance
+   * @private
    */
   requestPrune: function () {
     if (this.pruneRequest) {
@@ -144,8 +193,9 @@ syngen.utility.perlin4d.prototype = {
 
     return this
   },
-  range: Math.sqrt(4/4),
   /**
+   * Clears all generated values.
+   * This is especially useful to call when {@link syngen.seed} is set.
    * @instance
    */
   reset: function () {
@@ -158,14 +208,24 @@ syngen.utility.perlin4d.prototype = {
     return this
   },
   /**
+   * Calculates a smooth delta value for interpolation.
    * @instance
+   * @param {Number} value
+   * @private
+   * @returns {Number}
    */
   smooth: function (value) {
     // 6x^5 - 15x^4 + 10x^3
     return (value ** 3) * (value * ((value * 6) - 15) + 10)
   },
   /**
+   * Calculates the value at `(x, y, z, t)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} t
+   * @returns {Number}
    */
   value: function (x, y, z, t) {
     const t0 = Math.floor(t),

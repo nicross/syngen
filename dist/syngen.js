@@ -852,18 +852,41 @@ syngen.utility.wrapAlternate = (value, min = 0, max = 1) => {
 }
 
 /**
+ * Provides a binary tree interface for storing and querying objects in one-dimensional space.
  * @interface
+ * @see syngen.utility.bitree.create
+ * @todo Document private members
  */
 syngen.utility.bitree = {}
 
 /**
+ * Instantiates a new binary tree.
+ * @param {Object} [options={}]
+ * @param {String} [options.dimension=value]
+ *   Key used to access items' values.
+ *   Must be a member, not a method.
+ * @param {Number} [options.maxItems=12]
+ *   Number of items before the tree branches.
+ *   This value is passed to child nodes.
+ * @param {Number} [options.minValue={@link syngen.const.maxSafeFloat|-syngen.const.maxSafeFloat}]
+ *   Lower bound of values for this node.
+ *   Typically this is set programmatically.
+ * @param {String} [options.range={@link syngen.const.maxSafeFloat|syngen.const.maxSafeFloat * 2}]
+ *   Range of values for this node.
+ *   Typically this is set programmatically.
+ * @returns {syngen.utility.bitree}
  * @static
  */
-syngen.utility.bitree.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.bitree.create = function (options = {}) {
+  return Object.create(this.prototype).construct(options)
 }
 
 /**
+ * Instantiates a new binary tree with `items` and `options`.
+ * @param {Object[]} [items=[]]
+ * @param {Object} [options={}]
+ *   See {@link syngen.utility.bitree.create} for a full reference.
+ * @returns {syngen.utility.bitree}
  * @static
  */
 syngen.utility.bitree.from = function (items = [], options = {}) {
@@ -878,6 +901,7 @@ syngen.utility.bitree.from = function (items = [], options = {}) {
 
 syngen.utility.bitree.prototype = {
   /**
+   * Clears all nodes and items.
    * @instance
    */
   clear: function () {
@@ -886,34 +910,48 @@ syngen.utility.bitree.prototype = {
     return this
   },
   /**
+   * Initializes the instance with `options`.
    * @instance
+   * @param {Object} [options={}]
+   * @private
    */
   construct: function ({
-    dimension = 'x',
+    dimension = 'value',
     maxItems = 12,
-    value = -syngen.const.maxSafeFloat,
-    width = syngen.const.maxSafeFloat * 2,
+    minValue = -syngen.const.maxSafeFloat,
+    range = syngen.const.maxSafeFloat * 2,
   } = {}) {
     this.dimension = dimension
     this.items = []
     this.maxItems = maxItems
+    this.minValue = minValue
     this.nodes = []
-    this.value = value
-    this.width = width
+    this.range = range
 
     return this
   },
   /**
+   * Prepares the instance for garbage collection.
    * @instance
    */
   destroy: function () {
     return this.clear()
   },
   /**
+   * Finds the closest item to `query` within `radius`.
+   * The `query` must contain a member set to the configured dimension.
+   * If `query` is contained within the tree, then the next closest item is returned.
+   * If no result is found, then `undefined` is returned.
    * @instance
+   * @param {Object} query
+   * @param {Number} query.{dimension}
+   * @param {Number} [radius=Infinity]
+   * @returns {Object|undefined}
    */
   find: function (query, radius = Infinity) {
-    // XXX: Assumes query[this.dimension] exists
+    if (!(this.dimension in query)) {
+      return
+    }
 
     if (isFinite(radius) && !this.intersects(query[this.dimension] - radius, radius * 2)) {
       return
@@ -967,14 +1005,17 @@ syngen.utility.bitree.prototype = {
     return result
   },
   /**
+   * Returns the node index for `item`.
    * @instance
+   * @param {Object} item
+   * @private
    */
   getIndex: function (item) {
     if (!this.nodes.length) {
       return -1
     }
 
-    const middle = this.value + (this.width / 2)
+    const middle = this.minValue + (this.range / 2)
 
     if (item[this.dimension] <= middle) {
       return 0
@@ -983,10 +1024,14 @@ syngen.utility.bitree.prototype = {
     return 1
   },
   /**
+   * Inserts `item` into the tree.
    * @instance
+   * @param {Object} item
    */
   insert: function (item = {}) {
-    // XXX: Assumes item[this.dimension] exists
+    if (!(this.dimension in item)) {
+      return this
+    }
 
     const index = this.getIndex(item)
 
@@ -1005,58 +1050,88 @@ syngen.utility.bitree.prototype = {
     return this
   },
   /**
+   * Returns whether this node intersects the line segment starting at `minValue` with length `range`.
    * @instance
+   * @param {Number} minValue
+   * @param {Number} range
+   * @returns {Boolean}
    */
-  intersects: function (value, width) {
-    return syngen.utility.between(this.value, value, value + width)
-      || syngen.utility.between(value, this.value, this.value + this.width)
+  intersects: function (minValue, range) {
+    return syngen.utility.between(this.minValue, minValue, minValue + range)
+      || syngen.utility.between(minValue, this.minValue, this.minValue + this.range)
   },
   /**
+   * Removes `item` from the tree, if it exists.
    * @instance
+   * @param {Object} item
    */
-  retrieve: function (value, width) {
+  remove: function (item) {
+    if (this.nodes.length) {
+      const index = this.getIndex(item)
+      this.nodes[index].remove(item)
+      return this
+    }
+
+    const index = this.items.indexOf(item)
+
+    if (index != -1) {
+      this.items.splice(index, 1)
+    }
+
+    return this
+  },
+  /**
+   * Retrieves all items with values along the line segment starting at `minValue` with length `range`.
+   * @instance
+   * @param {Number} minValue
+   * @param {Number} range
+   * @returns {Object[]}
+   */
+  retrieve: function (minValue, range) {
     const items = []
 
-    if (!this.intersects(value, width)) {
+    if (!this.intersects(minValue, range)) {
       return items
     }
 
     for (const item of this.items) {
-      if (item[this.dimension] >= value && item[this.dimension] <= value + width) {
+      if (item[this.dimension] >= minValue && item[this.dimension] <= minValue + range) {
         items.push(item)
       }
     }
 
     for (const node of this.nodes) {
       items.push(
-        ...node.retrieve(value, width)
+        ...node.retrieve(minValue, range)
       )
     }
 
     return items
   },
   /**
+   * Splits this node into two child nodes.
    * @instance
+   * @private
    */
   split: function () {
     if (this.nodes.length) {
       return this
     }
 
-    const width = this.width / 2
+    const range = this.range / 2
 
     this.nodes[0] = syngen.utility.bitree.create({
       dimension: this.dimension,
       maxItems: this.maxItems,
-      value: this.value,
-      width,
+      minValue: this.minValue,
+      range,
     })
 
     this.nodes[1] = syngen.utility.bitree.create({
       dimension: this.dimension,
       maxItems: this.maxItems,
-      value: this.value + width,
-      width,
+      minValue: this.minValue + range,
+      range,
     })
 
     for (const item of this.items) {
@@ -1071,21 +1146,33 @@ syngen.utility.bitree.prototype = {
 }
 
 /**
+ * Provides an interface for Euler angles.
+ * They express 3D orientations in space with pitch, roll, and yaw.
+ * Although they're explicitly easier to use, implementations should prefer {@linkplain syngen.utility.quaternion|quaternions} to avoid gimbal lock.
  * @interface
- * @property {Number} pitch
- * @property {Number} roll
- * @property {Number} yaw
+ * @see syngen.utility.euler.create
  */
 syngen.utility.euler = {}
 
 /**
+ * Instantiates a new Euler angle.
+ * @param {syngen.utility.euler|Object} [options={}]
+ * @param {Number} [options.pitch=0]
+ * @param {Number} [options.roll=0]
+ * @param {Number} [options.yaw=0]
+ * @returns {syngen.utility.euler}
  * @static
  */
-syngen.utility.euler.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.euler.create = function (options = {}) {
+  return Object.create(this.prototype).construct(options)
 }
 
 /**
+ * Converts a quaternion to an Euler angle.
+ * @param {syngen.utility.quaternion} quaternion
+ * @param {String} [sequence={@link syngen.const.eulerToQuaternion}]
+ * @returns {syngen.utility.euler}
+ * @see syngen.const.eulerToQuaternion
  * @static
  */
 syngen.utility.euler.fromQuaternion = function ({
@@ -1148,13 +1235,18 @@ syngen.utility.euler.fromQuaternion = function ({
 
 syngen.utility.euler.prototype = {
   /**
+   * Returns a new instance with the same properties.
    * @instance
+   * @returns {syngen.utility.euler}
    */
   clone: function () {
     return syngen.utility.euler.create(this)
   },
   /**
+   * Initializes the instance with `options`.
    * @instance
+   * @param {Object} [options={}]
+   * @private
    */
   construct: function ({
     pitch = 0,
@@ -1167,25 +1259,63 @@ syngen.utility.euler.prototype = {
     return this
   },
   /**
+   * Returns whether this is equal to `euler`.
    * @instance
+   * @param {syngen.utility.euler|Object} [euler]
+   * @returns {Boolean}
+   */
+  equals: function ({
+    pitch = 0,
+    roll = 0,
+    yaw = 0,
+  } = {}) {
+    return (this.pitch == pitch) && (this.roll == roll) && (this.yaw == yaw)
+  },
+  /**
+   * Returns the unit vector that's ahead of the orientation.
+   * The vector can be inverted to receive a vector behind.
+   * @instance
+   * @returns {syngen.utility.vector3d}
    */
   forward: function () {
     return syngen.utility.vector3d.unitX().rotateEuler(this)
   },
   /**
+   * Returns whether all properties are zero.
    * @instance
+   * @returns {Boolean}
    */
   isZero: function () {
     return !this.pitch && !this.roll && !this.yaw
   },
   /**
+   * Rotation along the y-axis.
+   * Normally within `[-π/2, π/2]`.
    * @instance
+   * @type {Number}
+   */
+  pitch: 0,
+  /**
+   * Returns the unit vector that's to the right of the orientation.
+   * The vector can be inverted to receive a vector to its left.
+   * @instance
+   * @returns {syngen.utility.vector3d}
    */
   right: function () {
     return syngen.utility.vector3d.unitY().rotateEuler(this)
   },
   /**
+   * Rotation along the x-axis.
+   * Normally within `[-π, π]`.
    * @instance
+   * @type {Number}
+   */
+  roll: 0,
+  /**
+   * Multiplies this by `scalar` and returns it as a new instance.
+   * @instance
+   * @param {Number} [scalar=0]
+   * @returns {syngen.utility.euler}
    */
   scale: function (scalar = 0) {
     return syngen.utility.euler.create({
@@ -1195,7 +1325,12 @@ syngen.utility.euler.prototype = {
     })
   },
   /**
+   * Sets all properties to `options`.
    * @instance
+   * @param {syngen.utility.euler|Object} [options]
+   * @param {Number} [options.pitch=0]
+   * @param {Number} [options.roll=0]
+   * @param {Number} [options.yaw=0]
    */
   set: function ({
     pitch = 0,
@@ -1208,31 +1343,64 @@ syngen.utility.euler.prototype = {
     return this
   },
   /**
+   * Returns the unit vector that's above of the orientation.
+   * The vector can be inverted to receive a vector below.
    * @instance
+   * @returns {syngen.utility.vector3d}
    */
   up: function () {
     return syngen.utility.vector3d.unitZ().rotateEuler(this)
   },
+  /**
+   * Rotation along the z-axis.
+   * Normally within `[-π, π]`.
+   * @instance
+   * @type {Number}
+   */
+  yaw: 0,
 }
 
 /**
+ * Provides an interface for finite-state machines.
+ * Machines have defined finite states with actions that transition it to other states.
+ * Implementations can leverage machines to handle state and subscribe to their events to respond to changes in state.
+ * @augments syngen.utility.pubsub
  * @interface
+ * @see syngen.utility.machine.create
  */
 syngen.utility.machine = {}
 
 /**
+ * Instantiates a new finite-state machine.
+ * @param {Object} options
+ * @param {Object} [options={}]
+ * @param {Object} [options.state=none]
+ *   The initial state.
+ * @param {Object} [options.transition={}]
+ *   A hash of states and their actions.
+ *   Each state is a hash of one or more actions.
+ *   Each action is a function which _should_ call {@link syngen.utility.machine.change|this.change()} to change state.
+ *   Actions _can_ have branching logic that results in multiple states.
+ * @returns {syngen.utility.machine}
  * @static
  */
-syngen.utility.machine.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.machine.create = function (options = {}) {
+  return Object.create(this.prototype).construct(options)
 }
 
 syngen.utility.machine.prototype = {
   /**
+   * Changes to `state` with `data`.
+   * @fires syngen.utility.machine#event:enter
+   * @fires syngen.utility.machine#event:enter-{state}
+   * @fires syngen.utility.machine#event:exit
+   * @fires syngen.utility.machine#event:exit-{state}
    * @instance
+   * @param {String} state
+   * @param {Object} [data={}]
    */
   change: function (state, data = {}) {
-    if (this.is(state)) {
+    if (!(state in this.transition) || this.is(state)) {
       return this
     }
 
@@ -1242,35 +1410,77 @@ syngen.utility.machine.prototype = {
       ...data,
     }
 
+    /**
+     * Fired whenever states are exited.
+     * @event syngen.utility.machine#event:exit
+     * @type {Object}
+     * @param {String} currentState
+     * @param {String} nextState
+     * @param {...*} ...data
+     */
     this.pubsub.emit('exit', exitPayload)
-    this.pubsub.emit(`exit-${this.state}`, exitPayload)
 
-    const previousState = this.state
-    this.state = state
+    /**
+     * Fired whenever a particular state is exited.
+     * If the state is `foo`, then the event is named `exit-foo`.
+     * @event syngen.utility.machine#event:exit-{state}
+     * @type {Object}
+     * @param {String} currentState
+     * @param {String} nextState
+     * @param {...*} ...data
+     */
+    this.pubsub.emit(`exit-${this.state}`, exitPayload)
 
     const enterPayload = {
       currentState: state,
-      previousState,
+      previousState: this.state,
       ...data,
     }
 
+    this.setState(state)
+
+    /**
+     * Fired whenever states are entered.
+     * @event syngen.utility.machine#event:enter
+     * @type {Object}
+     * @param {String} currentState
+     * @param {String} previousState
+     * @param {...*} ...data
+     */
     this.pubsub.emit('enter', enterPayload)
+
+    /**
+     * Fired whenever a particular state is entered.
+     * If the state is `foo`, then the event is named `enter-foo`.
+     * @event syngen.utility.machine#event:enter-{state}
+     * @type {Object}
+     * @param {String} currentState
+     * @param {String} previousState
+     * @param {...*} ...data
+     */
     this.pubsub.emit(`enter-${this.state}`, enterPayload)
 
     return this
   },
   /**
+   * Initializes the instance with `options`.
    * @instance
+   * @param {Object} options
+   * @private
    */
-  construct: function ({state = 'none', transition = {}} = {}) {
-    this.state = state
+  construct: function ({
+    state = 'none',
+    transition = {}
+  } = {}) {
     this.transition = {...transition}
+    this.setState(state)
 
     syngen.utility.pubsub.decorate(this)
 
     return this
   },
   /**
+   * Prepares the instance for garbage collection.
    * @instance
    */
   destroy: function () {
@@ -1278,6 +1488,13 @@ syngen.utility.machine.prototype = {
     return this
   },
   /**
+   * Calls the function defined for `action` in the current state with `data`.
+   * @fires syngen.utility.machine#event:after
+   * @fires syngen.utility.machine#event:after-{event}
+   * @fires syngen.utility.machine#event:after-{state}-{event}
+   * @fires syngen.utility.machine#event:before
+   * @fires syngen.utility.machine#event:before-{event}
+   * @fires syngen.utility.machine#event:before-{state}-{event}
    * @instance
    */
   dispatch: function (event, data = {}) {
@@ -1298,8 +1515,36 @@ syngen.utility.machine.prototype = {
         ...data,
       }
 
+      /**
+       * Fired before an event is dispatched.
+       * @event syngen.utility.machine#event:before
+       * @type {Object}
+       * @param {String} event
+       * @param {Object} state
+       * @param {...*} ...data
+       */
       this.pubsub.emit('before', beforePayload)
+
+      /**
+       * Fired before a particular event is dispatched.
+       * If the event is `foo`, then the event is named `before-foo`.
+       * @event syngen.utility.machine#event:before-{event}
+       * @type {Object}
+       * @param {String} event
+       * @param {Object} state
+       * @param {...*} ...data
+       */
       this.pubsub.emit(`before-${event}`, beforePayload)
+
+      /**
+       * Fired before a particular event is dispatched in a particular state.
+       * If the state is `foo` and the event is `bar`, then the event is named `before-foo-bar`.
+       * @event syngen.utility.machine#event:before-{state}-{event}
+       * @type {Object}
+       * @param {String} event
+       * @param {Object} state
+       * @param {...*} ...data
+       */
       this.pubsub.emit(`before-${state}-${event}`, beforePayload)
 
       action.call(this, data)
@@ -1311,40 +1556,130 @@ syngen.utility.machine.prototype = {
         ...data,
       }
 
+      /**
+       * Fired after an event is dispatched.
+       * @event syngen.utility.machine#event:after
+       * @type {Object}
+       * @param {String} currentState
+       * @param {String} event
+       * @param {String} previousState
+       * @param {Object} state
+       * @param {...*} ...data
+       */
       this.pubsub.emit('after', afterPayload)
+
+      /**
+       * Fired after a particular event is dispatched.
+       * If the event is `foo`, then the event is named `before-foo`.
+       * @event syngen.utility.machine#event:after-{event}
+       * @type {Object}
+       * @param {String} currentState
+       * @param {String} event
+       * @param {String} previousState
+       * @param {Object} state
+       * @param {...*} ...data
+       */
       this.pubsub.emit(`after-${event}`, afterPayload)
+
+      /**
+       * Fired after a particular event is dispatched in a particular state.
+       * If the state is `foo` and the event is `bar`, then the event is named `before-foo-bar`.
+       * @event syngen.utility.machine#event:after-{state}-{event}
+       * @type {Object}
+       * @param {String} currentState
+       * @param {String} event
+       * @param {String} previousState
+       * @param {Object} state
+       * @param {...*} ...data
+       */
       this.pubsub.emit(`after-${state}-${event}`, afterPayload)
     }
 
     return this
   },
   /**
+   * Returns the current state.
    * @instance
+   * @returns {String}
    */
   getState: function () {
     return this.state
   },
   /**
+   * Returns whether `state` is the current state.
    * @instance
+   * @param {String} state
+   * @returns {Boolean}
    */
   is: function (state) {
     return this.state == state
   },
+  /**
+   * Sets the current state to `state` immediately.
+   * @instance
+   * @param {String} state
+   * @returns {String}
+   */
+  setState: function (state) {
+    if (state in this.transition) {
+      this.state = state
+    }
+
+    return this
+  },
+  /**
+   * The current state.
+   * @instance
+   * @type {String}
+   */
+  state: undefined,
 }
 
 /**
+ * Provides an octree interface for storing and querying objects in three-dimensional space.
  * @interface
+ * @see syngen.utility.octree.create
+ * @todo Document private members
  */
 syngen.utility.octree = {}
 
 /**
+ * Instantiates a new octree.
+ * @param {Object} [options={}]
+ * @param {Number} [options.depth={@link syngen.const.maxSafeFloat|syngen.const.maxSafeFloat * 2}]
+ *   Range of values along the z-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.height={@link syngen.const.maxSafeFloat|syngen.const.maxSafeFloat * 2}]
+ *   Range of values along the y-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.maxItems=12]
+ *   Number of items before the tree branches.
+ *   This value is passed to child nodes.
+ * @param {Number} [options.width={@link syngen.const.maxSafeFloat|syngen.const.maxSafeFloat * 2}]
+ *   Range of values along the y-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.x={@link syngen.const.maxSafeFloat|-syngen.const.maxSafeFloat}]
+ *   Lower bound for valeus along the x-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.y={@link syngen.const.maxSafeFloat|-syngen.const.maxSafeFloat}]
+ *   Lower bound for valeus along the y-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.z={@link syngen.const.maxSafeFloat|-syngen.const.maxSafeFloat}]
+ *   Lower bound for valeus along the z-axis.
+ *   Typically this is set programmatically.
+ * @returns {syngen.utility.octree}
  * @static
  */
-syngen.utility.octree.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.octree.create = function (options = {}) {
+  return Object.create(this.prototype).construct(options)
 }
 
 /**
+ * Instantiates a new octree with `items` and `options`.
+ * @param {Object[]} [items=[]]
+ * @param {Object} [options={}]
+ *   See {@link syngen.utility.octree.create} for a full reference.
+ * @returns {syngen.utility.octree}
  * @static
  */
 syngen.utility.octree.from = function (items = [], options = {}) {
@@ -1359,6 +1694,7 @@ syngen.utility.octree.from = function (items = [], options = {}) {
 
 syngen.utility.octree.prototype = {
   /**
+   * Clears all nodes and items.
    * @instance
    */
   clear: function () {
@@ -1367,7 +1703,10 @@ syngen.utility.octree.prototype = {
     return this
   },
   /**
+   * Initializes the instance with `options`.
    * @instance
+   * @param {Object} [options={}]
+   * @private
    */
   construct: function ({
     depth = syngen.const.maxSafeFloat * 2,
@@ -1391,16 +1730,31 @@ syngen.utility.octree.prototype = {
     return this
   },
   /**
+   * Prepares the instance for garbage collection.
    * @instance
    */
   destroy: function () {
     return this.clear()
   },
   /**
+   * Finds the closest item to `query` within `radius`.
+   * If `query` is contained within the tree, then the next closest item is returned.
+   * If no result is found, then `undefined` is returned.
    * @instance
+   * @param {Object} query
+   * @param {Number} query.depth
+   * @param {Number} query.height
+   * @param {Number} query.width
+   * @param {Number} query.x
+   * @param {Number} query.y
+   * @param {Number} query.z
+   * @param {Number} [radius=Infinity]
+   * @returns {Object|undefined}
    */
   find: function (query = {}, radius = Infinity) {
-    // NOTE: Assumes query.x, query.y, and query.z exist
+    if (!('depth' in query && 'height' in query && 'width' in query && 'x' in query && 'y' in query && 'z' in query)) {
+      return this
+    }
 
     if (
          isFinite(radius)
@@ -1465,7 +1819,10 @@ syngen.utility.octree.prototype = {
     return result
   },
   /**
+   * Returns the node index for `item`.
    * @instance
+   * @param {Object} item
+   * @private
    */
   getIndex: function ({
     x = 0,
@@ -1514,10 +1871,14 @@ syngen.utility.octree.prototype = {
     return 7
   },
   /**
+   * Inserts `item` into the tree.
    * @instance
+   * @param {Object} item
    */
   insert: function (item = {}) {
-    // XXX: Assumes item.x and item.y exist
+    if (!('x' in item && 'y' in item && 'z' in item)) {
+      return this
+    }
 
     const index = this.getIndex(item)
 
@@ -1536,13 +1897,54 @@ syngen.utility.octree.prototype = {
     return this
   },
   /**
+   * Returns whether this node intersects the rectanglular prism `prism`.
    * @instance
+   * @param {Object} prism
+   * @param {Number} [prism.depth=0]
+   * @param {Number} [prism.height=0]
+   * @param {Number} [prism.width=0]
+   * @param {Number} [prism.x=0]
+   * @param {Number} [prism.y=0]
+   * @param {Number} [prism.z=0]
+   * @returns {Boolean}
+   * @see syngen.utility.intersects
+   * @todo Define a rectangular prism utility or type
    */
   intersects: function (prism) {
     return syngen.utility.intersects(this, prism)
   },
   /**
+   * Removes `item` from the tree, if it exists.
    * @instance
+   * @param {Object} item
+   */
+  remove: function (item) {
+    if (this.nodes.length) {
+      const index = this.getIndex(item)
+      this.nodes[index].remove(item)
+      return this
+    }
+
+    const index = this.items.indexOf(item)
+
+    if (index != -1) {
+      this.items.splice(index, 1)
+    }
+
+    return this
+  },
+  /**
+   * Retrieves all items within the rectanglular prism `prism`.
+   * @instance
+   * @param {Object} prism
+   * @param {Number} [prism.depth=0]
+   * @param {Number} [prism.height=0]
+   * @param {Number} [prism.width=0]
+   * @param {Number} [prism.x=0]
+   * @param {Number} [prism.y=0]
+   * @param {Number} [prism.z=0]
+   * @returns {Object[]}
+   * @todo Define a rectangular prism utility or type
    */
   retrieve: function ({
     depth = 0,
@@ -1587,25 +1989,9 @@ syngen.utility.octree.prototype = {
     return items
   },
   /**
+   * Splits this node into eight child nodes.
    * @instance
-   */
-  remove: function (item) {
-    if (this.nodes.length) {
-      const index = this.getIndex(item)
-      this.nodes[index].remove(item)
-      return this
-    }
-
-    const index = this.items.indexOf(item)
-
-    if (index != -1) {
-      this.items.splice(index, 1)
-    }
-
-    return this
-  },
-  /**
-   * @instance
+   * @private
    */
   split: function () {
     if (this.nodes.length) {
@@ -1708,21 +2094,30 @@ syngen.utility.octree.prototype = {
 }
 
 /**
+ * Provides an interface for generating seeded one-dimensional noise.
+ * Despite its name, it's not technically Perlin noise; rather, it interpolates between random values along the number line.
  * @interface
- * @property {Number} pruneThreshold=10**4
+ * @see syngen.utility.perlin1d.create
+ * @todo Document private members
  */
 syngen.utility.perlin1d = {}
 
 /**
+ * Instantiates a one-dimensional noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.perlin1d}
  * @static
  */
-syngen.utility.perlin1d.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.perlin1d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
 }
 
 syngen.utility.perlin1d.prototype = {
   /**
+   * Initializes the instance with `...seeds`.
    * @instance
+   * @param {...String} [...seeds]
+   * @private
    */
   construct: function (...seeds) {
     this.gradient = new Map()
@@ -1730,7 +2125,10 @@ syngen.utility.perlin1d.prototype = {
     return this
   },
   /**
+   * Generates the value at `x`.
    * @instance
+   * @param {Number} x
+   * @private
    */
   generateGradient: function (x) {
     const srand = syngen.utility.srand('perlin', this.seed, x)
@@ -1738,7 +2136,11 @@ syngen.utility.perlin1d.prototype = {
     return this
   },
   /**
+   * Retrieves the value at `x`.
    * @instance
+   * @param {Number} x
+   * @private
+   * @returns {Number}
    */
   getGradient: function (x) {
     if (!this.hasGradient(x)) {
@@ -1749,13 +2151,20 @@ syngen.utility.perlin1d.prototype = {
     return this.gradient.get(x)
   },
   /**
+   * Returns whether a value exists for `x`.
    * @instance
+   * @param {Number} x
+   * @private
+   * @returns {Boolean}
    */
   hasGradient: function (x) {
     return this.gradient.has(x)
   },
   /**
+   * Frees memory when usage exceeds the prune threshold.
    * @instance
+   * @private
+   * @see syngen.utility.perlin1d#pruneThreshold
    */
   prune: function () {
     if (this.gradient.size >= this.pruneThreshold) {
@@ -1764,9 +2173,16 @@ syngen.utility.perlin1d.prototype = {
 
     return this
   },
+  /**
+   * The maximum vertex count before they must be pruned.
+   * @instance
+   * @private
+   */
   pruneThreshold: 10 ** 4,
   /**
+   * Requests a pruning.
    * @instance
+   * @private
    */
   requestPrune: function () {
     if (this.pruneRequest) {
@@ -1781,6 +2197,8 @@ syngen.utility.perlin1d.prototype = {
     return this
   },
   /**
+   * Clears all generated values.
+   * This is especially useful to call when {@link syngen.seed} is set.
    * @instance
    */
   reset: function () {
@@ -1793,13 +2211,27 @@ syngen.utility.perlin1d.prototype = {
     return this
   },
   /**
+   * Calculates a smooth delta value for interpolation.
    * @instance
+   * @param {Number} value
+   * @private
+   * @returns {Number}
+   */
+  smooth: function (value) {
+    // 6x^5 - 15x^4 + 10x^3
+    return (value ** 3) * (value * ((value * 6) - 15) + 10)
+  },
+  /**
+   * Calculates the value at `x`.
+   * @instance
+   * @param {Number} x
+   * @returns {Number}
    */
   value: function (x) {
     const x0 = Math.floor(x),
       x1 = x0 + 1
 
-    const dx = x - x0,
+    const dx = this.smooth(x - x0),
       v0 = this.getGradient(x0),
       v1 = this.getGradient(x1)
 
@@ -1808,25 +2240,29 @@ syngen.utility.perlin1d.prototype = {
 }
 
 /**
+ * Provides an interface for generating seeded two-dimensional Perlin noise.
  * @interface
- * @property {Number} pruneThreshold=10**3
- * @property {Number} range=Math.sqrt(2/4)
+ * @see syngen.utility.perlin2d.create
+ * @todo Document private members
  */
 syngen.utility.perlin2d = {}
 
 /**
+ * Instantiates a two-dimensional Perlin noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.perlin2d}
  * @static
  */
-syngen.utility.perlin2d.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.perlin2d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
 }
 
-// SEE: https://en.wikipedia.org/wiki/Perlin_noise
-// SEE: https://gamedev.stackexchange.com/questions/23625/how-do-you-generate-tileable-perlin-noise
-// SEE: https://github.com/josephg/noisejs
 syngen.utility.perlin2d.prototype = {
   /**
+   * Initializes the instance with `...seeds`.
    * @instance
+   * @param {...String} [...seeds]
+   * @private
    */
   construct: function (...seeds) {
     this.gradient = new Map()
@@ -1834,7 +2270,11 @@ syngen.utility.perlin2d.prototype = {
     return this
   },
   /**
+   * Generates the value at `(x, y)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
    */
   generateGradient: function (x, y) {
     const srand = syngen.utility.srand('perlin', this.seed, x, y)
@@ -1851,7 +2291,13 @@ syngen.utility.perlin2d.prototype = {
     return this
   },
   /**
+   * Calculates the dot product between `(dx, dy)` and the value at `(xi, yi)`.
    * @instance
+   * @param {Number} xi
+   * @param {Number} yi
+   * @param {Number} x
+   * @param {Number} y
+   * @private
    */
   getDotProduct: function (xi, yi, x, y) {
     const dx = x - xi,
@@ -1860,17 +2306,28 @@ syngen.utility.perlin2d.prototype = {
     return (dx * this.getGradient(xi, yi, 0)) + (dy * this.getGradient(xi, yi, 1))
   },
   /**
+   * Retrieves the value at `(x, y)` and index `i`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   * @returns {Number}
    */
   getGradient: function (x, y, i) {
     if (!this.hasGradient(x, y)) {
       this.generateGradient(x, y)
+      this.requestPrune()
     }
 
     return this.gradient.get(x).get(y)[i]
   },
   /**
+   * Returns whether a value exists for `(x, y)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   * @returns {Boolean}
    */
   hasGradient: function (x, y) {
     const xMap = this.gradient.get(x)
@@ -1882,7 +2339,10 @@ syngen.utility.perlin2d.prototype = {
     return xMap.has(y)
   },
   /**
+   * Frees memory when usage exceeds the prune threshold.
    * @instance
+   * @private
+   * @see syngen.utility.perlin2d#pruneThreshold
    */
   prune: function () {
     this.gradient.forEach((xMap, x) => {
@@ -1899,9 +2359,22 @@ syngen.utility.perlin2d.prototype = {
 
     return this
   },
+  /**
+   * The maximum vertex count before they must be pruned.
+   * @instance
+   * @private
+   */
   pruneThreshold: 10 ** 3,
   /**
+   * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.
    * @instance
+   * @private
+   */
+  range: Math.sqrt(2/4),
+  /**
+   * Requests a pruning.
+   * @instance
+   * @private
    */
   requestPrune: function () {
     if (this.pruneRequest) {
@@ -1915,7 +2388,11 @@ syngen.utility.perlin2d.prototype = {
 
     return this
   },
-  range: Math.sqrt(2/4),
+  /**
+   * Clears all generated values.
+   * This is especially useful to call when {@link syngen.seed} is set.
+   * @instance
+   */
   reset: function () {
     if (this.pruneRequest) {
       cancelIdleCallback(this.pruneRequest)
@@ -1925,10 +2402,24 @@ syngen.utility.perlin2d.prototype = {
 
     return this
   },
+  /**
+   * Calculates a smooth delta value for interpolation.
+   * @instance
+   * @param {Number} value
+   * @private
+   * @returns {Number}
+   */
   smooth: function (value) {
     // 6x^5 - 15x^4 + 10x^3
     return (value ** 3) * (value * ((value * 6) - 15) + 10)
   },
+  /**
+   * Calculates the value at `(x, y)`.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @returns {Number}
+   */
   value: function (x, y) {
     const x0 = Math.floor(x),
       x1 = x0 + 1,
@@ -1952,31 +2443,34 @@ syngen.utility.perlin2d.prototype = {
       dy
     )
 
-    this.requestPrune()
-
     return syngen.utility.scale(value, -this.range, this.range, 0, 1)
   },
 }
 
 /**
+ * Provides an interface for generating seeded two-dimensional Perlin noise.
  * @interface
- * @property {Number} pruneThreshold=10**2
- * @property {Number} range=Math.sqrt(3/4)
+ * @see syngen.utility.perlin3d.create
+ * @todo Document private members
  */
 syngen.utility.perlin3d = {}
 
 /**
+ * Instantiates a three-dimensional Perlin noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.perlin3d}
  * @static
  */
-syngen.utility.perlin3d.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.perlin3d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
 }
 
-// SEE: https://en.wikipedia.org/wiki/Perlin_noise
-// SEE: https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/perlin-noise-part-2
 syngen.utility.perlin3d.prototype = {
   /**
+   * Initializes the instance with `...seeds`.
    * @instance
+   * @param {...String} [...seeds]
+   * @private
    */
   construct: function (...seeds) {
     this.gradient = new Map()
@@ -1984,7 +2478,12 @@ syngen.utility.perlin3d.prototype = {
     return this
   },
   /**
+   * Generates the value at `(x, y, z)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @private
    */
   generateGradient: function (x, y, z) {
     const srand = syngen.utility.srand('perlin', this.seed, x, y, z)
@@ -2008,7 +2507,15 @@ syngen.utility.perlin3d.prototype = {
     return this
   },
   /**
+   * Calculates the dot product between `(dx, dy, dz)` and the value at `(xi, yi, zi)`.
    * @instance
+   * @param {Number} xi
+   * @param {Number} yi
+   * @param {Number} zi
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @private
    */
   getDotProduct: function (xi, yi, zi, x, y, z) {
     const dx = x - xi,
@@ -2018,7 +2525,12 @@ syngen.utility.perlin3d.prototype = {
     return (dx * this.getGradient(xi, yi, zi, 0)) + (dy * this.getGradient(xi, yi, zi, 1)) + (dz * this.getGradient(xi, yi, zi, 2))
   },
   /**
+   * Retrieves the value at `(x, y, z)` and index `i`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   * @returns {Number}
    */
   getGradient: function (x, y, z, i) {
     if (!this.hasGradient(x, y, z)) {
@@ -2029,7 +2541,13 @@ syngen.utility.perlin3d.prototype = {
     return this.gradient.get(x).get(y).get(z)[i]
   },
   /**
+   * Returns whether a value exists for `(x, y, z)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @private
+   * @returns {Boolean}
    */
   hasGradient: function (x, y, z) {
     const xMap = this.gradient.get(x)
@@ -2047,7 +2565,10 @@ syngen.utility.perlin3d.prototype = {
     return yMap.has(z)
   },
   /**
+   * Frees memory when usage exceeds the prune threshold.
    * @instance
+   * @private
+   * @see syngen.utility.perlin3d#pruneThreshold
    */
   prune: function () {
     this.gradient.forEach((xMap, x) => {
@@ -2070,9 +2591,22 @@ syngen.utility.perlin3d.prototype = {
 
     return this
   },
+  /**
+   * The maximum vertex count before they must be pruned.
+   * @instance
+   * @private
+   */
   pruneThreshold: 10 ** 2,
   /**
+   * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.
    * @instance
+   * @private
+   */
+  range: Math.sqrt(3/4),
+  /**
+   * Requests a pruning.
+   * @instance
+   * @private
    */
   requestPrune: function () {
     if (this.pruneRequest) {
@@ -2086,8 +2620,9 @@ syngen.utility.perlin3d.prototype = {
 
     return this
   },
-  range: Math.sqrt(3/4),
   /**
+   * Clears all generated values.
+   * This is especially useful to call when {@link syngen.seed} is set.
    * @instance
    */
   reset: function () {
@@ -2100,14 +2635,23 @@ syngen.utility.perlin3d.prototype = {
     return this
   },
   /**
+   * Calculates a smooth delta value for interpolation.
    * @instance
+   * @param {Number} value
+   * @private
+   * @returns {Number}
    */
   smooth: function (value) {
     // 6x^5 - 15x^4 + 10x^3
     return (value ** 3) * (value * ((value * 6) - 15) + 10)
   },
   /**
+   * Calculates the value at `(x, y, z)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @returns {Number}
    */
   value: function (x, y, z) {
     const x0 = Math.floor(x),
@@ -2156,22 +2700,29 @@ syngen.utility.perlin3d.prototype = {
 }
 
 /**
+ * Provides an interface for generating seeded four-dimensional Perlin noise.
  * @interface
- * @property {Number} pruneThreshold=10**2
- * @property {Number} range=Math.sqrt(4/4)
+ * @see syngen.utility.perlin4d.create
+ * @todo Document private members
  */
 syngen.utility.perlin4d = {}
 
 /**
+ * Instantiates a four-dimensional Perlin noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.perlin4d}
  * @static
  */
-syngen.utility.perlin4d.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.perlin4d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
 }
 
 syngen.utility.perlin4d.prototype = {
   /**
+   * Initializes the instance with `...seeds`.
    * @instance
+   * @param {...String} [...seeds]
+   * @private
    */
   construct: function (...seeds) {
     this.gradient = new Map()
@@ -2179,7 +2730,13 @@ syngen.utility.perlin4d.prototype = {
     return this
   },
   /**
+   * Generates the value at `(x, y, z, t)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} t
+   * @private
    */
   generateGradient: function (x, y, z, t) {
     const srand = syngen.utility.srand('perlin', this.seed, x, y, z, t)
@@ -2210,7 +2767,15 @@ syngen.utility.perlin4d.prototype = {
     return this
   },
   /**
+   * Calculates the dot product between `(dx, dy, dz, dt)` and the value at `(xi, yi, zi, ti)`.
    * @instance
+   * @param {Number} xi
+   * @param {Number} yi
+   * @param {Number} zi
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @private
    */
   getDotProduct: function (xi, yi, zi, ti, x, y, z, t) {
     const dt = t - ti,
@@ -2221,7 +2786,12 @@ syngen.utility.perlin4d.prototype = {
     return (dt * this.getGradient(xi, yi, zi, ti, 3)) + (dx * this.getGradient(xi, yi, zi, ti, 0)) + (dy * this.getGradient(xi, yi, zi, ti, 1)) + (dz * this.getGradient(xi, yi, zi, ti, 2))
   },
   /**
+   * Retrieves the value at `(x, y, z, t)` and index `i`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   * @returns {Number}
    */
   getGradient: function (x, y, z, t, i) {
     if (!this.hasGradient(x, y, z, t)) {
@@ -2232,7 +2802,14 @@ syngen.utility.perlin4d.prototype = {
     return this.gradient.get(x).get(y).get(z).get(t)[i]
   },
   /**
+   * Returns whether a value exists for `(x, y, z, t)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} t
+   * @private
+   * @returns {Boolean}
    */
   hasGradient: function (x, y, z, t) {
     const xMap = this.gradient.get(x)
@@ -2256,7 +2833,10 @@ syngen.utility.perlin4d.prototype = {
     return zMap.has(t)
   },
   /**
+   * Frees memory when usage exceeds the prune threshold.
    * @instance
+   * @private
+   * @see syngen.utility.perlin4d#pruneThreshold
    */
   prune: function () {
     this.gradient.forEach((xMap, x) => {
@@ -2285,9 +2865,22 @@ syngen.utility.perlin4d.prototype = {
 
     return this
   },
+  /**
+   * The maximum vertex count before they must be pruned.
+   * @instance
+   * @private
+   */
   pruneThreshold: 10 ** 2,
   /**
+   * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.
    * @instance
+   * @private
+   */
+  range: Math.sqrt(4/4),
+  /**
+   * Requests a pruning.
+   * @instance
+   * @private
    */
   requestPrune: function () {
     if (this.pruneRequest) {
@@ -2301,8 +2894,9 @@ syngen.utility.perlin4d.prototype = {
 
     return this
   },
-  range: Math.sqrt(4/4),
   /**
+   * Clears all generated values.
+   * This is especially useful to call when {@link syngen.seed} is set.
    * @instance
    */
   reset: function () {
@@ -2315,14 +2909,24 @@ syngen.utility.perlin4d.prototype = {
     return this
   },
   /**
+   * Calculates a smooth delta value for interpolation.
    * @instance
+   * @param {Number} value
+   * @private
+   * @returns {Number}
    */
   smooth: function (value) {
     // 6x^5 - 15x^4 + 10x^3
     return (value ** 3) * (value * ((value * 6) - 15) + 10)
   },
   /**
+   * Calculates the value at `(x, y, z, t)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} t
+   * @returns {Number}
    */
   value: function (x, y, z, t) {
     const t0 = Math.floor(t),
@@ -2409,12 +3013,13 @@ syngen.utility.perlin4d.prototype = {
  * Provides properties and methods to orient and move objects through three-dimensional space.
  * The static {@link syngen.utility.physical.decorate|decorate} method grants objects these qualities.
  * @mixin
+ * @see syngen.utility.physical.decorate
  * @todo Improve clarity and proximity of documentation and source
  */
 syngen.utility.physical = {}
 
 /**
- * Decorates the `target` object with physical properties and methods.
+ * Decorates `target` with physical properties and methods and returns it.
  * @param {Object} target
  * @static
  */
@@ -2529,18 +3134,29 @@ syngen.utility.physical.decoration = {
  */
 
 /**
+ * Provides an interface for a publish-subscribe messaging pattern.
+ * Objects can be decorated with an existing or new instance with the static {@link syngen.utility.pubsub.decorate|decorate} method.
  * @interface
+ * @see syngen.utility.pubsub.create
+ * @see syngen.utility.pubsub.decorate
  */
 syngen.utility.pubsub = {}
 
 /**
+ * Instantiates a new pubsub instance.
+ * @returns {syngen.utility.pubsub}
  * @static
  */
-syngen.utility.pubsub.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.pubsub.create = function () {
+  return Object.create(this.prototype).construct()
 }
 
 /**
+ * Decorates `target` with a new or existing `instance` and returns it.
+ * This exposes its methods on `target` as if they are its own.
+ * @param {Object} target
+ * @param {syngen.utility.pubsub} [instance]
+ * @returns {Object}
  * @static
  */
 syngen.utility.pubsub.decorate = function (target, instance) {
@@ -2561,13 +3177,16 @@ syngen.utility.pubsub.decorate = function (target, instance) {
 
 syngen.utility.pubsub.prototype = {
   /**
+   * Instantiates the instance.
    * @instance
+   * @private
    */
   construct: function() {
     this._handler = {}
     return this
   },
   /**
+   * Prepares the instance for garbage collection.
    * @instance
    */
   destroy: function() {
@@ -2575,14 +3194,17 @@ syngen.utility.pubsub.prototype = {
     return this
   },
   /**
+   * Dispatches `event` to all subscribers with optional `...data`.
    * @instance
+   * @param {String} event
+   * @param {...*} [...data]
    */
-  emit: function (event, ...args) {
+  emit: function (event, ...data) {
     if (!this._handler[event]) {
       return this
     }
 
-    const execute = (handler) => handler(...args),
+    const execute = (handler) => handler(...data),
       handlers = [...this._handler[event]]
 
     handlers.forEach(execute)
@@ -2590,7 +3212,12 @@ syngen.utility.pubsub.prototype = {
     return this
   },
   /**
+   * Unsubscribes `handler` from the handlers listening for `event`.
+   * If no `handler` is specified, then all handlers for `event` are removed.
+   * If no `event` is specified, then all handlers for all events are removed.
    * @instance
+   * @param {String} [event]
+   * @param {Function} [handler]
    */
   off: function (event, handler) {
     if (event === undefined) {
@@ -2617,9 +3244,16 @@ syngen.utility.pubsub.prototype = {
     return this
   },
   /**
+   * Subscribes `handler` to listen for `event`.
    * @instance
+   * @param {String} event
+   * @param {Function} handler
    */
   on: function (event, handler) {
+    if (!(handler instanceof Function)) {
+      return this
+    }
+
     if (!this._handler[event]) {
       this._handler[event] = []
     }
@@ -2629,12 +3263,16 @@ syngen.utility.pubsub.prototype = {
     return this
   },
   /**
+   * Subscribed `handler` to listen for `event` once.
+   * The `handler` is removed after its next dispatch.
    * @instance
+   * @param {String} event
+   * @param {Function} handler
    */
   once: function (event, handler) {
-    const wrapper = (...args) => {
+    const wrapper = (...data) => {
       this.off(event, wrapper)
-      handler(...args)
+      handler(...data)
     }
 
     return this.on(event, wrapper)
@@ -2642,18 +3280,44 @@ syngen.utility.pubsub.prototype = {
 }
 
 /**
+ * Provides a quadtree interface for storing and querying objects in two-dimensional space.
  * @interface
+ * @see syngen.utility.quadtree.create
+ * @todo Document private members
  */
 syngen.utility.quadtree = {}
 
 /**
+ * Instantiates a new quadtree.
+ * @param {Object} [options={}]
+ * @param {Number} [options.height={@link syngen.const.maxSafeFloat|syngen.const.maxSafeFloat * 2}]
+ *   Range of values along the y-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.maxItems=12]
+ *   Number of items before the tree branches.
+ *   This value is passed to child nodes.
+ * @param {Number} [options.width={@link syngen.const.maxSafeFloat|syngen.const.maxSafeFloat * 2}]
+ *   Range of values along the y-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.x={@link syngen.const.maxSafeFloat|-syngen.const.maxSafeFloat}]
+ *   Lower bound for valeus along the x-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.y={@link syngen.const.maxSafeFloat|-syngen.const.maxSafeFloat}]
+ *   Lower bound for valeus along the y-axis.
+ *   Typically this is set programmatically.
+ * @returns {syngen.utility.quadtree}
  * @static
  */
-syngen.utility.quadtree.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.quadtree.create = function (options = {}) {
+  return Object.create(this.prototype).construct(options)
 }
 
 /**
+ * Instantiates a new quadtree with `items` and `options`.
+ * @param {Object[]} [items=[]]
+ * @param {Object} [options={}]
+ *   See {@link syngen.utility.quadree.create} for a full reference.
+ * @returns {syngen.utility.quadtree}
  * @static
  */
 syngen.utility.quadtree.from = function (items = [], options = {}) {
@@ -2668,6 +3332,7 @@ syngen.utility.quadtree.from = function (items = [], options = {}) {
 
 syngen.utility.quadtree.prototype = {
   /**
+   * Clears all nodes and items.
    * @instance
    */
   clear: function () {
@@ -2676,7 +3341,10 @@ syngen.utility.quadtree.prototype = {
     return this
   },
   /**
+   * Initializes the instance with `options`.
    * @instance
+   * @param {Object} [options={}]
+   * @private
    */
   construct: function ({
     height = syngen.const.maxSafeFloat * 2,
@@ -2696,16 +3364,29 @@ syngen.utility.quadtree.prototype = {
     return this
   },
   /**
+   * Prepares the instance for garbage collection.
    * @instance
    */
   destroy: function () {
     return this.clear()
   },
   /**
+   * Finds the closest item to `query` within `radius`.
+   * If `query` is contained within the tree, then the next closest item is returned.
+   * If no result is found, then `undefined` is returned.
    * @instance
+   * @param {Object} query
+   * @param {Number} query.height
+   * @param {Number} query.width
+   * @param {Number} query.x
+   * @param {Number} query.y
+   * @param {Number} [radius=Infinity]
+   * @returns {Object|undefined}
    */
   find: function (query = {}, radius = Infinity) {
-    // NOTE: Assumes query.x and query.y exist
+    if (!('height' in query && 'width' in query && 'x' in query && 'y' in query)) {
+      return this
+    }
 
     if (
          isFinite(radius)
@@ -2768,7 +3449,10 @@ syngen.utility.quadtree.prototype = {
     return result
   },
   /**
+   * Returns the node index for `item`.
    * @instance
+   * @param {Object} item
+   * @private
    */
   getIndex: function ({
     x = 0,
@@ -2796,10 +3480,14 @@ syngen.utility.quadtree.prototype = {
     return 3
   },
   /**
+   * Inserts `item` into the tree.
    * @instance
+   * @param {Object} item
    */
   insert: function (item = {}) {
-    // XXX: Assumes item.x and item.y exist
+    if (!('x' in item && 'y' in item)) {
+      return this
+    }
 
     const index = this.getIndex(item)
 
@@ -2818,13 +3506,24 @@ syngen.utility.quadtree.prototype = {
     return this
   },
   /**
+   * Returns whether this node intersects the rectangle `rect`.
    * @instance
+   * @param {Object} rect
+   * @param {Number} [rect.height=0]
+   * @param {Number} [rect.width=0]
+   * @param {Number} [rect.x=0]
+   * @param {Number} [rect.y=0]
+   * @returns {Boolean}
+   * @see syngen.utility.intersects
+   * @todo Define a rectangular prism utility or type
    */
   intersects: function (rect) {
     return syngen.utility.intersects(this, rect)
   },
   /**
+   * Removes `item` from the tree, if it exists.
    * @instance
+   * @param {Object} item
    */
   remove: function (item) {
     if (this.nodes.length) {
@@ -2842,7 +3541,15 @@ syngen.utility.quadtree.prototype = {
     return this
   },
   /**
+   * Retrieves all items within the rectangle `rect`.
    * @instance
+   * @param {Object} rect
+   * @param {Number} [rect.height=0]
+   * @param {Number} [rect.width=0]
+   * @param {Number} [rect.x=0]
+   * @param {Number} [rect.y=0]
+   * @returns {Object[]}
+   * @todo Define a rectangular prism utility or type
    */
   retrieve: function ({
     height = 0,
@@ -2876,7 +3583,9 @@ syngen.utility.quadtree.prototype = {
     return items
   },
   /**
+   * Splits this node into four child nodes.
    * @instance
+   * @private
    */
   split: function () {
     if (this.nodes.length) {
@@ -2930,22 +3639,34 @@ syngen.utility.quadtree.prototype = {
 }
 
 /**
+ * Provides an interface for quaternions.
+ * They express 3D orientations in space with complex numbers.
+ * These are preferred over {@linkplain syngen.utility.euler|euler angles} to avoid gimbal lock.
  * @interface
- * @property {Number} w
- * @property {Number} x
- * @property {Number} y
- * @property {Number} z
+ * @see syngen.utility.quaternion.create
  */
 syngen.utility.quaternion = {}
 
 /**
+ * Instantiates a new quaternion.
+ * @param {syngen.utility.quaternion|Object} [options={}]
+ * @param {Number} [options.w=1]
+ * @param {Number} [options.x=0]
+ * @param {Number} [options.y=0]
+ * @param {Number} [options.z=0]
+ * @returns {syngen.utility.quaternion}
  * @static
  */
-syngen.utility.quaternion.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.quaternion.create = function (options = {}) {
+  return Object.create(this.prototype).construct(options)
 }
 
 /**
+ * Converts an Euler angle to a quaternion.
+ * @param {syngen.utility.euler} euler
+ * @param {String} [sequence={@link syngen.const.eulerToQuaternion}]
+ * @returns {syngen.utility.quaternion}
+ * @see syngen.const.eulerToQuaternion
  * @static
  */
 syngen.utility.quaternion.fromEuler = function ({
@@ -3013,18 +3734,20 @@ syngen.utility.quaternion.fromEuler = function ({
   }
 }
 
-/**
- * @interface
- */
 syngen.utility.quaternion.prototype = {
   /**
+   * Returns a new instance with the same properties.
    * @instance
+   * @returns {syngen.utility.quaternion}
    */
   clone: function () {
     return syngen.utility.quaternion.create(this)
   },
   /**
+   * Returns the conjugate as a new instance.
+   * This represents the reverse orientation.
    * @instance
+   * @returns {syngen.utility.quaternion}
    */
   conjugate: function () {
     return syngen.utility.quaternion.create({
@@ -3035,7 +3758,11 @@ syngen.utility.quaternion.prototype = {
     })
   },
   /**
+   * Initializes the instance with `options`.
+   * These values are best derived from {@link syngen.utility.quaternion.fromEuler} or other quaternions.
    * @instance
+   * @param {syngen.utility.quaternion|Object} [options={}]
+   * @private
    */
   construct: function ({
     w = 1,
@@ -3050,42 +3777,42 @@ syngen.utility.quaternion.prototype = {
     return this
   },
   /**
+   * Calculates the magnitude (Euclidean distance).
    * @instance
+   * @returns {Number}
    */
-  distance: function ({
-    w = 0,
-    x = 0,
-    y = 0,
-    z = 0,
-  } = {}) {
-    return Math.sqrt(((this.w - w) ** 2) + ((this.x - x) ** 2) + ((this.y - y) ** 2) + ((this.z - z) ** 2))
+  distance: function () {
+    return Math.sqrt((this.w ** 2) + (this.x ** 2) + (this.y ** 2) + (this.z ** 2))
   },
   /**
+   * Calculates the norm (squared Euclidean distance).
    * @instance
+   * @returns {Number}
    */
-  distance2: function ({
-    w = 0,
-    x = 0,
-    y = 0,
-    z = 0,
-  } = {}) {
-    return ((this.w - w) ** 2) + ((this.x - x) ** 2) + ((this.y - y) ** 2) + ((this.z - z) ** 2)
+  distance2: function () {
+    return (this.w ** 2) + (this.x ** 2) + (this.y ** 2) + (this.z ** 2)
   },
   /**
+   * Multiplies this by the inverse of `quaternion` to return their difference as a new instance.
    * @instance
+   * @param {syngen.utility.quaternion|Object} [quaternion]
+   * @returns {syngen.utility.quaternion}
    */
   divide: function (divisor) {
-    if (!syngen.utility.quaternion.prototype.isPrototypeOf(divisor)) {
-      divisor = syngen.utility.quaternion.create(divisor)
+    if (!syngen.utility.quaternion.prototype.isPrototypeOf(quaternion)) {
+      quaternion = syngen.utility.quaternion.create(quaternion)
     }
 
-    return this.multiply(divisor.inverse())
+    return this.multiply(quaternion.inverse())
   },
   /**
+   * Returns whether this is equal to `quaternion`.
    * @instance
+   * @param {syngen.utility.quaternion|Object} [quaternion]
+   * @returns {Boolean}
    */
   equals: function ({
-    w = 0,
+    w = 1,
     x = 0,
     y = 0,
     z = 0,
@@ -3093,13 +3820,18 @@ syngen.utility.quaternion.prototype = {
     return (this.w == w) && (this.x == x) && (this.y == y) && (this.z == z)
   },
   /**
+   * Returns the unit vector that's ahead of the orientation.
+   * The vector can be inverted to receive a vector behind.
    * @instance
+   * @returns {syngen.utility.vector3d}
    */
   forward: function () {
     return syngen.utility.vector3d.unitX().rotateQuaternion(this)
   },
   /**
+   * Returns the multiplicative inverse as a new instance.
    * @instance
+   * @returns {syngen.utility.quaternion}
    */
   inverse: function () {
     const scalar = 1 / this.distance2()
@@ -3111,16 +3843,22 @@ syngen.utility.quaternion.prototype = {
     return this.conjugate().scale(scalar)
   },
   /**
+   * Returns whether this is equal to the identity quaternion.
    * @instance
+   * @returns {Boolean}
    */
   isZero: function () {
-    return !this.x && !this.y && !this.z
+    return (this.w == 1) && !this.x && !this.y && !this.z
   },
   /**
+   * Linearly interpolates `quaternion` to this and returns it as a new instance.
    * @instance
+   * @param {syngen.utility.quaternion|Object} quaternion
+   * @returns {syngen.utility.quaternion}
+   * @todo Create syngen.utility.quaternion.slerpFrom for spherical interpolation
    */
   lerpFrom: function ({
-    w = 0,
+    w = 1,
     x = 0,
     y = 0,
     z = 0,
@@ -3133,10 +3871,14 @@ syngen.utility.quaternion.prototype = {
     })
   },
   /**
+   * Linearly interpolates this to `quaternion` and returns it as a new instance.
    * @instance
+   * @param {syngen.utility.quaternion|Object} quaternion
+   * @returns {syngen.utility.quaternion}
+   * @todo Create syngen.utility.quaternion.slerpTo for spherical interpolation
    */
   lerpTo: function ({
-    w = 0,
+    w = 1,
     x = 0,
     y = 0,
     z = 0,
@@ -3149,10 +3891,13 @@ syngen.utility.quaternion.prototype = {
     })
   },
   /**
+   * Multiplies this by `quaternion` to return their sum as a new instance.
    * @instance
+   * @param {syngen.utility.quaternion|Object} [quaternion]
+   * @returns {syngen.utility.quaternion}
    */
   multiply: function ({
-    w = 0,
+    w = 1,
     x = 0,
     y = 0,
     z = 0,
@@ -3165,7 +3910,9 @@ syngen.utility.quaternion.prototype = {
     })
   },
   /**
+   * Normalizes this and returns it as a new instance.
    * @instance
+   * @returns {syngen.utility.quaternion}
    */
   normalize: function () {
     const distance = this.distance()
@@ -3177,13 +3924,21 @@ syngen.utility.quaternion.prototype = {
     return this.scale(1 / distance)
   },
   /**
+   * Returns the unit vector that's to the right of the orientation.
+   * The vector can be inverted to receive a vector to its left.
    * @instance
+   * @returns {syngen.utility.vector3d}
    */
   right: function () {
     return syngen.utility.vector3d.unitY().rotateQuaternion(this)
   },
   /**
+   * Multiplies this by `scalar` and returns it as a new instance.
+   * Typically it's nonsensical to use this manually.
    * @instance
+   * @param {Number} [scalar=0]
+   * @returns {syngen.utility.quaternion}
+   * @private
    */
   scale: function (scalar = 0) {
     return syngen.utility.quaternion.create({
@@ -3194,10 +3949,17 @@ syngen.utility.quaternion.prototype = {
     })
   },
   /**
+   * Sets all properties with `options`.
+   * These values are best derived from {@link syngen.utility.quaternion.fromEuler} or other quaternions.
    * @instance
+   * @param {syngen.utility.quaternion|Object} [options]
+   * @param {Number} [options.w=1]
+   * @param {Number} [options.x=0]
+   * @param {Number} [options.y=0]
+   * @param {Number} [options.z=0]
    */
   set: function ({
-    w = 0,
+    w = 1,
     x = 0,
     y = 0,
     z = 0,
@@ -3209,14 +3971,47 @@ syngen.utility.quaternion.prototype = {
     return this
   },
   /**
+   * Returns the unit vector that's above of the orientation.
+   * The vector can be inverted to receive a vector below.
    * @instance
+   * @returns {syngen.utility.vector3d}
    */
   up: function () {
     return syngen.utility.vector3d.unitZ().rotateQuaternion(this)
   },
+  /**
+   * The real w-component of the quaternion.
+   * Implementations are discouraged from modifying this directly.
+   * @instance
+   * @type {Number}
+   */
+  w: 1,
+  /**
+   * The imaginary x-component of the quaternion.
+   * Implementations are discouraged from modifying this directly.
+   * @instance
+   * @type {Number}
+   */
+  x: 0,
+  /**
+   * The imaginary y-component of the quaternion.
+   * Implementations are discouraged from modifying this directly.
+   * @instance
+   * @type {Number}
+   */
+  y: 0,
+  /**
+   * The imaginary z-component of the quaternion.
+   * Implementations are discouraged from modifying this directly.
+   * @instance
+   * @type {Number}
+   */
+  z: 0,
 }
 
 /**
+ * Instantiates an identity quaternion.
+ * @returns {syngen.utility.quaternion}
  * @static
  */
 syngen.utility.quaternion.identity = function () {
@@ -3341,22 +4136,30 @@ syngen.utility.timing.cancelablePromise = (duration) => {
 syngen.utility.timing.promise = (duration) => new Promise((resolve) => setTimeout(resolve, duration))
 
 /**
+ * Provides an interface for two-dimensional vectors with x-y coordinates.
  * @interface
- * @property {Number} x
- * @property {Number} y
+ * @see syngen.utility.vector2d.create
  */
 syngen.utility.vector2d = {}
 
 /**
+ * Instantiates a new two-dimensional vector.
+ * @param {syngen.utility.vector2d|Object} [options={}]
+ * @param {Number} [options.x=0]
+ * @param {Number} [options.y=0]
+ * @returns {syngen.utility.vector2d}
  * @static
  */
-syngen.utility.vector2d.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.vector2d.create = function (options = {}) {
+  return Object.create(this.prototype).construct(options)
 }
 
 syngen.utility.vector2d.prototype = {
   /**
+   * Adds `vector` to this and returns their sum as a new instance.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {syngen.utility.vector2d|Object}
    */
   add: function ({
     x = 0,
@@ -3368,35 +4171,26 @@ syngen.utility.vector2d.prototype = {
     })
   },
   /**
+   * Calculates the angle between this and the positive x-axis, in radians.
    * @instance
+   * @returns {Number}
    */
   angle: function () {
     return Math.atan2(this.y, this.x)
   },
   /**
+   * Returns a new instance with the same properties.
    * @instance
-   */
-  angleTo: function (vector, angle = 0) {
-    let relative = syngen.utility.vector2d.prototype.isPrototypeOf(vector)
-      ? vector
-      : syngen.utility.vector2d.create(vector)
-
-    relative = relative.subtract(this)
-
-    if (angle) {
-      relative = relative.rotate(angle)
-    }
-
-    return relative.angle()
-  },
-  /**
-   * @instance
+   * @returns {syngen.utility.vector2d}
    */
   clone: function () {
     return syngen.utility.vector2d.create(this)
   },
   /**
+   * Initializes the instance with `options`.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [options={}]
+   * @private
    */
   construct: function ({
     x = 0,
@@ -3407,7 +4201,11 @@ syngen.utility.vector2d.prototype = {
     return this
   },
   /**
+   * Calculates the cross product with `vector`.
+   * This operation is noncommunicative.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {Number}
    */
   crossProduct: function ({
     x = 0,
@@ -3416,7 +4214,10 @@ syngen.utility.vector2d.prototype = {
     return (this.x * y) - (this.y * x)
   },
   /**
+   * Calculates the Euclidean distance from `vector`.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {Number}
    */
   distance: function ({
     x = 0,
@@ -3425,7 +4226,10 @@ syngen.utility.vector2d.prototype = {
     return Math.sqrt(((this.x - x) ** 2) + ((this.y - y) ** 2))
   },
   /**
+   * Calculates the squared Euclidean distance from `vector`.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {Number}
    */
   distance2: function ({
     x = 0,
@@ -3434,7 +4238,10 @@ syngen.utility.vector2d.prototype = {
     return ((this.x - x) ** 2) + ((this.y - y) ** 2)
   },
   /**
+   * Calculates the dot product with `vector`.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {Number}
    */
   dotProduct: function ({
     x = 0,
@@ -3443,7 +4250,10 @@ syngen.utility.vector2d.prototype = {
     return (this.x * x) + (this.y * y)
   },
   /**
+   * Returns whether this is equal to `vector`.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {Boolean}
    */
   equals: function ({
     x = 0,
@@ -3452,7 +4262,9 @@ syngen.utility.vector2d.prototype = {
     return (this.x == x) && (this.y == y)
   },
   /**
+   * Returns the inverse vector as a new instance.
    * @instance
+   * @returns {syngen.utility.vector2d}
    */
   inverse: function () {
     return syngen.utility.vector2d.create({
@@ -3461,13 +4273,17 @@ syngen.utility.vector2d.prototype = {
     })
   },
   /**
+   * Returns whether this represents the origin.
    * @instance
+   * @returns {Boolean}
    */
   isZero: function () {
     return !this.x && !this.y
   },
   /**
+   * Scales this by its distance to return a unit vector as a new instance.
    * @instance
+   * @returns {syngen.utility.vector2d}
    */
   normalize: function () {
     const distance = this.distance()
@@ -3479,9 +4295,16 @@ syngen.utility.vector2d.prototype = {
     return this.scale(1 / distance)
   },
   /**
+   * Rotates by `angle`, in radians, and returns it as a new instance.
    * @instance
+   * @param {Number} [angle=0]
+   * @returns {syngen.utility.vector2d}
    */
   rotate: function (angle = 0) {
+    if (angle == 0) {
+      return this.clone()
+    }
+
     const cos = Math.cos(angle),
       sin = Math.sin(angle)
 
@@ -3491,7 +4314,10 @@ syngen.utility.vector2d.prototype = {
     })
   },
   /**
+   * Multiplies this by `scalar` and returns it as a new instance.
    * @instance
+   * @param {Number} [scalar=0]
+   * @returns {syngen.utility.vector2d}
    */
   scale: function (scalar = 0) {
     return syngen.utility.vector2d.create({
@@ -3500,7 +4326,11 @@ syngen.utility.vector2d.prototype = {
     })
   },
   /**
+   * Sets all properties with `options`.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [options]
+   * @param {Number} [options.x=0]
+   * @param {Number} [options.y=0]
    */
   set: function ({
     x = 0,
@@ -3511,7 +4341,10 @@ syngen.utility.vector2d.prototype = {
     return this
   },
   /**
+   * Subtracts `vector` from this and returns their difference as a new instance.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {syngen.utility.vector2d|Object}
    */
   subtract: function ({
     x = 0,
@@ -3523,11 +4356,14 @@ syngen.utility.vector2d.prototype = {
     })
   },
   /**
+   * Subtracts a circular radius from this and returns it as a new instance.
    * @instance
+   * @param {Number} [radius=0]
+   * @returns {syngen.utility.vector2d}
    */
   subtractRadius: function (radius = 0) {
     if (radius <= 0) {
-      return syngen.utility.vector2d.create(this)
+      return this.clone()
     }
 
     const distance = this.distance()
@@ -3538,9 +4374,23 @@ syngen.utility.vector2d.prototype = {
 
     return this.multiply(1 - (radius / distance))
   },
+  /**
+   * Position along the x-axis.
+   * @instance
+   * @type {Number}
+   */
+  x: 0,
+  /**
+   * Position along the y-axis.
+   * @instance
+   * @type {Number}
+   */
+  y: 0,
 }
 
 /**
+ * Instantiates a unit vector along the x-axis.
+ * @returns {syngen.utility.vector2d}
  * @static
  */
 syngen.utility.vector2d.unitX = function () {
@@ -3550,6 +4400,8 @@ syngen.utility.vector2d.unitX = function () {
 }
 
 /**
+ * Instantiates a unit vector along the y-axis.
+ * @returns {syngen.utility.vector2d}
  * @static
  */
 syngen.utility.vector2d.unitY = function () {
@@ -3559,23 +4411,31 @@ syngen.utility.vector2d.unitY = function () {
 }
 
 /**
+ * Provides an interface for two-dimensional vectors with x-y-z coordinates.
  * @interface
- * @property {Number} x
- * @property {Number} y
- * @property {Number} z
+ * @see syngen.utility.vector3d.create
  */
 syngen.utility.vector3d = {}
 
 /**
+ * Instantiates a new three-dimensional vector.
+ * @param {syngen.utility.vector3d|Object} [options={}]
+ * @param {Number} [options.x=0]
+ * @param {Number} [options.y=0]
+ * @param {Number} [options.z=0]
+ * @returns {syngen.utility.vector3d}
  * @static
  */
-syngen.utility.vector3d.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.vector3d.create = function (options = {}) {
+  return Object.create(this.prototype).construct(options)
 }
 
 syngen.utility.vector3d.prototype = {
   /**
+   * Adds `vector` to this and returns their sum as a new instance.
    * @instance
+   * @param {syngen.utility.vector3d|Object} [vector]
+   * @returns {syngen.utility.vector3d|Object}
    */
   add: function ({
     x = 0,
@@ -3589,13 +4449,18 @@ syngen.utility.vector3d.prototype = {
     })
   },
   /**
+   * Returns a new instance with the same properties.
    * @instance
+   * @returns {syngen.utility.vector3d}
    */
   clone: function () {
     return syngen.utility.vector3d.create(this)
   },
   /**
+   * Initializes the instance with `options`.
    * @instance
+   * @param {syngen.utility.vector3d|Object} [options={}]
+   * @private
    */
   construct: function ({
     x = 0,
@@ -3608,7 +4473,11 @@ syngen.utility.vector3d.prototype = {
     return this
   },
   /**
+   * Calculates the cross product with `vector`.
+   * This operation is noncommunicative.
    * @instance
+   * @param {syngen.utility.vector3d|Object} [vector]
+   * @returns {syngen.utility.vector3d}
    */
   crossProduct: function ({
     x = 0,
@@ -3622,7 +4491,10 @@ syngen.utility.vector3d.prototype = {
     })
   },
   /**
+   * Calculates the Euclidean distance from `vector`.
    * @instance
+   * @param {syngen.utility.vector3d|Object} [vector]
+   * @returns {Number}
    */
   distance: function ({
     x = 0,
@@ -3632,7 +4504,10 @@ syngen.utility.vector3d.prototype = {
     return Math.sqrt(((this.x - x) ** 2) + ((this.y - y) ** 2) + ((this.z - z) ** 2))
   },
   /**
+   * Calculates the squared Euclidean distance from `vector`.
    * @instance
+   * @param {syngen.utility.vector3d|Object} [vector]
+   * @returns {Number}
    */
   distance2: function ({
     x = 0,
@@ -3642,7 +4517,10 @@ syngen.utility.vector3d.prototype = {
     return ((this.x - x) ** 2) + ((this.y - y) ** 2) + ((this.z - z) ** 2)
   },
   /**
+   * Calculates the dot product with `vector`.
    * @instance
+   * @param {syngen.utility.vector3d|Object} [vector]
+   * @returns {Number}
    */
   dotProduct: function ({
     x = 0,
@@ -3652,33 +4530,10 @@ syngen.utility.vector3d.prototype = {
     return (this.x * x) + (this.y * y) + (this.z * z)
   },
   /**
+   * Returns whether this is equal to `vector`.
    * @instance
-   */
-  euler: function () {
-    return syngen.utility.euler.create({
-      pitch: this.z ? Math.atan2(this.z, Math.sqrt((this.x ** 2) + (this.y ** 2))) : 0,
-      roll: 0,
-      yaw: Math.atan2(this.y, this.x),
-    })
-  },
-  /**
-   * @instance
-   */
-  eulerTo: function (vector, euler = undefined) {
-    let relative = syngen.utility.vector3d.prototype.isPrototypeOf(vector)
-      ? vector
-      : syngen.utility.vector3d.create(vector)
-
-    relative = relative.subtract(this)
-
-    if (euler) {
-      relative = relative.rotateEuler(euler)
-    }
-
-    return relative.euler()
-  },
-  /**
-   * @instance
+   * @param {syngen.utility.vector3d|Object} [vector]
+   * @returns {Boolean}
    */
   equals: function ({
     x = 0,
@@ -3688,7 +4543,21 @@ syngen.utility.vector3d.prototype = {
     return (this.x == x) && (this.y == y) && (this.z == z)
   },
   /**
+   * Calculates the Euler angle between this and the positive x-axis.
    * @instance
+   * @returns {syngen.utility.euler}
+   */
+  euler: function () {
+    return syngen.utility.euler.create({
+      pitch: this.z ? Math.atan2(this.z, Math.sqrt((this.x ** 2) + (this.y ** 2))) : 0,
+      roll: 0,
+      yaw: Math.atan2(this.y, this.x),
+    })
+  },
+  /**
+   * Returns the inverse vector as a new instance.
+   * @instance
+   * @returns {syngen.utility.vector3d}
    */
   inverse: function () {
     return syngen.utility.vector3d.create({
@@ -3698,13 +4567,17 @@ syngen.utility.vector3d.prototype = {
     })
   },
   /**
+   * Returns whether this represents the origin.
    * @instance
+   * @returns {Boolean}
    */
   isZero: function () {
     return !this.x && !this.y && !this.z
   },
   /**
+   * Scales this by its distance to return a unit vector as a new instance.
    * @instance
+   * @returns {syngen.utility.vector3d}
    */
   normalize: function () {
     const distance = this.distance()
@@ -3716,7 +4589,22 @@ syngen.utility.vector3d.prototype = {
     return this.scale(1 / distance)
   },
   /**
+   * Calculates the quaternion between this and the positive x-axis.
    * @instance
+   * @returns {syngen.utility.quaternion}
+   */
+  quaternion: function () {
+    return syngen.utility.quaternion.fromEuler(
+      this.euler()
+    )
+  },
+  /**
+   * Rotates this by `euler` with `sequence` and returns it as a new instance.
+   * Beware that this is less performant than using quaternions and can result in gimbal lock.
+   * @instance
+   * @param {syngen.utility.euler} euler
+   * @param {String} [sequence]
+   * @returns {syngen.utility.vector3d}
    */
   rotateEuler: function (euler, sequence) {
     return this.rotateQuaternion(
@@ -3724,7 +4612,10 @@ syngen.utility.vector3d.prototype = {
     )
   },
   /**
+   * Rotates this by `quaternion` and returns it as a new instance.
    * @instance
+   * @param {syngen.utility.quaternion} quaternion
+   * @returns {syngen.utility.vector3d}
    */
   rotateQuaternion: function (quaternion) {
     if (!syngen.utility.quaternion.prototype.isPrototypeOf(quaternion)) {
@@ -3744,7 +4635,10 @@ syngen.utility.vector3d.prototype = {
     )
   },
   /**
+   * Multiplies this by `scalar` and returns it as a new instance.
    * @instance
+   * @param {Number} [scalar=0]
+   * @returns {syngen.utility.vector3d}
    */
   scale: function (scalar = 0) {
     return syngen.utility.vector3d.create({
@@ -3754,7 +4648,12 @@ syngen.utility.vector3d.prototype = {
     })
   },
   /**
+   * Sets all properties with `options`.
    * @instance
+   * @param {syngen.utility.vector3d|Object} [options]
+   * @param {Number} [options.x=0]
+   * @param {Number} [options.y=0]
+   * @param {Number} [options.z=0]
    */
   set: function ({
     x = 0,
@@ -3767,7 +4666,10 @@ syngen.utility.vector3d.prototype = {
     return this
   },
   /**
+   * Subtracts `vector` from this and returns their difference as a new instance.
    * @instance
+   * @param {syngen.utility.vector3d|Object} [vector]
+   * @returns {syngen.utility.vector3d|Object}
    */
   subtract: function ({
     x = 0,
@@ -3781,11 +4683,14 @@ syngen.utility.vector3d.prototype = {
     })
   },
   /**
+   * Subtracts a spherical radius from this and returns it as a new instance.
    * @instance
+   * @param {Number} [radius=0]
+   * @returns {syngen.utility.vector3d}
    */
   subtractRadius: function (radius = 0) {
     if (radius <= 0) {
-      return syngen.utility.vector3d.create(this)
+      return this.clone()
     }
 
     const distance = this.distance()
@@ -3796,9 +4701,29 @@ syngen.utility.vector3d.prototype = {
 
     return this.scale(1 - (radius / distance))
   },
+  /**
+   * Position along the x-axis.
+   * @instance
+   * @type {Number}
+   */
+  x: 0,
+  /**
+   * Position along the y-axis.
+   * @instance
+   * @type {Number}
+   */
+  y: 0,
+  /**
+   * Position along the y-axis.
+   * @instance
+   * @type {Number}
+   */
+  z: 0,
 }
 
 /**
+ * Instantiates a unit vector along the x-axis.
+ * @returns {syngen.utility.vector3d}
  * @static
  */
 syngen.utility.vector3d.unitX = function () {
@@ -3808,6 +4733,8 @@ syngen.utility.vector3d.unitX = function () {
 }
 
 /**
+ * Instantiates a unit vector along the y-axis.
+ * @returns {syngen.utility.vector3d}
  * @static
  */
 syngen.utility.vector3d.unitY = function () {
@@ -3817,6 +4744,8 @@ syngen.utility.vector3d.unitY = function () {
 }
 
 /**
+ * Instantiates a unit vector along the z-axis.
+ * @returns {syngen.utility.vector3d}
  * @static
  */
 syngen.utility.vector3d.unitZ = function () {
@@ -6829,6 +7758,7 @@ syngen.loop = (() => {
     delta = 0,
     frameCount = 0,
     idleRequest,
+    isPaused = false,
     isRunning = false,
     lastFrame = 0,
     time = 0
@@ -6875,7 +7805,7 @@ syngen.loop = (() => {
     pubsub.emit('frame', {
       delta,
       frame: frameCount,
-      paused: !isRunning,
+      paused: isPaused,
       time,
     })
 
@@ -6917,7 +7847,7 @@ syngen.loop = (() => {
      * @memberof syngen.loop
      * @returns {Boolean}
      */
-    isPaused: () => !isRunning,
+    isPaused: () => isPaused,
     /**
      * Returns whether the loop is currently running.
      * @memberof syngen.loop
@@ -6930,11 +7860,11 @@ syngen.loop = (() => {
      * @memberof syngen.loop
      */
     pause: function () {
-      if (!isRunning) {
+      if (isPaused) {
         return this
       }
 
-      isRunning = false
+      isPaused = true
 
       /**
        * Fired when the loop is paused.
@@ -6950,11 +7880,11 @@ syngen.loop = (() => {
      * @memberof syngen.loop
      */
     resume: function () {
-      if (isRunning) {
+      if (!isPaused) {
         return this
       }
 
-      isRunning = true
+      isPaused = false
 
       /**
        * Fired when the loop is resumed.
@@ -6968,7 +7898,6 @@ syngen.loop = (() => {
      * Starts the loop.
      * @fires syngen.loop#event:start
      * @memberof syngen.loop
-     * @todo Deprecate and always leave running
      */
     start: function () {
       if (isRunning) {
@@ -6983,7 +7912,6 @@ syngen.loop = (() => {
       /**
        * Fired when the loop starts.
        * @event syngen.loop#event:start
-       * @todo Deprecate
        */
       pubsub.emit('start')
 
@@ -6993,7 +7921,6 @@ syngen.loop = (() => {
      * Stops the loop.
      * @fires syngen.loop#event:stop
      * @memberof syngen.loop
-     * @todo Deprecate and always leave running
      */
     stop: function () {
       if (!isRunning) {
@@ -7011,7 +7938,6 @@ syngen.loop = (() => {
       /**
        * Fired when the loop stops.
        * @event syngen.loop#event:stop
-       * @todo Deprecate
        */
       pubsub.emit('stop')
 
@@ -7665,7 +8591,7 @@ syngen.state.on('reset', () => syngen.position.reset())
 /**
  * The most basic prop that exists on the soundstage.
  * With its {@link syngen.prop.base.invent|invent} method, implementations can extend and create a hierarchy of prototypes with a variety of sounds and behaviors.
- * Instances must be created and destroyed via {@link syngen.props}.
+ * Instances _should_ be created and destroyed via {@link syngen.props}.
  * @augments syngen.utility.physical
  * @interface
  * @todo Allow reverb to be optional with a flag on the prototype
@@ -7680,11 +8606,11 @@ syngen.prop.base = {
    */
   binaural: undefined,
   /**
-   * Instantiates the prop with `options` and fades in its volume.
+   * Initializes the prop with `options` and fades in its volume.
    * Derivative props are discouraged from overriding this method.
    * Instead they should define an {@link syngen.prop.base#onConstruct|onConstruct} method.
    * @instance
-   * @param {Object} [options]
+   * @param {Object} [options={}]
    * @param {AudioDestinationNode|GainNode} [options.destination={@link syngen.audio.mixer.bus.props|syngen.audio.mixer.bus.props()}]
    * @param {Number} [options.radius]
    *   Defaults to the prototype's radius.
@@ -7733,7 +8659,7 @@ syngen.prop.base = {
     return this
   },
   /**
-   * Prepares the prop for garbage collection and fades out its volume.
+   * Prepares the instance for garbage collection and fades out its volume.
    * Derivative props are discouraged from overriding this method.
    * Instead they should define an {@link syngen.prop.base#onConstruct|onDestroy} method.
    * @instance

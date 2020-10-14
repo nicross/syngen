@@ -1,7 +1,7 @@
 /**
  * The most basic prop that exists on the soundstage.
  * With its {@link syngen.prop.base.invent|invent} method, implementations can extend and create a hierarchy of prototypes with a variety of sounds and behaviors.
- * Instances must be created and destroyed via {@link syngen.props}.
+ * Instances _should_ be created and destroyed via {@link syngen.props}.
  * @augments syngen.utility.physical
  * @interface
  * @todo Allow reverb to be optional with a flag on the prototype
@@ -16,11 +16,11 @@ syngen.prop.base = {
    */
   binaural: undefined,
   /**
-   * Instantiates the prop with `options` and fades in its volume.
+   * Initializes the prop with `options` and fades in its volume.
    * Derivative props are discouraged from overriding this method.
    * Instead they should define an {@link syngen.prop.base#onConstruct|onConstruct} method.
    * @instance
-   * @param {Object} [options]
+   * @param {Object} [options={}]
    * @param {AudioDestinationNode|GainNode} [options.destination={@link syngen.audio.mixer.bus.props|syngen.audio.mixer.bus.props()}]
    * @param {Number} [options.radius]
    *   Defaults to the prototype's radius.
@@ -69,7 +69,7 @@ syngen.prop.base = {
     return this
   },
   /**
-   * Prepares the prop for garbage collection and fades out its volume.
+   * Prepares the instance for garbage collection and fades out its volume.
    * Derivative props are discouraged from overriding this method.
    * Instead they should define an {@link syngen.prop.base#onConstruct|onDestroy} method.
    * @instance

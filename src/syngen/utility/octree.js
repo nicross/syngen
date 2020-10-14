@@ -1,16 +1,48 @@
 /**
+ * Provides an octree interface for storing and querying objects in three-dimensional space.
  * @interface
+ * @see syngen.utility.octree.create
+ * @todo Document private members
  */
 syngen.utility.octree = {}
 
 /**
+ * Instantiates a new octree.
+ * @param {Object} [options={}]
+ * @param {Number} [options.depth={@link syngen.const.maxSafeFloat|syngen.const.maxSafeFloat * 2}]
+ *   Range of values along the z-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.height={@link syngen.const.maxSafeFloat|syngen.const.maxSafeFloat * 2}]
+ *   Range of values along the y-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.maxItems=12]
+ *   Number of items before the tree branches.
+ *   This value is passed to child nodes.
+ * @param {Number} [options.width={@link syngen.const.maxSafeFloat|syngen.const.maxSafeFloat * 2}]
+ *   Range of values along the y-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.x={@link syngen.const.maxSafeFloat|-syngen.const.maxSafeFloat}]
+ *   Lower bound for valeus along the x-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.y={@link syngen.const.maxSafeFloat|-syngen.const.maxSafeFloat}]
+ *   Lower bound for valeus along the y-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.z={@link syngen.const.maxSafeFloat|-syngen.const.maxSafeFloat}]
+ *   Lower bound for valeus along the z-axis.
+ *   Typically this is set programmatically.
+ * @returns {syngen.utility.octree}
  * @static
  */
-syngen.utility.octree.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.octree.create = function (options = {}) {
+  return Object.create(this.prototype).construct(options)
 }
 
 /**
+ * Instantiates a new octree with `items` and `options`.
+ * @param {Object[]} [items=[]]
+ * @param {Object} [options={}]
+ *   See {@link syngen.utility.octree.create} for a full reference.
+ * @returns {syngen.utility.octree}
  * @static
  */
 syngen.utility.octree.from = function (items = [], options = {}) {
@@ -25,6 +57,7 @@ syngen.utility.octree.from = function (items = [], options = {}) {
 
 syngen.utility.octree.prototype = {
   /**
+   * Clears all nodes and items.
    * @instance
    */
   clear: function () {
@@ -33,7 +66,10 @@ syngen.utility.octree.prototype = {
     return this
   },
   /**
+   * Initializes the instance with `options`.
    * @instance
+   * @param {Object} [options={}]
+   * @private
    */
   construct: function ({
     depth = syngen.const.maxSafeFloat * 2,
@@ -57,16 +93,31 @@ syngen.utility.octree.prototype = {
     return this
   },
   /**
+   * Prepares the instance for garbage collection.
    * @instance
    */
   destroy: function () {
     return this.clear()
   },
   /**
+   * Finds the closest item to `query` within `radius`.
+   * If `query` is contained within the tree, then the next closest item is returned.
+   * If no result is found, then `undefined` is returned.
    * @instance
+   * @param {Object} query
+   * @param {Number} query.depth
+   * @param {Number} query.height
+   * @param {Number} query.width
+   * @param {Number} query.x
+   * @param {Number} query.y
+   * @param {Number} query.z
+   * @param {Number} [radius=Infinity]
+   * @returns {Object|undefined}
    */
   find: function (query = {}, radius = Infinity) {
-    // NOTE: Assumes query.x, query.y, and query.z exist
+    if (!('depth' in query && 'height' in query && 'width' in query && 'x' in query && 'y' in query && 'z' in query)) {
+      return this
+    }
 
     if (
          isFinite(radius)
@@ -131,7 +182,10 @@ syngen.utility.octree.prototype = {
     return result
   },
   /**
+   * Returns the node index for `item`.
    * @instance
+   * @param {Object} item
+   * @private
    */
   getIndex: function ({
     x = 0,
@@ -180,10 +234,14 @@ syngen.utility.octree.prototype = {
     return 7
   },
   /**
+   * Inserts `item` into the tree.
    * @instance
+   * @param {Object} item
    */
   insert: function (item = {}) {
-    // XXX: Assumes item.x and item.y exist
+    if (!('x' in item && 'y' in item && 'z' in item)) {
+      return this
+    }
 
     const index = this.getIndex(item)
 
@@ -202,13 +260,54 @@ syngen.utility.octree.prototype = {
     return this
   },
   /**
+   * Returns whether this node intersects the rectanglular prism `prism`.
    * @instance
+   * @param {Object} prism
+   * @param {Number} [prism.depth=0]
+   * @param {Number} [prism.height=0]
+   * @param {Number} [prism.width=0]
+   * @param {Number} [prism.x=0]
+   * @param {Number} [prism.y=0]
+   * @param {Number} [prism.z=0]
+   * @returns {Boolean}
+   * @see syngen.utility.intersects
+   * @todo Define a rectangular prism utility or type
    */
   intersects: function (prism) {
     return syngen.utility.intersects(this, prism)
   },
   /**
+   * Removes `item` from the tree, if it exists.
    * @instance
+   * @param {Object} item
+   */
+  remove: function (item) {
+    if (this.nodes.length) {
+      const index = this.getIndex(item)
+      this.nodes[index].remove(item)
+      return this
+    }
+
+    const index = this.items.indexOf(item)
+
+    if (index != -1) {
+      this.items.splice(index, 1)
+    }
+
+    return this
+  },
+  /**
+   * Retrieves all items within the rectanglular prism `prism`.
+   * @instance
+   * @param {Object} prism
+   * @param {Number} [prism.depth=0]
+   * @param {Number} [prism.height=0]
+   * @param {Number} [prism.width=0]
+   * @param {Number} [prism.x=0]
+   * @param {Number} [prism.y=0]
+   * @param {Number} [prism.z=0]
+   * @returns {Object[]}
+   * @todo Define a rectangular prism utility or type
    */
   retrieve: function ({
     depth = 0,
@@ -253,25 +352,9 @@ syngen.utility.octree.prototype = {
     return items
   },
   /**
+   * Splits this node into eight child nodes.
    * @instance
-   */
-  remove: function (item) {
-    if (this.nodes.length) {
-      const index = this.getIndex(item)
-      this.nodes[index].remove(item)
-      return this
-    }
-
-    const index = this.items.indexOf(item)
-
-    if (index != -1) {
-      this.items.splice(index, 1)
-    }
-
-    return this
-  },
-  /**
-   * @instance
+   * @private
    */
   split: function () {
     if (this.nodes.length) {

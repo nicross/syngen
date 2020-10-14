@@ -2,12 +2,13 @@
  * Provides properties and methods to orient and move objects through three-dimensional space.
  * The static {@link syngen.utility.physical.decorate|decorate} method grants objects these qualities.
  * @mixin
+ * @see syngen.utility.physical.decorate
  * @todo Improve clarity and proximity of documentation and source
  */
 syngen.utility.physical = {}
 
 /**
- * Decorates the `target` object with physical properties and methods.
+ * Decorates `target` with physical properties and methods and returns it.
  * @param {Object} target
  * @static
  */

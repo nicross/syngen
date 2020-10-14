@@ -1,16 +1,39 @@
 /**
+ * Provides a binary tree interface for storing and querying objects in one-dimensional space.
  * @interface
+ * @see syngen.utility.bitree.create
+ * @todo Document private members
  */
 syngen.utility.bitree = {}
 
 /**
+ * Instantiates a new binary tree.
+ * @param {Object} [options={}]
+ * @param {String} [options.dimension=value]
+ *   Key used to access items' values.
+ *   Must be a member, not a method.
+ * @param {Number} [options.maxItems=12]
+ *   Number of items before the tree branches.
+ *   This value is passed to child nodes.
+ * @param {Number} [options.minValue={@link syngen.const.maxSafeFloat|-syngen.const.maxSafeFloat}]
+ *   Lower bound of values for this node.
+ *   Typically this is set programmatically.
+ * @param {String} [options.range={@link syngen.const.maxSafeFloat|syngen.const.maxSafeFloat * 2}]
+ *   Range of values for this node.
+ *   Typically this is set programmatically.
+ * @returns {syngen.utility.bitree}
  * @static
  */
-syngen.utility.bitree.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.bitree.create = function (options = {}) {
+  return Object.create(this.prototype).construct(options)
 }
 
 /**
+ * Instantiates a new binary tree with `items` and `options`.
+ * @param {Object[]} [items=[]]
+ * @param {Object} [options={}]
+ *   See {@link syngen.utility.bitree.create} for a full reference.
+ * @returns {syngen.utility.bitree}
  * @static
  */
 syngen.utility.bitree.from = function (items = [], options = {}) {
@@ -25,6 +48,7 @@ syngen.utility.bitree.from = function (items = [], options = {}) {
 
 syngen.utility.bitree.prototype = {
   /**
+   * Clears all nodes and items.
    * @instance
    */
   clear: function () {
@@ -33,34 +57,48 @@ syngen.utility.bitree.prototype = {
     return this
   },
   /**
+   * Initializes the instance with `options`.
    * @instance
+   * @param {Object} [options={}]
+   * @private
    */
   construct: function ({
-    dimension = 'x',
+    dimension = 'value',
     maxItems = 12,
-    value = -syngen.const.maxSafeFloat,
-    width = syngen.const.maxSafeFloat * 2,
+    minValue = -syngen.const.maxSafeFloat,
+    range = syngen.const.maxSafeFloat * 2,
   } = {}) {
     this.dimension = dimension
     this.items = []
     this.maxItems = maxItems
+    this.minValue = minValue
     this.nodes = []
-    this.value = value
-    this.width = width
+    this.range = range
 
     return this
   },
   /**
+   * Prepares the instance for garbage collection.
    * @instance
    */
   destroy: function () {
     return this.clear()
   },
   /**
+   * Finds the closest item to `query` within `radius`.
+   * The `query` must contain a member set to the configured dimension.
+   * If `query` is contained within the tree, then the next closest item is returned.
+   * If no result is found, then `undefined` is returned.
    * @instance
+   * @param {Object} query
+   * @param {Number} query.{dimension}
+   * @param {Number} [radius=Infinity]
+   * @returns {Object|undefined}
    */
   find: function (query, radius = Infinity) {
-    // XXX: Assumes query[this.dimension] exists
+    if (!(this.dimension in query)) {
+      return
+    }
 
     if (isFinite(radius) && !this.intersects(query[this.dimension] - radius, radius * 2)) {
       return
@@ -114,14 +152,17 @@ syngen.utility.bitree.prototype = {
     return result
   },
   /**
+   * Returns the node index for `item`.
    * @instance
+   * @param {Object} item
+   * @private
    */
   getIndex: function (item) {
     if (!this.nodes.length) {
       return -1
     }
 
-    const middle = this.value + (this.width / 2)
+    const middle = this.minValue + (this.range / 2)
 
     if (item[this.dimension] <= middle) {
       return 0
@@ -130,10 +171,14 @@ syngen.utility.bitree.prototype = {
     return 1
   },
   /**
+   * Inserts `item` into the tree.
    * @instance
+   * @param {Object} item
    */
   insert: function (item = {}) {
-    // XXX: Assumes item[this.dimension] exists
+    if (!(this.dimension in item)) {
+      return this
+    }
 
     const index = this.getIndex(item)
 
@@ -152,58 +197,88 @@ syngen.utility.bitree.prototype = {
     return this
   },
   /**
+   * Returns whether this node intersects the line segment starting at `minValue` with length `range`.
    * @instance
+   * @param {Number} minValue
+   * @param {Number} range
+   * @returns {Boolean}
    */
-  intersects: function (value, width) {
-    return syngen.utility.between(this.value, value, value + width)
-      || syngen.utility.between(value, this.value, this.value + this.width)
+  intersects: function (minValue, range) {
+    return syngen.utility.between(this.minValue, minValue, minValue + range)
+      || syngen.utility.between(minValue, this.minValue, this.minValue + this.range)
   },
   /**
+   * Removes `item` from the tree, if it exists.
    * @instance
+   * @param {Object} item
    */
-  retrieve: function (value, width) {
+  remove: function (item) {
+    if (this.nodes.length) {
+      const index = this.getIndex(item)
+      this.nodes[index].remove(item)
+      return this
+    }
+
+    const index = this.items.indexOf(item)
+
+    if (index != -1) {
+      this.items.splice(index, 1)
+    }
+
+    return this
+  },
+  /**
+   * Retrieves all items with values along the line segment starting at `minValue` with length `range`.
+   * @instance
+   * @param {Number} minValue
+   * @param {Number} range
+   * @returns {Object[]}
+   */
+  retrieve: function (minValue, range) {
     const items = []
 
-    if (!this.intersects(value, width)) {
+    if (!this.intersects(minValue, range)) {
       return items
     }
 
     for (const item of this.items) {
-      if (item[this.dimension] >= value && item[this.dimension] <= value + width) {
+      if (item[this.dimension] >= minValue && item[this.dimension] <= minValue + range) {
         items.push(item)
       }
     }
 
     for (const node of this.nodes) {
       items.push(
-        ...node.retrieve(value, width)
+        ...node.retrieve(minValue, range)
       )
     }
 
     return items
   },
   /**
+   * Splits this node into two child nodes.
    * @instance
+   * @private
    */
   split: function () {
     if (this.nodes.length) {
       return this
     }
 
-    const width = this.width / 2
+    const range = this.range / 2
 
     this.nodes[0] = syngen.utility.bitree.create({
       dimension: this.dimension,
       maxItems: this.maxItems,
-      value: this.value,
-      width,
+      minValue: this.minValue,
+      range,
     })
 
     this.nodes[1] = syngen.utility.bitree.create({
       dimension: this.dimension,
       maxItems: this.maxItems,
-      value: this.value + width,
-      width,
+      minValue: this.minValue + range,
+      range,
     })
 
     for (const item of this.items) {

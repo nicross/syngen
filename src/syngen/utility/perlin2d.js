@@ -1,23 +1,27 @@
 /**
+ * Provides an interface for generating seeded two-dimensional Perlin noise.
  * @interface
- * @property {Number} pruneThreshold=10**3
- * @property {Number} range=Math.sqrt(2/4)
+ * @see syngen.utility.perlin2d.create
+ * @todo Document private members
  */
 syngen.utility.perlin2d = {}
 
 /**
+ * Instantiates a two-dimensional Perlin noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.perlin2d}
  * @static
  */
-syngen.utility.perlin2d.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.perlin2d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
 }
 
-// SEE: https://en.wikipedia.org/wiki/Perlin_noise
-// SEE: https://gamedev.stackexchange.com/questions/23625/how-do-you-generate-tileable-perlin-noise
-// SEE: https://github.com/josephg/noisejs
 syngen.utility.perlin2d.prototype = {
   /**
+   * Initializes the instance with `...seeds`.
    * @instance
+   * @param {...String} [...seeds]
+   * @private
    */
   construct: function (...seeds) {
     this.gradient = new Map()
@@ -25,7 +29,11 @@ syngen.utility.perlin2d.prototype = {
     return this
   },
   /**
+   * Generates the value at `(x, y)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
    */
   generateGradient: function (x, y) {
     const srand = syngen.utility.srand('perlin', this.seed, x, y)
@@ -42,7 +50,13 @@ syngen.utility.perlin2d.prototype = {
     return this
   },
   /**
+   * Calculates the dot product between `(dx, dy)` and the value at `(xi, yi)`.
    * @instance
+   * @param {Number} xi
+   * @param {Number} yi
+   * @param {Number} x
+   * @param {Number} y
+   * @private
    */
   getDotProduct: function (xi, yi, x, y) {
     const dx = x - xi,
@@ -51,17 +65,28 @@ syngen.utility.perlin2d.prototype = {
     return (dx * this.getGradient(xi, yi, 0)) + (dy * this.getGradient(xi, yi, 1))
   },
   /**
+   * Retrieves the value at `(x, y)` and index `i`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   * @returns {Number}
    */
   getGradient: function (x, y, i) {
     if (!this.hasGradient(x, y)) {
       this.generateGradient(x, y)
+      this.requestPrune()
     }
 
     return this.gradient.get(x).get(y)[i]
   },
   /**
+   * Returns whether a value exists for `(x, y)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   * @returns {Boolean}
    */
   hasGradient: function (x, y) {
     const xMap = this.gradient.get(x)
@@ -73,7 +98,10 @@ syngen.utility.perlin2d.prototype = {
     return xMap.has(y)
   },
   /**
+   * Frees memory when usage exceeds the prune threshold.
    * @instance
+   * @private
+   * @see syngen.utility.perlin2d#pruneThreshold
    */
   prune: function () {
     this.gradient.forEach((xMap, x) => {
@@ -90,9 +118,22 @@ syngen.utility.perlin2d.prototype = {
 
     return this
   },
+  /**
+   * The maximum vertex count before they must be pruned.
+   * @instance
+   * @private
+   */
   pruneThreshold: 10 ** 3,
   /**
+   * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.
    * @instance
+   * @private
+   */
+  range: Math.sqrt(2/4),
+  /**
+   * Requests a pruning.
+   * @instance
+   * @private
    */
   requestPrune: function () {
     if (this.pruneRequest) {
@@ -106,7 +147,11 @@ syngen.utility.perlin2d.prototype = {
 
     return this
   },
-  range: Math.sqrt(2/4),
+  /**
+   * Clears all generated values.
+   * This is especially useful to call when {@link syngen.seed} is set.
+   * @instance
+   */
   reset: function () {
     if (this.pruneRequest) {
       cancelIdleCallback(this.pruneRequest)
@@ -116,10 +161,24 @@ syngen.utility.perlin2d.prototype = {
 
     return this
   },
+  /**
+   * Calculates a smooth delta value for interpolation.
+   * @instance
+   * @param {Number} value
+   * @private
+   * @returns {Number}
+   */
   smooth: function (value) {
     // 6x^5 - 15x^4 + 10x^3
     return (value ** 3) * (value * ((value * 6) - 15) + 10)
   },
+  /**
+   * Calculates the value at `(x, y)`.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @returns {Number}
+   */
   value: function (x, y) {
     const x0 = Math.floor(x),
       x1 = x0 + 1,
@@ -142,8 +201,6 @@ syngen.utility.perlin2d.prototype = {
       ),
       dy
     )
-
-    this.requestPrune()
 
     return syngen.utility.scale(value, -this.range, this.range, 0, 1)
   },

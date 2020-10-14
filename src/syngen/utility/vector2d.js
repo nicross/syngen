@@ -1,20 +1,28 @@
 /**
+ * Provides an interface for two-dimensional vectors with x-y coordinates.
  * @interface
- * @property {Number} x
- * @property {Number} y
+ * @see syngen.utility.vector2d.create
  */
 syngen.utility.vector2d = {}
 
 /**
+ * Instantiates a new two-dimensional vector.
+ * @param {syngen.utility.vector2d|Object} [options={}]
+ * @param {Number} [options.x=0]
+ * @param {Number} [options.y=0]
+ * @returns {syngen.utility.vector2d}
  * @static
  */
-syngen.utility.vector2d.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.vector2d.create = function (options = {}) {
+  return Object.create(this.prototype).construct(options)
 }
 
 syngen.utility.vector2d.prototype = {
   /**
+   * Adds `vector` to this and returns their sum as a new instance.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {syngen.utility.vector2d|Object}
    */
   add: function ({
     x = 0,
@@ -26,35 +34,26 @@ syngen.utility.vector2d.prototype = {
     })
   },
   /**
+   * Calculates the angle between this and the positive x-axis, in radians.
    * @instance
+   * @returns {Number}
    */
   angle: function () {
     return Math.atan2(this.y, this.x)
   },
   /**
+   * Returns a new instance with the same properties.
    * @instance
-   */
-  angleTo: function (vector, angle = 0) {
-    let relative = syngen.utility.vector2d.prototype.isPrototypeOf(vector)
-      ? vector
-      : syngen.utility.vector2d.create(vector)
-
-    relative = relative.subtract(this)
-
-    if (angle) {
-      relative = relative.rotate(angle)
-    }
-
-    return relative.angle()
-  },
-  /**
-   * @instance
+   * @returns {syngen.utility.vector2d}
    */
   clone: function () {
     return syngen.utility.vector2d.create(this)
   },
   /**
+   * Initializes the instance with `options`.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [options={}]
+   * @private
    */
   construct: function ({
     x = 0,
@@ -65,7 +64,11 @@ syngen.utility.vector2d.prototype = {
     return this
   },
   /**
+   * Calculates the cross product with `vector`.
+   * This operation is noncommunicative.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {Number}
    */
   crossProduct: function ({
     x = 0,
@@ -74,7 +77,10 @@ syngen.utility.vector2d.prototype = {
     return (this.x * y) - (this.y * x)
   },
   /**
+   * Calculates the Euclidean distance from `vector`.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {Number}
    */
   distance: function ({
     x = 0,
@@ -83,7 +89,10 @@ syngen.utility.vector2d.prototype = {
     return Math.sqrt(((this.x - x) ** 2) + ((this.y - y) ** 2))
   },
   /**
+   * Calculates the squared Euclidean distance from `vector`.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {Number}
    */
   distance2: function ({
     x = 0,
@@ -92,7 +101,10 @@ syngen.utility.vector2d.prototype = {
     return ((this.x - x) ** 2) + ((this.y - y) ** 2)
   },
   /**
+   * Calculates the dot product with `vector`.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {Number}
    */
   dotProduct: function ({
     x = 0,
@@ -101,7 +113,10 @@ syngen.utility.vector2d.prototype = {
     return (this.x * x) + (this.y * y)
   },
   /**
+   * Returns whether this is equal to `vector`.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {Boolean}
    */
   equals: function ({
     x = 0,
@@ -110,7 +125,9 @@ syngen.utility.vector2d.prototype = {
     return (this.x == x) && (this.y == y)
   },
   /**
+   * Returns the inverse vector as a new instance.
    * @instance
+   * @returns {syngen.utility.vector2d}
    */
   inverse: function () {
     return syngen.utility.vector2d.create({
@@ -119,13 +136,17 @@ syngen.utility.vector2d.prototype = {
     })
   },
   /**
+   * Returns whether this represents the origin.
    * @instance
+   * @returns {Boolean}
    */
   isZero: function () {
     return !this.x && !this.y
   },
   /**
+   * Scales this by its distance to return a unit vector as a new instance.
    * @instance
+   * @returns {syngen.utility.vector2d}
    */
   normalize: function () {
     const distance = this.distance()
@@ -137,9 +158,16 @@ syngen.utility.vector2d.prototype = {
     return this.scale(1 / distance)
   },
   /**
+   * Rotates by `angle`, in radians, and returns it as a new instance.
    * @instance
+   * @param {Number} [angle=0]
+   * @returns {syngen.utility.vector2d}
    */
   rotate: function (angle = 0) {
+    if (angle == 0) {
+      return this.clone()
+    }
+
     const cos = Math.cos(angle),
       sin = Math.sin(angle)
 
@@ -149,7 +177,10 @@ syngen.utility.vector2d.prototype = {
     })
   },
   /**
+   * Multiplies this by `scalar` and returns it as a new instance.
    * @instance
+   * @param {Number} [scalar=0]
+   * @returns {syngen.utility.vector2d}
    */
   scale: function (scalar = 0) {
     return syngen.utility.vector2d.create({
@@ -158,7 +189,11 @@ syngen.utility.vector2d.prototype = {
     })
   },
   /**
+   * Sets all properties with `options`.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [options]
+   * @param {Number} [options.x=0]
+   * @param {Number} [options.y=0]
    */
   set: function ({
     x = 0,
@@ -169,7 +204,10 @@ syngen.utility.vector2d.prototype = {
     return this
   },
   /**
+   * Subtracts `vector` from this and returns their difference as a new instance.
    * @instance
+   * @param {syngen.utility.vector2d|Object} [vector]
+   * @returns {syngen.utility.vector2d|Object}
    */
   subtract: function ({
     x = 0,
@@ -181,11 +219,14 @@ syngen.utility.vector2d.prototype = {
     })
   },
   /**
+   * Subtracts a circular radius from this and returns it as a new instance.
    * @instance
+   * @param {Number} [radius=0]
+   * @returns {syngen.utility.vector2d}
    */
   subtractRadius: function (radius = 0) {
     if (radius <= 0) {
-      return syngen.utility.vector2d.create(this)
+      return this.clone()
     }
 
     const distance = this.distance()
@@ -196,9 +237,23 @@ syngen.utility.vector2d.prototype = {
 
     return this.multiply(1 - (radius / distance))
   },
+  /**
+   * Position along the x-axis.
+   * @instance
+   * @type {Number}
+   */
+  x: 0,
+  /**
+   * Position along the y-axis.
+   * @instance
+   * @type {Number}
+   */
+  y: 0,
 }
 
 /**
+ * Instantiates a unit vector along the x-axis.
+ * @returns {syngen.utility.vector2d}
  * @static
  */
 syngen.utility.vector2d.unitX = function () {
@@ -208,6 +263,8 @@ syngen.utility.vector2d.unitX = function () {
 }
 
 /**
+ * Instantiates a unit vector along the y-axis.
+ * @returns {syngen.utility.vector2d}
  * @static
  */
 syngen.utility.vector2d.unitY = function () {

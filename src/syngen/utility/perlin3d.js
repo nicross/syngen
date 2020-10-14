@@ -1,22 +1,27 @@
 /**
+ * Provides an interface for generating seeded two-dimensional Perlin noise.
  * @interface
- * @property {Number} pruneThreshold=10**2
- * @property {Number} range=Math.sqrt(3/4)
+ * @see syngen.utility.perlin3d.create
+ * @todo Document private members
  */
 syngen.utility.perlin3d = {}
 
 /**
+ * Instantiates a three-dimensional Perlin noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.perlin3d}
  * @static
  */
-syngen.utility.perlin3d.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.perlin3d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
 }
 
-// SEE: https://en.wikipedia.org/wiki/Perlin_noise
-// SEE: https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/perlin-noise-part-2
 syngen.utility.perlin3d.prototype = {
   /**
+   * Initializes the instance with `...seeds`.
    * @instance
+   * @param {...String} [...seeds]
+   * @private
    */
   construct: function (...seeds) {
     this.gradient = new Map()
@@ -24,7 +29,12 @@ syngen.utility.perlin3d.prototype = {
     return this
   },
   /**
+   * Generates the value at `(x, y, z)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @private
    */
   generateGradient: function (x, y, z) {
     const srand = syngen.utility.srand('perlin', this.seed, x, y, z)
@@ -48,7 +58,15 @@ syngen.utility.perlin3d.prototype = {
     return this
   },
   /**
+   * Calculates the dot product between `(dx, dy, dz)` and the value at `(xi, yi, zi)`.
    * @instance
+   * @param {Number} xi
+   * @param {Number} yi
+   * @param {Number} zi
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @private
    */
   getDotProduct: function (xi, yi, zi, x, y, z) {
     const dx = x - xi,
@@ -58,7 +76,12 @@ syngen.utility.perlin3d.prototype = {
     return (dx * this.getGradient(xi, yi, zi, 0)) + (dy * this.getGradient(xi, yi, zi, 1)) + (dz * this.getGradient(xi, yi, zi, 2))
   },
   /**
+   * Retrieves the value at `(x, y, z)` and index `i`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   * @returns {Number}
    */
   getGradient: function (x, y, z, i) {
     if (!this.hasGradient(x, y, z)) {
@@ -69,7 +92,13 @@ syngen.utility.perlin3d.prototype = {
     return this.gradient.get(x).get(y).get(z)[i]
   },
   /**
+   * Returns whether a value exists for `(x, y, z)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @private
+   * @returns {Boolean}
    */
   hasGradient: function (x, y, z) {
     const xMap = this.gradient.get(x)
@@ -87,7 +116,10 @@ syngen.utility.perlin3d.prototype = {
     return yMap.has(z)
   },
   /**
+   * Frees memory when usage exceeds the prune threshold.
    * @instance
+   * @private
+   * @see syngen.utility.perlin3d#pruneThreshold
    */
   prune: function () {
     this.gradient.forEach((xMap, x) => {
@@ -110,9 +142,22 @@ syngen.utility.perlin3d.prototype = {
 
     return this
   },
+  /**
+   * The maximum vertex count before they must be pruned.
+   * @instance
+   * @private
+   */
   pruneThreshold: 10 ** 2,
   /**
+   * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.
    * @instance
+   * @private
+   */
+  range: Math.sqrt(3/4),
+  /**
+   * Requests a pruning.
+   * @instance
+   * @private
    */
   requestPrune: function () {
     if (this.pruneRequest) {
@@ -126,8 +171,9 @@ syngen.utility.perlin3d.prototype = {
 
     return this
   },
-  range: Math.sqrt(3/4),
   /**
+   * Clears all generated values.
+   * This is especially useful to call when {@link syngen.seed} is set.
    * @instance
    */
   reset: function () {
@@ -140,14 +186,23 @@ syngen.utility.perlin3d.prototype = {
     return this
   },
   /**
+   * Calculates a smooth delta value for interpolation.
    * @instance
+   * @param {Number} value
+   * @private
+   * @returns {Number}
    */
   smooth: function (value) {
     // 6x^5 - 15x^4 + 10x^3
     return (value ** 3) * (value * ((value * 6) - 15) + 10)
   },
   /**
+   * Calculates the value at `(x, y, z)`.
    * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @returns {Number}
    */
   value: function (x, y, z) {
     const x0 = Math.floor(x),

@@ -12,6 +12,7 @@ syngen.loop = (() => {
     delta = 0,
     frameCount = 0,
     idleRequest,
+    isPaused = false,
     isRunning = false,
     lastFrame = 0,
     time = 0
@@ -58,7 +59,7 @@ syngen.loop = (() => {
     pubsub.emit('frame', {
       delta,
       frame: frameCount,
-      paused: !isRunning,
+      paused: isPaused,
       time,
     })
 
@@ -100,7 +101,7 @@ syngen.loop = (() => {
      * @memberof syngen.loop
      * @returns {Boolean}
      */
-    isPaused: () => !isRunning,
+    isPaused: () => isPaused,
     /**
      * Returns whether the loop is currently running.
      * @memberof syngen.loop
@@ -113,11 +114,11 @@ syngen.loop = (() => {
      * @memberof syngen.loop
      */
     pause: function () {
-      if (!isRunning) {
+      if (isPaused) {
         return this
       }
 
-      isRunning = false
+      isPaused = true
 
       /**
        * Fired when the loop is paused.
@@ -133,11 +134,11 @@ syngen.loop = (() => {
      * @memberof syngen.loop
      */
     resume: function () {
-      if (isRunning) {
+      if (!isPaused) {
         return this
       }
 
-      isRunning = true
+      isPaused = false
 
       /**
        * Fired when the loop is resumed.
@@ -151,7 +152,6 @@ syngen.loop = (() => {
      * Starts the loop.
      * @fires syngen.loop#event:start
      * @memberof syngen.loop
-     * @todo Deprecate and always leave running
      */
     start: function () {
       if (isRunning) {
@@ -166,7 +166,6 @@ syngen.loop = (() => {
       /**
        * Fired when the loop starts.
        * @event syngen.loop#event:start
-       * @todo Deprecate
        */
       pubsub.emit('start')
 
@@ -176,7 +175,6 @@ syngen.loop = (() => {
      * Stops the loop.
      * @fires syngen.loop#event:stop
      * @memberof syngen.loop
-     * @todo Deprecate and always leave running
      */
     stop: function () {
       if (!isRunning) {
@@ -194,7 +192,6 @@ syngen.loop = (() => {
       /**
        * Fired when the loop stops.
        * @event syngen.loop#event:stop
-       * @todo Deprecate
        */
       pubsub.emit('stop')
 

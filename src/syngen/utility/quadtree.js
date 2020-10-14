@@ -1,16 +1,42 @@
 /**
+ * Provides a quadtree interface for storing and querying objects in two-dimensional space.
  * @interface
+ * @see syngen.utility.quadtree.create
+ * @todo Document private members
  */
 syngen.utility.quadtree = {}
 
 /**
+ * Instantiates a new quadtree.
+ * @param {Object} [options={}]
+ * @param {Number} [options.height={@link syngen.const.maxSafeFloat|syngen.const.maxSafeFloat * 2}]
+ *   Range of values along the y-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.maxItems=12]
+ *   Number of items before the tree branches.
+ *   This value is passed to child nodes.
+ * @param {Number} [options.width={@link syngen.const.maxSafeFloat|syngen.const.maxSafeFloat * 2}]
+ *   Range of values along the y-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.x={@link syngen.const.maxSafeFloat|-syngen.const.maxSafeFloat}]
+ *   Lower bound for valeus along the x-axis.
+ *   Typically this is set programmatically.
+ * @param {Number} [options.y={@link syngen.const.maxSafeFloat|-syngen.const.maxSafeFloat}]
+ *   Lower bound for valeus along the y-axis.
+ *   Typically this is set programmatically.
+ * @returns {syngen.utility.quadtree}
  * @static
  */
-syngen.utility.quadtree.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.utility.quadtree.create = function (options = {}) {
+  return Object.create(this.prototype).construct(options)
 }
 
 /**
+ * Instantiates a new quadtree with `items` and `options`.
+ * @param {Object[]} [items=[]]
+ * @param {Object} [options={}]
+ *   See {@link syngen.utility.quadree.create} for a full reference.
+ * @returns {syngen.utility.quadtree}
  * @static
  */
 syngen.utility.quadtree.from = function (items = [], options = {}) {
@@ -25,6 +51,7 @@ syngen.utility.quadtree.from = function (items = [], options = {}) {
 
 syngen.utility.quadtree.prototype = {
   /**
+   * Clears all nodes and items.
    * @instance
    */
   clear: function () {
@@ -33,7 +60,10 @@ syngen.utility.quadtree.prototype = {
     return this
   },
   /**
+   * Initializes the instance with `options`.
    * @instance
+   * @param {Object} [options={}]
+   * @private
    */
   construct: function ({
     height = syngen.const.maxSafeFloat * 2,
@@ -53,16 +83,29 @@ syngen.utility.quadtree.prototype = {
     return this
   },
   /**
+   * Prepares the instance for garbage collection.
    * @instance
    */
   destroy: function () {
     return this.clear()
   },
   /**
+   * Finds the closest item to `query` within `radius`.
+   * If `query` is contained within the tree, then the next closest item is returned.
+   * If no result is found, then `undefined` is returned.
    * @instance
+   * @param {Object} query
+   * @param {Number} query.height
+   * @param {Number} query.width
+   * @param {Number} query.x
+   * @param {Number} query.y
+   * @param {Number} [radius=Infinity]
+   * @returns {Object|undefined}
    */
   find: function (query = {}, radius = Infinity) {
-    // NOTE: Assumes query.x and query.y exist
+    if (!('height' in query && 'width' in query && 'x' in query && 'y' in query)) {
+      return this
+    }
 
     if (
          isFinite(radius)
@@ -125,7 +168,10 @@ syngen.utility.quadtree.prototype = {
     return result
   },
   /**
+   * Returns the node index for `item`.
    * @instance
+   * @param {Object} item
+   * @private
    */
   getIndex: function ({
     x = 0,
@@ -153,10 +199,14 @@ syngen.utility.quadtree.prototype = {
     return 3
   },
   /**
+   * Inserts `item` into the tree.
    * @instance
+   * @param {Object} item
    */
   insert: function (item = {}) {
-    // XXX: Assumes item.x and item.y exist
+    if (!('x' in item && 'y' in item)) {
+      return this
+    }
 
     const index = this.getIndex(item)
 
@@ -175,13 +225,24 @@ syngen.utility.quadtree.prototype = {
     return this
   },
   /**
+   * Returns whether this node intersects the rectangle `rect`.
    * @instance
+   * @param {Object} rect
+   * @param {Number} [rect.height=0]
+   * @param {Number} [rect.width=0]
+   * @param {Number} [rect.x=0]
+   * @param {Number} [rect.y=0]
+   * @returns {Boolean}
+   * @see syngen.utility.intersects
+   * @todo Define a rectangular prism utility or type
    */
   intersects: function (rect) {
     return syngen.utility.intersects(this, rect)
   },
   /**
+   * Removes `item` from the tree, if it exists.
    * @instance
+   * @param {Object} item
    */
   remove: function (item) {
     if (this.nodes.length) {
@@ -199,7 +260,15 @@ syngen.utility.quadtree.prototype = {
     return this
   },
   /**
+   * Retrieves all items within the rectangle `rect`.
    * @instance
+   * @param {Object} rect
+   * @param {Number} [rect.height=0]
+   * @param {Number} [rect.width=0]
+   * @param {Number} [rect.x=0]
+   * @param {Number} [rect.y=0]
+   * @returns {Object[]}
+   * @todo Define a rectangular prism utility or type
    */
   retrieve: function ({
     height = 0,
@@ -233,7 +302,9 @@ syngen.utility.quadtree.prototype = {
     return items
   },
   /**
+   * Splits this node into four child nodes.
    * @instance
+   * @private
    */
   split: function () {
     if (this.nodes.length) {
