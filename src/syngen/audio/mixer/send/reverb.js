@@ -1,27 +1,36 @@
 /**
+ * Provides an interface for routing audio to the global reverb auxiliary send.
+ * Importantly, it models physical space to add pre-delay and attenuate based on distance.
  * @interface
+ * @see syngen.audio.mixer.auxiliary.reverb
+ * @todo Document private members
  */
-syngen.audio.send.reverb = {}
+syngen.audio.mixer.send.reverb = {}
 
 /**
+ * Creates a reverb send.
+ * @returns {syngen.audio.mixer.send.reverb}
  * @static
  */
-syngen.audio.send.reverb.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.audio.mixer.send.reverb.create = function () {
+  return Object.create(this.prototype).construct()
 }
 
-syngen.audio.send.reverb.prototype = {
+syngen.audio.mixer.send.reverb.prototype = {
   /**
+   * Initializes the instance.
    * @instance
+   * @private
    */
   construct: function () {
     const context = syngen.audio.context()
 
-    this.input = context.createGain()
     this.delay = context.createDelay()
+    this.input = context.createGain()
+    this.relative = syngen.utility.vector3d.create()
     this.send = syngen.audio.mixer.auxiliary.reverb.createSend()
 
-    this.relative = syngen.utility.vector3d.create()
+    this.input.gain.value = syngen.const.zeroGain
 
     this.onSendActivate = this.onSendActivate.bind(this)
     syngen.audio.mixer.auxiliary.reverb.on('activate', this.onSendActivate)
@@ -38,6 +47,8 @@ syngen.audio.send.reverb.prototype = {
     return this
   },
   /**
+   * Prepares the instance for garbage collection.
+   * Immediately disconnects from all inputs and outputs.
    * @instance
    */
   destroy: function () {
@@ -47,6 +58,7 @@ syngen.audio.send.reverb.prototype = {
     return this
   },
   /**
+   * Connects `input` to this.
    * @instance
    */
   from: function (input) {
@@ -54,7 +66,10 @@ syngen.audio.send.reverb.prototype = {
     return this
   },
   /**
+   * Handles whenever the auxiliary send activates.
    * @instance
+   * @listens syngen.audio.mixer.auxiliary.reverb#event:activate
+   * @private
    */
   onSendActivate: function () {
     this.update(this.relative)
@@ -63,7 +78,10 @@ syngen.audio.send.reverb.prototype = {
     return this
   },
   /**
+   * Handles whenever the auxiliary send deactivates.
    * @instance
+   * @listens syngen.audio.mixer.auxiliary.reverb#event:activate
+   * @private
    */
   onSendDeactivate: function () {
     this.input.disconnect()
@@ -71,7 +89,13 @@ syngen.audio.send.reverb.prototype = {
     return this
   },
   /**
+   * Updates the circuit with `options` relative to an observer at the origin.
    * @instance
+   * @param {Object} [options={}]
+   * @param {Number} [options.x=0]
+   * @param {Number} [options.y=0]
+   * @param {Number} [options.z=0]
+   * @todo Assess whether it'd be better to simply pass the distance
    */
   update: function ({
     x = 0,
@@ -88,16 +112,11 @@ syngen.audio.send.reverb.prototype = {
       return this
     }
 
-    // TODO: Consider a distance model that doesn't rely on syngen.streamer.getRadius()
-    // e.g. a constant ratio that forces users to turn reverb send way down
-    // BUT what's nice about this solution is close sounds are present and further are roomy
-
     const distance = this.relative.distance(),
-      distancePower = syngen.utility.distanceToPower(distance),
-      distanceRatio = 0.5 + (syngen.utility.clamp(distance / syngen.streamer.getRadius(), 0, 1) * 0.5)
+      power = syngen.utility.distanceToPower(distance)
 
     const delayTime = syngen.utility.clamp(distance / syngen.const.speedOfSound, syngen.const.zeroTime, 1),
-      inputGain = syngen.utility.clamp(distancePower * distanceRatio, syngen.const.zeroGain, 1)
+      inputGain = syngen.utility.clamp((1 - (power ** 0.25)) * power, syngen.const.zeroGain, 1)
 
     syngen.audio.ramp.set(this.delay.delayTime, delayTime)
     syngen.audio.ramp.set(this.input.gain, inputGain)

@@ -1,20 +1,26 @@
 /**
+ * Provides an interface for binaural audio processing.
+ * Typical use involves sending it a monophonic signal for processing and then routing its output to a bus.
+ * This interface is actually a small wrapper for two {@link syngen.audio.binaural.monaural|monaural} processors.
  * @interface
- * @property {syngen.audio.binaural.monaural} left
- * @property {syngen.audio.binaural.monaural} right
+ * @todo Document private members
  */
 syngen.audio.binaural = {}
 
 /**
+ * Instantiates a new binaural processor.
+ * @returns {syngen.audio.binaural}
  * @static
  */
-syngen.audio.binaural.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.audio.binaural.create = function () {
+  return Object.create(this.prototype).construct()
 }
 
 syngen.audio.binaural.prototype = {
   /**
+   * Initializes the binaural processor.
    * @instance
+   * @private
    */
   construct: function () {
     const context = syngen.audio.context()
@@ -34,6 +40,8 @@ syngen.audio.binaural.prototype = {
     return this
   },
   /**
+   * Prepares the instance for garbage collection.
+   * Immediately disconnects from all inputs and outputs.
    * @instance
    */
   destroy: function () {
@@ -43,7 +51,9 @@ syngen.audio.binaural.prototype = {
     return this
   },
   /**
+   * Connects `input` to this.
    * @instance
+   * @param {AudioNode} input
    */
   from: function (input) {
     this.left.from(input)
@@ -51,18 +61,23 @@ syngen.audio.binaural.prototype = {
     return this
   },
   /**
+   * Connects this to `output`.
    * @instance
+   * @param {AudioNode}
    */
   to: function (output) {
     this.merger.connect(output)
     return this
   },
   /**
+   * Updates its inner monaural processors with `options`.
    * @instance
+   * @see syngen.audio.binaural.monaural#update
+   * @todo Calculate coordinates and orientation of monaural processors here
    */
-  update: function (...args) {
-    this.left.update(...args)
-    this.right.update(...args)
+  update: function (options) {
+    this.left.update(options)
+    this.right.update(options)
     return this
   },
 }

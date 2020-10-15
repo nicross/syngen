@@ -1,9 +1,16 @@
 /**
+ * Provides factories and utilities for building prefabricated synthesizers.
  * @namespace
  */
 syngen.audio.synth = {}
 
 /**
+ * Assigns `plugin` to `synth` at `key`, merges its parameters into `synth.param[key]`, and returns `synth`.
+ * @param {syngen.audio.synth~Synth} synth
+ * @param {String} key
+ * @param {Object} plugin
+ * @private
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.assign = function (synth, key, plugin) {
@@ -14,6 +21,12 @@ syngen.audio.synth.assign = function (synth, key, plugin) {
 }
 
 /**
+ * Adds `plugin` into the output chain for `synth` and returns `synth`.
+ * Their stop methods are atuomatically chained.
+ * @param {syngen.audio.synth~Synth} synth
+ * @param {Object} plugin
+ * @private
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.chain = function (synth, plugin) {
@@ -49,6 +62,14 @@ syngen.audio.synth.chain = function (synth, plugin) {
 }
 
 /**
+ * Chains and assigns `plugin` to `synth` and returns `synth`.
+ * @param {syngen.audio.synth~Synth} synth
+ * @param {Synth} key
+ * @param {Object} plugin
+ * @private
+ * @returns {Object}
+ * @see syngen.audio.synth.assign
+ * @see syngen.audio.synth.chain
  * @static
  */
 syngen.audio.synth.chainAssign = function (synth, key, plugin) {
@@ -57,6 +78,11 @@ syngen.audio.synth.chainAssign = function (synth, key, plugin) {
 }
 
 /**
+ * Wraps `synth` such that `plugin` stops when it stops and returns `synth`.
+ * @param {syngen.audio.synth~Synth} synth
+ * @param {Object} plugin
+ * @private
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.chainStop = function (synth, plugin) {
@@ -81,10 +107,25 @@ syngen.audio.synth.chainStop = function (synth, plugin) {
 }
 
 /**
+ * Creates an additive synthesizer which wraps configurable harmonics into a unified synth.
+ * Each harmonic is calculated from an individual frequency coefficient, gain multiplier, and detune modifier.
+ * With `ConstantSourceNode`s their values are controllable in unison such that they maintain their relationships.
+ * @param {Object} [options={}]
+ * @param {Number} [options.detune=0]
+ * @param {Number} [options.frequency=440]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {Object[]} [options.harmonic=[]]
+ *   Each harmonic is an object with these fields:
+ * @param {Number} [options.harmonic.coefficient=1]
+ * @param {Number} [options.harmonic.detune=0]
+ * @param {Number} [options.harmonic.gain=1]
+ * @param {String} [options.harmonic.type=sine]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createAdditive = ({
-  detune,
+  detune = 0,
   frequency,
   gain = syngen.const.zeroGain,
   harmonic: harmonicParams = [],
@@ -146,18 +187,16 @@ syngen.audio.synth.createAdditive = ({
 
   return syngen.audio.synth.decorate({
     _chain: sum,
-    harmonic: harmonics,
     output,
     param: {
       detune: detuneConstant.offset,
       frequency: frequencyConstant.offset,
       gain: output.gain,
+      harmonic: harmonics.map((synth) => synth.param),
     },
     stop: function (when = syngen.audio.time()) {
-      if (harmonics.length) {
-        harmonics[0].oscillator.onended = () => {
-          output.disconnect()
-        }
+      detuneConstant.onended = () => {
+        output.disconnect()
       }
 
       detuneConstant.stop(when)
@@ -170,16 +209,30 @@ syngen.audio.synth.createAdditive = ({
 }
 
 /**
+ * Creates a synthesizer with amplitude modulation.
+ * @param {Object} [options={}]
+ * @param {Number} [options.carrierDetune=0]
+ * @param {Number} [options.carrierFrequency=440]
+ * @param {Number} [options.carrierGain=1]
+ * @param {Number} [options.carrierType=sine]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {Number} [options.modDepth={@link syngen.const.zeroGain|syngen.const.zeroGain}]
+ * @param {Number} [options.modDetune=0]
+ * @param {Number} [options.modFrequency=440]
+ * @param {Number} [options.modType=sine]
+ * @param {Number} [options.modWhen]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createAm = ({
-  carrierDetune,
+  carrierDetune = 0,
   carrierFrequency,
-  carrierGain: carrierGainAmount,
+  carrierGain: carrierGainAmount = 1,
   carrierType = 'sine',
   gain = syngen.const.zeroGain,
-  modDepth: modDepthAmount,
-  modDetune,
+  modDepth: modDepthAmount = syngen.const.zeroGain,
+  modDetune = 0,
   modFrequency,
   modType = 'sine',
   modWhen,
@@ -242,22 +295,39 @@ syngen.audio.synth.createAm = ({
 }
 
 /**
+ * Creates a synthesizer which applies amplitude modulation to an `AudioBufferSourceNode`.
+ * @param {Object} [options={}]
+ * @param {AudioBuffer} options.buffer
+ * @param {Number} [options.carrierGain=1]
+ * @param {Number} [options.detune=0]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {Boolean} [options.loop=true]
+ * @param {Number} [options.loopEnd]
+ * @param {Number} [options.loopStart]
+ * @param {Number} [options.modDepth={@link syngen.const.zeroGain}]
+ * @param {Number} [options.modDetune=0]
+ * @param {Number} [options.modFrequency=440]
+ * @param {String} [options.modType=sine]
+ * @param {String} [options.modWhen]
+ * @param {String} [options.playbackRate=1]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createAmBuffer = ({
   buffer,
-  carrierGain: carrierGainAmount,
-  detune,
+  carrierGain: carrierGainAmount = 1,
+  detune = 0,
   gain = syngen.const.zeroGain,
   loop = true,
   loopEnd,
   loopStart,
-  modDepth: modDepthAmount,
-  modDetune,
+  modDepth: modDepthAmount = syngen.const.zeroGain,
+  modDetune = 0,
   modFrequency,
   modType = 'sine',
   modWhen,
-  rate = 1,
+  playbackRate = 1,
   when = syngen.audio.time(),
 } = {}) => {
   const context = syngen.audio.context()
@@ -291,7 +361,7 @@ syngen.audio.synth.createAmBuffer = ({
   syngen.audio.synth.setAudioParams(
     [carrierGain.gain, carrierGainAmount],
     [source.detune, detune],
-    [source.playbackRate, rate],
+    [source.playbackRate, playbackRate],
     [modDepth.gain, modDepthAmount],
     [modOscillator.detune, modDetune],
     [modOscillator.frequency, modFrequency],
@@ -310,7 +380,7 @@ syngen.audio.synth.createAmBuffer = ({
         detune: modOscillator.detune,
         frequency: modOscillator.frequency,
       },
-      rate: source.playbackRate,
+      playbackRate: source.playbackRate,
     },
     stop: function (when = syngen.audio.time()) {
       source.onended = () => {
@@ -326,16 +396,27 @@ syngen.audio.synth.createAmBuffer = ({
 }
 
 /**
+ * Creates a synthesizer which uses an `AudioBufferSourceNode`.
+ * @param {Object} [options={}]
+ * @param {AudioBuffer} options.buffer
+ * @param {Number} [options.detune=0]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {Boolean} [options.loop=true]
+ * @param {Number} [options.loopEnd]
+ * @param {Number} [options.loopStart]
+ * @param {String} [options.playbackRate=1]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createBuffer = ({
   buffer,
-  detune,
+  detune = 0,
   gain = syngen.const.zeroGain,
   loop = true,
   loopEnd,
   loopStart,
-  rate = 1,
+  playbackRate = 1,
   when = syngen.audio.time(),
 } = {}) => {
   const context = syngen.audio.context()
@@ -358,7 +439,7 @@ syngen.audio.synth.createBuffer = ({
 
   syngen.audio.synth.setAudioParams(
     [source.detune, detune],
-    [source.playbackRate, rate],
+    [source.playbackRate, playbackRate],
     [output.gain, gain],
   )
 
@@ -368,7 +449,7 @@ syngen.audio.synth.createBuffer = ({
     param: {
       detune: source.detune,
       gain: output.gain,
-      rate: source.playbackRate,
+      playbackRate: source.playbackRate,
     },
     source,
     stop: function (when = syngen.audio.time()) {
@@ -384,15 +465,29 @@ syngen.audio.synth.createBuffer = ({
 }
 
 /**
+ * Creates a synthesizer with frequency modulation.
+ * @param {Object} [options={}]
+ * @param {Number} [options.carrierDetune=0]
+ * @param {Number} [options.carrierFrequency=440]
+ * @param {Number} [options.carrierGain=1]
+ * @param {Number} [options.carrierType=sine]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {Number} [options.modDepth={@link syngen.const.zeroGain|syngen.const.zeroGain}]
+ * @param {Number} [options.modDetune=0]
+ * @param {Number} [options.modFrequency=440]
+ * @param {Number} [options.modType=sine]
+ * @param {Number} [options.modWhen]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createFm = ({
-  carrierDetune,
+  carrierDetune = 0,
   carrierFrequency,
   carrierType = 'sine',
   gain = syngen.const.zeroGain,
-  modDepth: modDepthAmount,
-  modDetune,
+  modDepth: modDepthAmount = syngen.const.zeroGain,
+  modDetune = 0,
   modFrequency,
   modType = 'sine',
   modWhen,
@@ -450,12 +545,21 @@ syngen.audio.synth.createFm = ({
 }
 
 /**
+ * Creates a simple low-frequency oscillator intended for modulation.
+ * This is identical to {@link |createSimple()} except with different terminology.
+ * @param {Object} [options={}]
+ * @param {Number} [options.depth={@link syngen.const.zeroGain}]
+ * @param {Number} [options.detune=0]
+ * @param {Number} [options.frequency=0]
+ * @param {String} [options.type=sine]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createLfo = ({
-  depth: depthAmount,
-  detune,
-  frequency,
+  depth: depthAmount = syngen.const.zeroGain,
+  detune = 0,
+  frequency = 0,
   type = 'sine',
   when = syngen.audio.time(),
 } = {}) => {
@@ -495,21 +599,40 @@ syngen.audio.synth.createLfo = ({
 }
 
 /**
+ * Creates a synthesizer with both amplitude and frequency modulation.
+ * @param {Object} [options={}]
+ * @param {Number} [options.amodDepth={@link syngen.const.zeroGain|syngen.const.zeroGain}]
+ * @param {Number} [options.amodDetune=0]
+ * @param {Number} [options.amodFrequency=440]
+ * @param {Number} [options.amodType=sine]
+ * @param {Number} [options.amodWhen]
+ * @param {Number} [options.carrierDetune=0]
+ * @param {Number} [options.carrierFrequency=440]
+ * @param {Number} [options.carrierGain=1]
+ * @param {Number} [options.carrierType=sine]
+ * @param {Number} [options.fmodDepth={@link syngen.const.zeroGain|syngen.const.zeroGain}]
+ * @param {Number} [options.fmodDetune=0]
+ * @param {Number} [options.fmodFrequency=440]
+ * @param {Number} [options.fmodType=sine]
+ * @param {Number} [options.fmodWhen]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createMod = ({
   amodDepth: amodDepthAmount = syngen.const.zeroGain,
-  amodDetune,
+  amodDetune = 0,
   amodFrequency,
   amodType = 'sine',
   amodWhen,
-  carrierDetune,
+  carrierDetune = 0,
   carrierFrequency,
-  carrierGain: carrierGainAmount,
+  carrierGain: carrierGainAmount = 1,
   carrierType = 'sine',
   gain = syngen.const.zeroGain,
-  fmodDepth: fmodDepthAmount,
-  fmodDetune,
+  fmodDepth: fmodDepthAmount = syngen.const.zeroGain,
+  fmodDetune = 0,
   fmodFrequency,
   fmodType = 'sine',
   fmodWhen,
@@ -588,17 +711,25 @@ syngen.audio.synth.createMod = ({
 }
 
 /**
+ * Creates a simple synthesizer with configurable pulse-width modulation.
+ * @param {Object} [options={}]
+ * @param {Number} [options.detune=0]
+ * @param {Number} [options.frequency=440]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {String} [options.type=sine]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @param {Number} [options.width=0]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createPwm = ({
-  detune,
+  detune = 0,
   frequency,
   gain = syngen.const.zeroGain,
   type = 'sine',
   when = syngen.audio.time(),
+  width: widthAmount = 0,
 } = {}) => {
-  // SEE: https://github.com/pendragon-andyh/WebAudio-PulseOscillator
-
   const context = syngen.audio.context(),
     facade = context.createGain(),
     oscillator = context.createOscillator(),
@@ -610,7 +741,6 @@ syngen.audio.synth.createPwm = ({
   oscillator.type = type
   shaperOne.curve = syngen.audio.shape.one()
   shaperPulse.curve = syngen.audio.shape.square()
-  width.gain.value = 0
 
   facade.connect(output)
   oscillator.connect(shaperOne)
@@ -625,6 +755,7 @@ syngen.audio.synth.createPwm = ({
     [oscillator.detune, detune],
     [oscillator.frequency, frequency],
     [output.gain, gain],
+    [width.gain, widthAmount],
   )
 
   return syngen.audio.synth.decorate({
@@ -650,10 +781,18 @@ syngen.audio.synth.createPwm = ({
 }
 
 /**
+ * Creates a simple synthesizer with a single oscillator.
+ * @param {Object} [options={}]
+ * @param {Number} [options.detune=0]
+ * @param {Number} [options.frequency=440]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {String} [options.type=sine]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createSimple = ({
-  detune,
+  detune = 0,
   frequency,
   gain = syngen.const.zeroGain,
   type = 'sine',
@@ -695,6 +834,10 @@ syngen.audio.synth.createSimple = ({
 }
 
 /**
+ * Decorates prefabricated `synth` with synth methods.
+ * @param {Object} [synth={}]
+ * @private
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.decorate = (synth = {}) => {
@@ -702,7 +845,33 @@ syngen.audio.synth.decorate = (synth = {}) => {
 }
 
 /**
- * @static
+ * A prefabricated synth returned from a {@link syngen.audio.synth} factory method.
+ * They wrap their `AudioNode`s with an interface that exposes their `AudioParam`s and provides methods to build more sophisticated circuits.
+ * Internally they maintain a pointer to the last node before output so they can unlink them and dynamically add plugins to the output chain.
+ * @property {Function} assign
+ *   Assigns `plugin` to `key` and merges its parameters.
+ * @property {Function} chain
+ *   Adds `plugin` to the output chain and ensures they stop together.
+ * @property {Function} chainAssign
+ *   Assigns and chains `plugin` to `key`.
+ * @property {Function} chainStop
+ *   Ensures `plugin` stops when the synth is stopped.
+ * @property {Function} connect
+ *   Connects output to node.
+ * @property {Function} disconnect
+ *   Disconnects output from node.
+ * @property {Function} filtered
+ *   Adds a `BiquadFilterNode` to the output chain with `options`.
+ * @property {GainNode} output
+ *   The final output after all chained plugins.
+ * @property {Object} param
+ *   Hash of all `AudioParam`s.
+ * @property {Function} shaped
+ *   Adds a `WaveShaperNode` to the output chain with `curve`.
+ * @property {Function} stop
+ *   Stops the synth and all chained plugins.
+ * @todo Improve documentation
+ * @typedef {Object} syngen.audio.synth~Synth
  */
 syngen.audio.synth.decoration = {
   assign: function (...args) {
@@ -742,10 +911,15 @@ syngen.audio.synth.decoration = {
 }
 
 /**
+ * Adds a filter with `options` to the output chain of `synth` and returns `synth`.
+ * @param {syngen.audio.synth~Synth} synth
+ * @param {Object} [options={}]
+ * @private
+ * @returns {Object}
  * @static
  */
 syngen.audio.synth.filtered = function (synth, {
-  detune,
+  detune = 0,
   gain,
   frequency,
   Q,
@@ -766,6 +940,9 @@ syngen.audio.synth.filtered = function (synth, {
 }
 
 /**
+ * Helper that sets `AudioParam`s to values.
+ * Expects multiple arguments in the format `[AudioParam, value]`.
+ * @private
  * @static
  */
 syngen.audio.synth.setAudioParams = function (...params) {
@@ -781,6 +958,11 @@ syngen.audio.synth.setAudioParams = function (...params) {
 }
 
 /**
+ * Inserts a `WaveShaperNode` into the output chain for `synth` and returns `synth`.
+ * @param {syngen.audio.synth~Synth} synth
+ * @param {Float32Array} curve
+ * @private
+ * @returns {Object}
  * @static
  */
 syngen.audio.synth.shaped = function (synth, curve) {

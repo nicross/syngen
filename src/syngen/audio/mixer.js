@@ -1,4 +1,6 @@
 /**
+ * Provides a mastering process and utilities for routing audio into it like a virtual mixing board.
+ * Implementations are encouraged to leverage this instead of the main audio destination directly.
  * @namespace
  */
 syngen.audio.mixer = (() => {
@@ -25,14 +27,14 @@ syngen.audio.mixer = (() => {
 
   createFilters()
 
-  function createFilters() {
+  function createFilters(highpassFrequency = syngen.const.minFrequency, lowpassFrequency = syngen.const.maxFrequency) {
     masterHighpass = context.createBiquadFilter()
     masterHighpass.type = 'highpass'
-    masterHighpass.frequency.value = syngen.const.minFrequency
+    masterHighpass.frequency.value = highpassFrequency
 
     masterLowpass = context.createBiquadFilter()
     masterLowpass.type = 'lowpass'
-    masterLowpass.frequency.value = syngen.const.maxFrequency
+    masterLowpass.frequency.value = lowpassFrequency
 
     masterInput.connect(masterHighpass)
     masterHighpass.connect(masterLowpass)
@@ -48,28 +50,17 @@ syngen.audio.mixer = (() => {
   }
 
   return {
-    auxiliary: {},
     /**
+     * A collection of auxiliary sends that provide optional parallel effects processing.
      * @memberof syngen.audio.mixer
      * @namespace
      */
-    bus: {},
+    auxiliary: {},
     /**
+     * Creates a `GainNode` that's connected to the master input.
+     * Implementations can leverage buses to create submixes.
      * @memberof syngen.audio.mixer
-     */
-    createAuxiliary: () => {
-      const input = context.createGain(),
-        output = context.createGain()
-
-      output.connect(masterInput)
-
-      return {
-        input,
-        output,
-      }
-    },
-    /**
-     * @memberof syngen.audio.mixer
+     * @returns {GainNode}
      */
     createBus: () => {
       const input = context.createGain()
@@ -77,10 +68,22 @@ syngen.audio.mixer = (() => {
       return input
     },
     /**
+     * Exposes the nodes and parameters associated with the mastering process.
+     * Here's an overview of its routing:
+     * - `GainNode` input
+     * - `BiquadFilterNode` highpass
+     * - `BiquadFilterNode` lowpass
+     * - `DynamicsCompressorNode` limiter
+     * - `GainNode` limiter makeup gain
+     * - `GainNode` output
+     * - `AudioDestinationNode` `{@link syngen.audio.context}().destination`
      * @memberof syngen.audio.mixer
-     * @property {GainNode} input
-     * @property {GainNode} output
+     * @property {Function} input
+     *   Returns the master input `GainNode`.
+     * @property {Function} output
+     *   Returns the master output `GainNode`.
      * @property {Object} param
+     *   Useful parameters for tuning the mastering process.
      * @property {AudioParam} param.gain
      * @property {Object} param.highpass
      * @property {AudioParam} param.highpass.frequency
@@ -95,8 +98,8 @@ syngen.audio.mixer = (() => {
      * @property {AudioParam} param.lowpass.frequency
      */
     master: {
-      input: masterInput,
-      output: masterOutput,
+      input: () => masterInput,
+      output: () => masterOutput,
       param: {
         gain: masterOutput.gain,
         highpass: {
@@ -116,16 +119,30 @@ syngen.audio.mixer = (() => {
       },
     },
     /**
+     * Occasionally the master filters can enter an unstable or bad state.
+     * When this happens the entire mix can drop out to silence.
+     * This provides a solution for replacing them with stable filters.
+     * Implementations can proactively check for invalid states with an {@link https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode|AnalyserNode} or {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode|AudioWorkletNode}.
+     * Beware that the nodes that caused the issue may also need reset.
      * @memberof syngen.audio.mixer
+     * @todo Reset reverb filters once implemented
      */
     rebuildFilters: function () {
+      const highpassFrequency = masterHighpass.frequency.value,
+        lowpassFrequency = masterLowpass.frequency.value
+
       destroyFilters()
-      createFilters()
+      createFilters(highpassFrequency, lowpassFrequency)
 
       this.master.param.highpass.frequency = masterHighpass.frequency
       this.master.param.lowpass.frequency = masterLowpass.frequency
 
       return this
     },
+    /**
+     * A collection of circuits that route signals to auxiliary sends.
+     * @namespace syngen.audio.mixer.send
+     */
+    send: {},
   }
 })()

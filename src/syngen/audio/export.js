@@ -10,7 +10,7 @@
  */
 syngen.audio.export = ({
   duration = 0,
-  input = syngen.audio.mixer.master.output,
+  input = syngen.audio.mixer.master.output(),
   name = 'export.webm',
 } = {}) => {
   if (!(input instanceof AudioNode)) {

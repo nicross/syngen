@@ -5070,12 +5070,6 @@ syngen.audio = (() => {
      */
     nyquist: (coefficient = 1) => coefficient * context.sampleRate / 2,
     /**
-     * A collection of circuits that send signals to auxiliary sends.
-     * @namespace syngen.audio.send
-     * @todo Move to syngen.audio.mixer.send
-     */
-    send: {},
-    /**
      * Resumes the main `AudioContext`.
      * Must be called after the first user gesture so playback works in all browsers.
      * @memberof syngen.audio
@@ -5112,22 +5106,28 @@ syngen.audio = (() => {
 })()
 
 /**
+ * Provides an interface for binaural audio processing.
+ * Typical use involves sending it a monophonic signal for processing and then routing its output to a bus.
+ * This interface is actually a small wrapper for two {@link syngen.audio.binaural.monaural|monaural} processors.
  * @interface
- * @property {syngen.audio.binaural.monaural} left
- * @property {syngen.audio.binaural.monaural} right
+ * @todo Document private members
  */
 syngen.audio.binaural = {}
 
 /**
+ * Instantiates a new binaural processor.
+ * @returns {syngen.audio.binaural}
  * @static
  */
-syngen.audio.binaural.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.audio.binaural.create = function () {
+  return Object.create(this.prototype).construct()
 }
 
 syngen.audio.binaural.prototype = {
   /**
+   * Initializes the binaural processor.
    * @instance
+   * @private
    */
   construct: function () {
     const context = syngen.audio.context()
@@ -5147,6 +5147,8 @@ syngen.audio.binaural.prototype = {
     return this
   },
   /**
+   * Prepares the instance for garbage collection.
+   * Immediately disconnects from all inputs and outputs.
    * @instance
    */
   destroy: function () {
@@ -5156,7 +5158,9 @@ syngen.audio.binaural.prototype = {
     return this
   },
   /**
+   * Connects `input` to this.
    * @instance
+   * @param {AudioNode} input
    */
   from: function (input) {
     this.left.from(input)
@@ -5164,18 +5168,23 @@ syngen.audio.binaural.prototype = {
     return this
   },
   /**
+   * Connects this to `output`.
    * @instance
+   * @param {AudioNode}
    */
   to: function (output) {
     this.merger.connect(output)
     return this
   },
   /**
+   * Updates its inner monaural processors with `options`.
    * @instance
+   * @see syngen.audio.binaural.monaural#update
+   * @todo Calculate coordinates and orientation of monaural processors here
    */
-  update: function (...args) {
-    this.left.update(...args)
-    this.right.update(...args)
+  update: function (options) {
+    this.left.update(options)
+    this.right.update(options)
     return this
   },
 }
@@ -5696,7 +5705,7 @@ syngen.audio.effect.createTalkbox = ({
  */
 syngen.audio.export = ({
   duration = 0,
-  input = syngen.audio.mixer.master.output,
+  input = syngen.audio.mixer.master.output(),
   name = 'export.webm',
 } = {}) => {
   if (!(input instanceof AudioNode)) {
@@ -6000,6 +6009,8 @@ syngen.audio.formant.u = () => [
 ]
 
 /**
+ * Provides a mastering process and utilities for routing audio into it like a virtual mixing board.
+ * Implementations are encouraged to leverage this instead of the main audio destination directly.
  * @namespace
  */
 syngen.audio.mixer = (() => {
@@ -6026,14 +6037,14 @@ syngen.audio.mixer = (() => {
 
   createFilters()
 
-  function createFilters() {
+  function createFilters(highpassFrequency = syngen.const.minFrequency, lowpassFrequency = syngen.const.maxFrequency) {
     masterHighpass = context.createBiquadFilter()
     masterHighpass.type = 'highpass'
-    masterHighpass.frequency.value = syngen.const.minFrequency
+    masterHighpass.frequency.value = highpassFrequency
 
     masterLowpass = context.createBiquadFilter()
     masterLowpass.type = 'lowpass'
-    masterLowpass.frequency.value = syngen.const.maxFrequency
+    masterLowpass.frequency.value = lowpassFrequency
 
     masterInput.connect(masterHighpass)
     masterHighpass.connect(masterLowpass)
@@ -6049,28 +6060,17 @@ syngen.audio.mixer = (() => {
   }
 
   return {
-    auxiliary: {},
     /**
+     * A collection of auxiliary sends that provide optional parallel effects processing.
      * @memberof syngen.audio.mixer
      * @namespace
      */
-    bus: {},
+    auxiliary: {},
     /**
+     * Creates a `GainNode` that's connected to the master input.
+     * Implementations can leverage buses to create submixes.
      * @memberof syngen.audio.mixer
-     */
-    createAuxiliary: () => {
-      const input = context.createGain(),
-        output = context.createGain()
-
-      output.connect(masterInput)
-
-      return {
-        input,
-        output,
-      }
-    },
-    /**
-     * @memberof syngen.audio.mixer
+     * @returns {GainNode}
      */
     createBus: () => {
       const input = context.createGain()
@@ -6078,10 +6078,22 @@ syngen.audio.mixer = (() => {
       return input
     },
     /**
+     * Exposes the nodes and parameters associated with the mastering process.
+     * Here's an overview of its routing:
+     * - `GainNode` input
+     * - `BiquadFilterNode` highpass
+     * - `BiquadFilterNode` lowpass
+     * - `DynamicsCompressorNode` limiter
+     * - `GainNode` limiter makeup gain
+     * - `GainNode` output
+     * - `AudioDestinationNode` `{@link syngen.audio.context}().destination`
      * @memberof syngen.audio.mixer
-     * @property {GainNode} input
-     * @property {GainNode} output
+     * @property {Function} input
+     *   Returns the master input `GainNode`.
+     * @property {Function} output
+     *   Returns the master output `GainNode`.
      * @property {Object} param
+     *   Useful parameters for tuning the mastering process.
      * @property {AudioParam} param.gain
      * @property {Object} param.highpass
      * @property {AudioParam} param.highpass.frequency
@@ -6096,8 +6108,8 @@ syngen.audio.mixer = (() => {
      * @property {AudioParam} param.lowpass.frequency
      */
     master: {
-      input: masterInput,
-      output: masterOutput,
+      input: () => masterInput,
+      output: () => masterOutput,
       param: {
         gain: masterOutput.gain,
         highpass: {
@@ -6117,59 +6129,45 @@ syngen.audio.mixer = (() => {
       },
     },
     /**
+     * Occasionally the master filters can enter an unstable or bad state.
+     * When this happens the entire mix can drop out to silence.
+     * This provides a solution for replacing them with stable filters.
+     * Implementations can proactively check for invalid states with an {@link https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode|AnalyserNode} or {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode|AudioWorkletNode}.
+     * Beware that the nodes that caused the issue may also need reset.
      * @memberof syngen.audio.mixer
+     * @todo Reset reverb filters once implemented
      */
     rebuildFilters: function () {
+      const highpassFrequency = masterHighpass.frequency.value,
+        lowpassFrequency = masterLowpass.frequency.value
+
       destroyFilters()
-      createFilters()
+      createFilters(highpassFrequency, lowpassFrequency)
 
       this.master.param.highpass.frequency = masterHighpass.frequency
       this.master.param.lowpass.frequency = masterLowpass.frequency
 
       return this
     },
+    /**
+     * A collection of circuits that route signals to auxiliary sends.
+     * @namespace syngen.audio.mixer.send
+     */
+    send: {},
   }
 })()
 
 /**
+ * Provides utility methods for ramping `AudioParam`s.
  * @namespace
  */
 syngen.audio.ramp = {}
 
 /**
- * @static
- */
-syngen.audio.ramp.createMachine = function (audioParam, rampFn) {
-  let timeout,
-    state = false
-
-  const container = (value, duration) => {
-    rampFn(audioParam, value, duration)
-
-    state = true
-    timeout = syngen.utility.timing.cancelablePromise(duration * 1000)
-
-    timeout.then(() => {
-      state = false
-      timeout = null
-    }, () => syngen.audio.ramp.hold(audioParam))
-
-    return timeout
-  }
-
-  container.cancel = function () {
-    if (timeout) {
-      timeout.cancel()
-    }
-    return this
-  }
-
-  container.state = () => state
-
-  return container
-}
-
-/**
+ * Ramps `audioParam` to the values in `curve` over `duration` seconds.
+ * @param {AudioParam} audioParam
+ * @param {Number[]} curve
+ * @param {Number} [duration={@link syngen.const.zeroTime}]
  * @static
  */
 syngen.audio.ramp.curve = function (audioParam, curve, duration = syngen.const.zeroTime) {
@@ -6179,6 +6177,10 @@ syngen.audio.ramp.curve = function (audioParam, curve, duration = syngen.const.z
 }
 
 /**
+ * Exponentially ramps `audioParam` to `value` over `duration` seconds.
+ * @param {AudioParam} audioParam
+ * @param {Number} value
+ * @param {Number} [duration={@link syngen.const.zeroTime}]
  * @static
  */
 syngen.audio.ramp.exponential = function (audioParam, value, duration = syngen.const.zeroTime) {
@@ -6188,6 +6190,9 @@ syngen.audio.ramp.exponential = function (audioParam, value, duration = syngen.c
 }
 
 /**
+ * Holds `audioParam` at its current time and cancels future values.
+ * This is a polyfill for {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/cancelAndHoldAtTime|AudioParam.cancelAndHoldAtTime()}.
+ * @param {AudioParam} audioParam
  * @static
  */
 syngen.audio.ramp.hold = function (audioParam) {
@@ -6197,6 +6202,10 @@ syngen.audio.ramp.hold = function (audioParam) {
 }
 
 /**
+ * Linearly ramps `audioParam` to `value` over `duration` seconds.
+ * @param {AudioParam} audioParam
+ * @param {Number} value
+ * @param {Number} [duration={@link syngen.const.zeroTime}]
  * @static
  */
 syngen.audio.ramp.linear = function (audioParam, value, duration = syngen.const.zeroTime) {
@@ -6206,6 +6215,11 @@ syngen.audio.ramp.linear = function (audioParam, value, duration = syngen.const.
 }
 
 /**
+ * Sets `audioParam` to `value` without pops or clicks.
+ * The duration depends on the average frame rate.
+ * @param {AudioParam} audioParam
+ * @param {Number} value
+ * @see syngen.performance.delta
  * @static
  */
 syngen.audio.ramp.set = function (audioParam, value) {
@@ -6490,11 +6504,18 @@ syngen.audio.shape = (() => {
 })()
 
 /**
+ * Provides factories and utilities for building prefabricated synthesizers.
  * @namespace
  */
 syngen.audio.synth = {}
 
 /**
+ * Assigns `plugin` to `synth` at `key`, merges its parameters into `synth.param[key]`, and returns `synth`.
+ * @param {syngen.audio.synth~Synth} synth
+ * @param {String} key
+ * @param {Object} plugin
+ * @private
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.assign = function (synth, key, plugin) {
@@ -6505,6 +6526,12 @@ syngen.audio.synth.assign = function (synth, key, plugin) {
 }
 
 /**
+ * Adds `plugin` into the output chain for `synth` and returns `synth`.
+ * Their stop methods are atuomatically chained.
+ * @param {syngen.audio.synth~Synth} synth
+ * @param {Object} plugin
+ * @private
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.chain = function (synth, plugin) {
@@ -6540,6 +6567,14 @@ syngen.audio.synth.chain = function (synth, plugin) {
 }
 
 /**
+ * Chains and assigns `plugin` to `synth` and returns `synth`.
+ * @param {syngen.audio.synth~Synth} synth
+ * @param {Synth} key
+ * @param {Object} plugin
+ * @private
+ * @returns {Object}
+ * @see syngen.audio.synth.assign
+ * @see syngen.audio.synth.chain
  * @static
  */
 syngen.audio.synth.chainAssign = function (synth, key, plugin) {
@@ -6548,6 +6583,11 @@ syngen.audio.synth.chainAssign = function (synth, key, plugin) {
 }
 
 /**
+ * Wraps `synth` such that `plugin` stops when it stops and returns `synth`.
+ * @param {syngen.audio.synth~Synth} synth
+ * @param {Object} plugin
+ * @private
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.chainStop = function (synth, plugin) {
@@ -6572,10 +6612,25 @@ syngen.audio.synth.chainStop = function (synth, plugin) {
 }
 
 /**
+ * Creates an additive synthesizer which wraps configurable harmonics into a unified synth.
+ * Each harmonic is calculated from an individual frequency coefficient, gain multiplier, and detune modifier.
+ * With `ConstantSourceNode`s their values are controllable in unison such that they maintain their relationships.
+ * @param {Object} [options={}]
+ * @param {Number} [options.detune=0]
+ * @param {Number} [options.frequency=440]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {Object[]} [options.harmonic=[]]
+ *   Each harmonic is an object with these fields:
+ * @param {Number} [options.harmonic.coefficient=1]
+ * @param {Number} [options.harmonic.detune=0]
+ * @param {Number} [options.harmonic.gain=1]
+ * @param {String} [options.harmonic.type=sine]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createAdditive = ({
-  detune,
+  detune = 0,
   frequency,
   gain = syngen.const.zeroGain,
   harmonic: harmonicParams = [],
@@ -6637,18 +6692,16 @@ syngen.audio.synth.createAdditive = ({
 
   return syngen.audio.synth.decorate({
     _chain: sum,
-    harmonic: harmonics,
     output,
     param: {
       detune: detuneConstant.offset,
       frequency: frequencyConstant.offset,
       gain: output.gain,
+      harmonic: harmonics.map((synth) => synth.param),
     },
     stop: function (when = syngen.audio.time()) {
-      if (harmonics.length) {
-        harmonics[0].oscillator.onended = () => {
-          output.disconnect()
-        }
+      detuneConstant.onended = () => {
+        output.disconnect()
       }
 
       detuneConstant.stop(when)
@@ -6661,16 +6714,30 @@ syngen.audio.synth.createAdditive = ({
 }
 
 /**
+ * Creates a synthesizer with amplitude modulation.
+ * @param {Object} [options={}]
+ * @param {Number} [options.carrierDetune=0]
+ * @param {Number} [options.carrierFrequency=440]
+ * @param {Number} [options.carrierGain=1]
+ * @param {Number} [options.carrierType=sine]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {Number} [options.modDepth={@link syngen.const.zeroGain|syngen.const.zeroGain}]
+ * @param {Number} [options.modDetune=0]
+ * @param {Number} [options.modFrequency=440]
+ * @param {Number} [options.modType=sine]
+ * @param {Number} [options.modWhen]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createAm = ({
-  carrierDetune,
+  carrierDetune = 0,
   carrierFrequency,
-  carrierGain: carrierGainAmount,
+  carrierGain: carrierGainAmount = 1,
   carrierType = 'sine',
   gain = syngen.const.zeroGain,
-  modDepth: modDepthAmount,
-  modDetune,
+  modDepth: modDepthAmount = syngen.const.zeroGain,
+  modDetune = 0,
   modFrequency,
   modType = 'sine',
   modWhen,
@@ -6733,22 +6800,39 @@ syngen.audio.synth.createAm = ({
 }
 
 /**
+ * Creates a synthesizer which applies amplitude modulation to an `AudioBufferSourceNode`.
+ * @param {Object} [options={}]
+ * @param {AudioBuffer} options.buffer
+ * @param {Number} [options.carrierGain=1]
+ * @param {Number} [options.detune=0]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {Boolean} [options.loop=true]
+ * @param {Number} [options.loopEnd]
+ * @param {Number} [options.loopStart]
+ * @param {Number} [options.modDepth={@link syngen.const.zeroGain}]
+ * @param {Number} [options.modDetune=0]
+ * @param {Number} [options.modFrequency=440]
+ * @param {String} [options.modType=sine]
+ * @param {String} [options.modWhen]
+ * @param {String} [options.playbackRate=1]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createAmBuffer = ({
   buffer,
-  carrierGain: carrierGainAmount,
-  detune,
+  carrierGain: carrierGainAmount = 1,
+  detune = 0,
   gain = syngen.const.zeroGain,
   loop = true,
   loopEnd,
   loopStart,
-  modDepth: modDepthAmount,
-  modDetune,
+  modDepth: modDepthAmount = syngen.const.zeroGain,
+  modDetune = 0,
   modFrequency,
   modType = 'sine',
   modWhen,
-  rate = 1,
+  playbackRate = 1,
   when = syngen.audio.time(),
 } = {}) => {
   const context = syngen.audio.context()
@@ -6782,7 +6866,7 @@ syngen.audio.synth.createAmBuffer = ({
   syngen.audio.synth.setAudioParams(
     [carrierGain.gain, carrierGainAmount],
     [source.detune, detune],
-    [source.playbackRate, rate],
+    [source.playbackRate, playbackRate],
     [modDepth.gain, modDepthAmount],
     [modOscillator.detune, modDetune],
     [modOscillator.frequency, modFrequency],
@@ -6801,7 +6885,7 @@ syngen.audio.synth.createAmBuffer = ({
         detune: modOscillator.detune,
         frequency: modOscillator.frequency,
       },
-      rate: source.playbackRate,
+      playbackRate: source.playbackRate,
     },
     stop: function (when = syngen.audio.time()) {
       source.onended = () => {
@@ -6817,16 +6901,27 @@ syngen.audio.synth.createAmBuffer = ({
 }
 
 /**
+ * Creates a synthesizer which uses an `AudioBufferSourceNode`.
+ * @param {Object} [options={}]
+ * @param {AudioBuffer} options.buffer
+ * @param {Number} [options.detune=0]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {Boolean} [options.loop=true]
+ * @param {Number} [options.loopEnd]
+ * @param {Number} [options.loopStart]
+ * @param {String} [options.playbackRate=1]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createBuffer = ({
   buffer,
-  detune,
+  detune = 0,
   gain = syngen.const.zeroGain,
   loop = true,
   loopEnd,
   loopStart,
-  rate = 1,
+  playbackRate = 1,
   when = syngen.audio.time(),
 } = {}) => {
   const context = syngen.audio.context()
@@ -6849,7 +6944,7 @@ syngen.audio.synth.createBuffer = ({
 
   syngen.audio.synth.setAudioParams(
     [source.detune, detune],
-    [source.playbackRate, rate],
+    [source.playbackRate, playbackRate],
     [output.gain, gain],
   )
 
@@ -6859,7 +6954,7 @@ syngen.audio.synth.createBuffer = ({
     param: {
       detune: source.detune,
       gain: output.gain,
-      rate: source.playbackRate,
+      playbackRate: source.playbackRate,
     },
     source,
     stop: function (when = syngen.audio.time()) {
@@ -6875,15 +6970,29 @@ syngen.audio.synth.createBuffer = ({
 }
 
 /**
+ * Creates a synthesizer with frequency modulation.
+ * @param {Object} [options={}]
+ * @param {Number} [options.carrierDetune=0]
+ * @param {Number} [options.carrierFrequency=440]
+ * @param {Number} [options.carrierGain=1]
+ * @param {Number} [options.carrierType=sine]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {Number} [options.modDepth={@link syngen.const.zeroGain|syngen.const.zeroGain}]
+ * @param {Number} [options.modDetune=0]
+ * @param {Number} [options.modFrequency=440]
+ * @param {Number} [options.modType=sine]
+ * @param {Number} [options.modWhen]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createFm = ({
-  carrierDetune,
+  carrierDetune = 0,
   carrierFrequency,
   carrierType = 'sine',
   gain = syngen.const.zeroGain,
-  modDepth: modDepthAmount,
-  modDetune,
+  modDepth: modDepthAmount = syngen.const.zeroGain,
+  modDetune = 0,
   modFrequency,
   modType = 'sine',
   modWhen,
@@ -6941,12 +7050,21 @@ syngen.audio.synth.createFm = ({
 }
 
 /**
+ * Creates a simple low-frequency oscillator intended for modulation.
+ * This is identical to {@link |createSimple()} except with different terminology.
+ * @param {Object} [options={}]
+ * @param {Number} [options.depth={@link syngen.const.zeroGain}]
+ * @param {Number} [options.detune=0]
+ * @param {Number} [options.frequency=0]
+ * @param {String} [options.type=sine]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createLfo = ({
-  depth: depthAmount,
-  detune,
-  frequency,
+  depth: depthAmount = syngen.const.zeroGain,
+  detune = 0,
+  frequency = 0,
   type = 'sine',
   when = syngen.audio.time(),
 } = {}) => {
@@ -6986,21 +7104,40 @@ syngen.audio.synth.createLfo = ({
 }
 
 /**
+ * Creates a synthesizer with both amplitude and frequency modulation.
+ * @param {Object} [options={}]
+ * @param {Number} [options.amodDepth={@link syngen.const.zeroGain|syngen.const.zeroGain}]
+ * @param {Number} [options.amodDetune=0]
+ * @param {Number} [options.amodFrequency=440]
+ * @param {Number} [options.amodType=sine]
+ * @param {Number} [options.amodWhen]
+ * @param {Number} [options.carrierDetune=0]
+ * @param {Number} [options.carrierFrequency=440]
+ * @param {Number} [options.carrierGain=1]
+ * @param {Number} [options.carrierType=sine]
+ * @param {Number} [options.fmodDepth={@link syngen.const.zeroGain|syngen.const.zeroGain}]
+ * @param {Number} [options.fmodDetune=0]
+ * @param {Number} [options.fmodFrequency=440]
+ * @param {Number} [options.fmodType=sine]
+ * @param {Number} [options.fmodWhen]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createMod = ({
   amodDepth: amodDepthAmount = syngen.const.zeroGain,
-  amodDetune,
+  amodDetune = 0,
   amodFrequency,
   amodType = 'sine',
   amodWhen,
-  carrierDetune,
+  carrierDetune = 0,
   carrierFrequency,
-  carrierGain: carrierGainAmount,
+  carrierGain: carrierGainAmount = 1,
   carrierType = 'sine',
   gain = syngen.const.zeroGain,
-  fmodDepth: fmodDepthAmount,
-  fmodDetune,
+  fmodDepth: fmodDepthAmount = syngen.const.zeroGain,
+  fmodDetune = 0,
   fmodFrequency,
   fmodType = 'sine',
   fmodWhen,
@@ -7079,17 +7216,25 @@ syngen.audio.synth.createMod = ({
 }
 
 /**
+ * Creates a simple synthesizer with configurable pulse-width modulation.
+ * @param {Object} [options={}]
+ * @param {Number} [options.detune=0]
+ * @param {Number} [options.frequency=440]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {String} [options.type=sine]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @param {Number} [options.width=0]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createPwm = ({
-  detune,
+  detune = 0,
   frequency,
   gain = syngen.const.zeroGain,
   type = 'sine',
   when = syngen.audio.time(),
+  width: widthAmount = 0,
 } = {}) => {
-  // SEE: https://github.com/pendragon-andyh/WebAudio-PulseOscillator
-
   const context = syngen.audio.context(),
     facade = context.createGain(),
     oscillator = context.createOscillator(),
@@ -7101,7 +7246,6 @@ syngen.audio.synth.createPwm = ({
   oscillator.type = type
   shaperOne.curve = syngen.audio.shape.one()
   shaperPulse.curve = syngen.audio.shape.square()
-  width.gain.value = 0
 
   facade.connect(output)
   oscillator.connect(shaperOne)
@@ -7116,6 +7260,7 @@ syngen.audio.synth.createPwm = ({
     [oscillator.detune, detune],
     [oscillator.frequency, frequency],
     [output.gain, gain],
+    [width.gain, widthAmount],
   )
 
   return syngen.audio.synth.decorate({
@@ -7141,10 +7286,18 @@ syngen.audio.synth.createPwm = ({
 }
 
 /**
+ * Creates a simple synthesizer with a single oscillator.
+ * @param {Object} [options={}]
+ * @param {Number} [options.detune=0]
+ * @param {Number} [options.frequency=440]
+ * @param {Number} [options.gain={@link syngen.const.zeroGain}]
+ * @param {String} [options.type=sine]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.createSimple = ({
-  detune,
+  detune = 0,
   frequency,
   gain = syngen.const.zeroGain,
   type = 'sine',
@@ -7186,6 +7339,10 @@ syngen.audio.synth.createSimple = ({
 }
 
 /**
+ * Decorates prefabricated `synth` with synth methods.
+ * @param {Object} [synth={}]
+ * @private
+ * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.decorate = (synth = {}) => {
@@ -7193,7 +7350,33 @@ syngen.audio.synth.decorate = (synth = {}) => {
 }
 
 /**
- * @static
+ * A prefabricated synth returned from a {@link syngen.audio.synth} factory method.
+ * They wrap their `AudioNode`s with an interface that exposes their `AudioParam`s and provides methods to build more sophisticated circuits.
+ * Internally they maintain a pointer to the last node before output so they can unlink them and dynamically add plugins to the output chain.
+ * @property {Function} assign
+ *   Assigns `plugin` to `key` and merges its parameters.
+ * @property {Function} chain
+ *   Adds `plugin` to the output chain and ensures they stop together.
+ * @property {Function} chainAssign
+ *   Assigns and chains `plugin` to `key`.
+ * @property {Function} chainStop
+ *   Ensures `plugin` stops when the synth is stopped.
+ * @property {Function} connect
+ *   Connects output to node.
+ * @property {Function} disconnect
+ *   Disconnects output from node.
+ * @property {Function} filtered
+ *   Adds a `BiquadFilterNode` to the output chain with `options`.
+ * @property {GainNode} output
+ *   The final output after all chained plugins.
+ * @property {Object} param
+ *   Hash of all `AudioParam`s.
+ * @property {Function} shaped
+ *   Adds a `WaveShaperNode` to the output chain with `curve`.
+ * @property {Function} stop
+ *   Stops the synth and all chained plugins.
+ * @todo Improve documentation
+ * @typedef {Object} syngen.audio.synth~Synth
  */
 syngen.audio.synth.decoration = {
   assign: function (...args) {
@@ -7233,10 +7416,15 @@ syngen.audio.synth.decoration = {
 }
 
 /**
+ * Adds a filter with `options` to the output chain of `synth` and returns `synth`.
+ * @param {syngen.audio.synth~Synth} synth
+ * @param {Object} [options={}]
+ * @private
+ * @returns {Object}
  * @static
  */
 syngen.audio.synth.filtered = function (synth, {
-  detune,
+  detune = 0,
   gain,
   frequency,
   Q,
@@ -7257,6 +7445,9 @@ syngen.audio.synth.filtered = function (synth, {
 }
 
 /**
+ * Helper that sets `AudioParam`s to values.
+ * Expects multiple arguments in the format `[AudioParam, value]`.
+ * @private
  * @static
  */
 syngen.audio.synth.setAudioParams = function (...params) {
@@ -7272,6 +7463,11 @@ syngen.audio.synth.setAudioParams = function (...params) {
 }
 
 /**
+ * Inserts a `WaveShaperNode` into the output chain for `synth` and returns `synth`.
+ * @param {syngen.audio.synth~Synth} synth
+ * @param {Float32Array} curve
+ * @private
+ * @returns {Object}
  * @static
  */
 syngen.audio.synth.shaped = function (synth, curve) {
@@ -7279,78 +7475,6 @@ syngen.audio.synth.shaped = function (synth, curve) {
   shaper.curve = curve
   return this.chainAssign(synth, 'shaper', shaper)
 }
-
-/**
- * Returns a large reverb impulse.
- * @method
- * @returns {AudioBuffer}
- */
-syngen.audio.buffer.impulse.large = (() => {
-  const context = syngen.audio.context()
-
-  const sampleRate = context.sampleRate,
-    size = 4 * sampleRate
-
-  const buffer = context.createBuffer(1, size, sampleRate)
-
-  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
-    const data = buffer.getChannelData(n)
-    for (let i = 0; i < size; i += 1) {
-      const factor = ((size - i) / size) ** 8
-      data[i] = factor * ((2 * Math.random()) - 1)
-    }
-  }
-
-  return () => buffer
-})()
-
-/**
- * Returns a medium reverb impulse.
- * @method
- * @returns {AudioBuffer}
- */
-syngen.audio.buffer.impulse.medium = (() => {
-  const context = syngen.audio.context()
-
-  const sampleRate = context.sampleRate,
-    size = 2 * sampleRate
-
-  const buffer = context.createBuffer(1, size, sampleRate)
-
-  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
-    const data = buffer.getChannelData(n)
-    for (let i = 0; i < size; i += 1) {
-      const factor = ((size - i) / size) ** 6
-      data[i] = factor * ((2 * Math.random()) - 1)
-    }
-  }
-
-  return () => buffer
-})()
-
-/**
- * Returns a small reverb impulse.
- * @method
- * @returns {AudioBuffer}
- */
-syngen.audio.buffer.impulse.small = (() => {
-  const context = syngen.audio.context()
-
-  const sampleRate = context.sampleRate,
-    size = 1 * sampleRate
-
-  const buffer = context.createBuffer(1, size, sampleRate)
-
-  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
-    const data = buffer.getChannelData(n)
-    for (let i = 0; i < size; i += 1) {
-      const factor = ((size - i) / size) ** 4
-      data[i] = factor * ((2 * Math.random()) - 1)
-    }
-  }
-
-  return () => buffer
-})()
 
 /**
  * Returns Brownian noise with intensity inversely proportional to the frequency squared.
@@ -7444,8 +7568,212 @@ syngen.audio.buffer.noise.white = (() => {
 })()
 
 /**
- * @implements syngen.utility.pubsub
+ * Returns a large reverb impulse.
+ * @method
+ * @returns {AudioBuffer}
+ */
+syngen.audio.buffer.impulse.large = (() => {
+  const context = syngen.audio.context()
+
+  const sampleRate = context.sampleRate,
+    size = 4 * sampleRate
+
+  const buffer = context.createBuffer(1, size, sampleRate)
+
+  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
+    const data = buffer.getChannelData(n)
+    for (let i = 0; i < size; i += 1) {
+      const factor = ((size - i) / size) ** 8
+      data[i] = factor * ((2 * Math.random()) - 1)
+    }
+  }
+
+  return () => buffer
+})()
+
+/**
+ * Returns a medium reverb impulse.
+ * @method
+ * @returns {AudioBuffer}
+ */
+syngen.audio.buffer.impulse.medium = (() => {
+  const context = syngen.audio.context()
+
+  const sampleRate = context.sampleRate,
+    size = 2 * sampleRate
+
+  const buffer = context.createBuffer(1, size, sampleRate)
+
+  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
+    const data = buffer.getChannelData(n)
+    for (let i = 0; i < size; i += 1) {
+      const factor = ((size - i) / size) ** 6
+      data[i] = factor * ((2 * Math.random()) - 1)
+    }
+  }
+
+  return () => buffer
+})()
+
+/**
+ * Returns a small reverb impulse.
+ * @method
+ * @returns {AudioBuffer}
+ */
+syngen.audio.buffer.impulse.small = (() => {
+  const context = syngen.audio.context()
+
+  const sampleRate = context.sampleRate,
+    size = 1 * sampleRate
+
+  const buffer = context.createBuffer(1, size, sampleRate)
+
+  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
+    const data = buffer.getChannelData(n)
+    for (let i = 0; i < size; i += 1) {
+      const factor = ((size - i) / size) ** 4
+      data[i] = factor * ((2 * Math.random()) - 1)
+    }
+  }
+
+  return () => buffer
+})()
+
+/**
+ * Provides an interface for routing audio to the global reverb auxiliary send.
+ * Importantly, it models physical space to add pre-delay and attenuate based on distance.
+ * @interface
+ * @see syngen.audio.mixer.auxiliary.reverb
+ * @todo Document private members
+ */
+syngen.audio.mixer.send.reverb = {}
+
+/**
+ * Creates a reverb send.
+ * @returns {syngen.audio.mixer.send.reverb}
+ * @static
+ */
+syngen.audio.mixer.send.reverb.create = function () {
+  return Object.create(this.prototype).construct()
+}
+
+syngen.audio.mixer.send.reverb.prototype = {
+  /**
+   * Initializes the instance.
+   * @instance
+   * @private
+   */
+  construct: function () {
+    const context = syngen.audio.context()
+
+    this.delay = context.createDelay()
+    this.input = context.createGain()
+    this.relative = syngen.utility.vector3d.create()
+    this.send = syngen.audio.mixer.auxiliary.reverb.createSend()
+
+    this.input.gain.value = syngen.const.zeroGain
+
+    this.onSendActivate = this.onSendActivate.bind(this)
+    syngen.audio.mixer.auxiliary.reverb.on('activate', this.onSendActivate)
+
+    this.onSendDeactivate = this.onSendDeactivate.bind(this)
+    syngen.audio.mixer.auxiliary.reverb.on('deactivate', this.onSendDeactivate)
+
+    if (syngen.audio.mixer.auxiliary.reverb.isActive()) {
+      this.onSendActivate()
+    } else {
+      this.onSendDeactivate()
+    }
+
+    return this
+  },
+  /**
+   * Prepares the instance for garbage collection.
+   * Immediately disconnects from all inputs and outputs.
+   * @instance
+   */
+  destroy: function () {
+    syngen.audio.mixer.auxiliary.reverb.off('activate', this.onSendActivate)
+    syngen.audio.mixer.auxiliary.reverb.off('deactivate', this.onSendDeactivate)
+    this.send.disconnect()
+    return this
+  },
+  /**
+   * Connects `input` to this.
+   * @instance
+   */
+  from: function (input) {
+    input.connect(this.input)
+    return this
+  },
+  /**
+   * Handles whenever the auxiliary send activates.
+   * @instance
+   * @listens syngen.audio.mixer.auxiliary.reverb#event:activate
+   * @private
+   */
+  onSendActivate: function () {
+    this.update(this.relative)
+    this.input.connect(this.delay)
+    this.delay.connect(this.send)
+    return this
+  },
+  /**
+   * Handles whenever the auxiliary send deactivates.
+   * @instance
+   * @listens syngen.audio.mixer.auxiliary.reverb#event:activate
+   * @private
+   */
+  onSendDeactivate: function () {
+    this.input.disconnect()
+    this.delay.disconnect()
+    return this
+  },
+  /**
+   * Updates the circuit with `options` relative to an observer at the origin.
+   * @instance
+   * @param {Object} [options={}]
+   * @param {Number} [options.x=0]
+   * @param {Number} [options.y=0]
+   * @param {Number} [options.z=0]
+   * @todo Assess whether it'd be better to simply pass the distance
+   */
+  update: function ({
+    x = 0,
+    y = 0,
+    z = 0,
+  } = {}) {
+    this.relative.set({
+      x,
+      y,
+      z,
+    })
+
+    if (!syngen.audio.mixer.auxiliary.reverb.isActive()) {
+      return this
+    }
+
+    const distance = this.relative.distance(),
+      power = syngen.utility.distanceToPower(distance)
+
+    const delayTime = syngen.utility.clamp(distance / syngen.const.speedOfSound, syngen.const.zeroTime, 1),
+      inputGain = syngen.utility.clamp((1 - (power ** 0.25)) * power, syngen.const.zeroGain, 1)
+
+    syngen.audio.ramp.set(this.delay.delayTime, delayTime)
+    syngen.audio.ramp.set(this.input.gain, inputGain)
+
+    return this
+  },
+}
+
+/**
+ * Provides a auxiliary send for global reverb processing.
+ * Because `ConvolverNode`s are quite intensive, implementations are encouraged to leverage this to provide a single global reverb.
+ * @augments syngen.utility.pubsub
  * @namespace
+ * @see syngen.audio.mixer.send.reverb
+ * @todo Add highpass, lowpass, and pre-delay to processing with parameters
+ * @todo Add resetFilters method
  */
 syngen.audio.mixer.auxiliary.reverb = (() => {
   const context = syngen.audio.context(),
@@ -7460,12 +7788,14 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
     input.connect(convolver)
   }
 
-  convolver.buffer = syngen.audio.buffer.impulse.large()
+  convolver.buffer = syngen.audio.buffer.impulse.small()
   convolver.connect(output)
 
   return syngen.utility.pubsub.decorate({
     /**
+     * Creates a `GainNode` that's connected to the reverb input.
      * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @returns {GainNode}
      */
     createSend: () => {
       const gain = context.createGain()
@@ -7473,15 +7803,33 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
       return gain
     },
     /**
+     * Returns whether the processing is active.
      * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @returns {Boolean}
      */
     isActive: () => active,
     /**
+     * Returns the output node for the send.
+     * @deprecated
      * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @returns {GainNode}
      */
     output: () => output,
     /**
+     * Exposes the parameters associated with reverb processing.
      * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @property {AudioParam} gain
+     */
+    param: {
+      gain: output.gain,
+    },
+    /**
+     * Sets the active state.
+     * Implementations can disable processing for a performance boost.
+     * @fires syngen.audio.mixer.auxiliary.reverb#event:activate
+     * @fires syngen.audio.mixer.auxiliary.reverb#event:deactivate
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @param {Boolean} state
      */
     setActive: function (state) {
       if (active == state) {
@@ -7491,24 +7839,28 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
       active = Boolean(state)
 
       if (active) {
-        input.connect(convolver)
+        /**
+         * Fired whenever the send is activated.
+         * @event syngen.audio.mixer.auxiliary.reverb#event:activate
+         */
         pubsub.emit('activate')
+        input.connect(convolver)
       } else {
-        input.disconnect(convolver)
+        /**
+         * Fired whenever the send is deactivated.
+         * @event syngen.audio.mixer.auxiliary.reverb#event:deactivate
+         */
         pubsub.emit('deactivate')
+        input.disconnect(convolver)
       }
 
       return this
     },
     /**
+     * Sets the impulse buffer for the inner `ConvolverNode`.
+     * To prevent pops and clicks, the tail of the previous buffer persists until it fades out.
      * @memberof syngen.audio.mixer.auxiliary.reverb
-     */
-    setGain: function (gain, duration) {
-      syngen.audio.ramp.linear(output.gain, gain, duration)
-      return this
-    },
-    /**
-     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @param {BufferSource} buffer
      */
     setImpulse: function (buffer) {
       input.disconnect()
@@ -7527,28 +7879,31 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
 })()
 
 /**
- * @static
- */
-syngen.audio.mixer.bus.props = (() => {
-  const bus = syngen.audio.mixer.createBus()
-  return () => bus
-})()
-
-/**
+ * Provides an interface for processing audio as an observer in a physical space.
+ * Importantly, it models interaural intensity differences, interaural arrival time, and acoustic shadow.
+ * Implementations are currently discouraged from using this directly.
  * @interface
+ * @todo Document private members
  */
 syngen.audio.binaural.monaural = {}
 
 /**
+ * Instantiates a monaural processor.
+ * @param {Object} [options={}]
+ * @param {Number} [options.pan=0]
+ *   Between `[-1, 1]` representing hard-left to hard-right.
+ * @returns {syngen.audio.binaural.monaural}
  * @static
  */
-syngen.audio.binaural.monaural.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.audio.binaural.monaural.create = function (options) {
+  return Object.create(this.prototype).construct(options)
 }
 
 syngen.audio.binaural.monaural.prototype = {
   /**
+   * Initializes the instance.
    * @instance
+   * @private
    */
   construct: function ({
     pan = 0,
@@ -7571,6 +7926,8 @@ syngen.audio.binaural.monaural.prototype = {
     return this
   },
   /**
+   * Prepares the instance for garbage collection.
+   * Immediately disconnects from all inputs and outputs.
    * @instance
    */
   destroy: function () {
@@ -7578,28 +7935,40 @@ syngen.audio.binaural.monaural.prototype = {
     return this
   },
   /**
+   * Connects `input` to this with additional `...args`.
    * @instance
+   * @param {AudioNode} input
+   * @param {...*} [...args]
    */
   from: function (input, ...args) {
     input.connect(this.gain, ...args)
     return this
   },
   /**
+   * Connects this to `output` with additional `...args`.
    * @instance
+   * @param {AudioNode} output
+   * @param {...*} [...args]
    */
   to: function (output, ...args) {
     this.filter.connect(output, ...args)
     return this
   },
   /**
+   * Updates the internal circuit with `options` relative to an observer facing 0° at the origin.
    * @instance
+   * @param {Object} [options={}]
+   * @param {ONumber} [options.x=0]
+   * @param {ONumber} [options.y=0]
+   * @param {ONumber} [options.z=0]
+   * @todo Model acoustic shadow as a three-dimensional cone or hemisphere
+   * @todo Simplify so {@link syngen.audio.binaural#update} positions and orients each ear before calling
    */
   update: function ({
     x = 0,
     y = 0,
     z = 0,
   } = {}) {
-    // NOTE: Observer is facing 0° at (0, 0)
     const ear = syngen.utility.vector3d.create({
       x,
       y: y + (this.panSign * syngen.const.binauralHeadWidth / 2),
@@ -7613,7 +7982,6 @@ syngen.audio.binaural.monaural.prototype = {
       yaw: this.panSign * syngen.const.binauralShadowOffset,
     }).euler()
 
-    // TODO: Simulate shadow as a 3D cone?
     const shadowCos = Math.cos(shadow.yaw)
     const isAhead = shadowCos > 0
 
@@ -7631,114 +7999,6 @@ syngen.audio.binaural.monaural.prototype = {
     syngen.audio.ramp.set(this.delay.delayTime, delayTime)
     syngen.audio.ramp.set(this.filter.frequency, filterFrequency)
     syngen.audio.ramp.set(this.gain.gain, inputGain)
-
-    return this
-  },
-}
-
-/**
- * @interface
- */
-syngen.audio.send.reverb = {}
-
-/**
- * @static
- */
-syngen.audio.send.reverb.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
-}
-
-syngen.audio.send.reverb.prototype = {
-  /**
-   * @instance
-   */
-  construct: function () {
-    const context = syngen.audio.context()
-
-    this.input = context.createGain()
-    this.delay = context.createDelay()
-    this.send = syngen.audio.mixer.auxiliary.reverb.createSend()
-
-    this.relative = syngen.utility.vector3d.create()
-
-    this.onSendActivate = this.onSendActivate.bind(this)
-    syngen.audio.mixer.auxiliary.reverb.on('activate', this.onSendActivate)
-
-    this.onSendDeactivate = this.onSendDeactivate.bind(this)
-    syngen.audio.mixer.auxiliary.reverb.on('deactivate', this.onSendDeactivate)
-
-    if (syngen.audio.mixer.auxiliary.reverb.isActive()) {
-      this.onSendActivate()
-    } else {
-      this.onSendDeactivate()
-    }
-
-    return this
-  },
-  /**
-   * @instance
-   */
-  destroy: function () {
-    syngen.audio.mixer.auxiliary.reverb.off('activate', this.onSendActivate)
-    syngen.audio.mixer.auxiliary.reverb.off('deactivate', this.onSendDeactivate)
-    this.send.disconnect()
-    return this
-  },
-  /**
-   * @instance
-   */
-  from: function (input) {
-    input.connect(this.input)
-    return this
-  },
-  /**
-   * @instance
-   */
-  onSendActivate: function () {
-    this.update(this.relative)
-    this.input.connect(this.delay)
-    this.delay.connect(this.send)
-    return this
-  },
-  /**
-   * @instance
-   */
-  onSendDeactivate: function () {
-    this.input.disconnect()
-    this.delay.disconnect()
-    return this
-  },
-  /**
-   * @instance
-   */
-  update: function ({
-    x = 0,
-    y = 0,
-    z = 0,
-  } = {}) {
-    this.relative.set({
-      x,
-      y,
-      z,
-    })
-
-    if (!syngen.audio.mixer.auxiliary.reverb.isActive()) {
-      return this
-    }
-
-    // TODO: Consider a distance model that doesn't rely on syngen.streamer.getRadius()
-    // e.g. a constant ratio that forces users to turn reverb send way down
-    // BUT what's nice about this solution is close sounds are present and further are roomy
-
-    const distance = this.relative.distance(),
-      distancePower = syngen.utility.distanceToPower(distance),
-      distanceRatio = 0.5 + (syngen.utility.clamp(distance / syngen.streamer.getRadius(), 0, 1) * 0.5)
-
-    const delayTime = syngen.utility.clamp(distance / syngen.const.speedOfSound, syngen.const.zeroTime, 1),
-      inputGain = syngen.utility.clamp(distancePower * distanceRatio, syngen.const.zeroGain, 1)
-
-    syngen.audio.ramp.set(this.delay.delayTime, delayTime)
-    syngen.audio.ramp.set(this.input.gain, inputGain)
 
     return this
   },
@@ -8611,7 +8871,7 @@ syngen.prop.base = {
    * Instead they should define an {@link syngen.prop.base#onConstruct|onConstruct} method.
    * @instance
    * @param {Object} [options={}]
-   * @param {AudioDestinationNode|GainNode} [options.destination={@link syngen.audio.mixer.bus.props|syngen.audio.mixer.bus.props()}]
+   * @param {GainNode} [options.destination={@link syngen.audio.mixer.master.input|syngen.audio.mixer.master.input()}]
    * @param {Number} [options.radius]
    *   Defaults to the prototype's radius.
    * @param {String} [options.token={@link syngen.utility.uuid|syngen.utility.uuid()}]
@@ -8622,7 +8882,7 @@ syngen.prop.base = {
    * @see syngen.props.create
    */
   construct: function ({
-    destination = syngen.audio.mixer.bus.props(),
+    destination = syngen.audio.mixer.master.input(),
     radius = this.radius || 0,
     token = syngen.utility.uuid(),
     x = 0,
@@ -8637,7 +8897,7 @@ syngen.prop.base = {
     this.periodic = {}
     this.output = context.createGain()
     this.radius = radius
-    this.reverb = syngen.audio.send.reverb.create()
+    this.reverb = syngen.audio.mixer.send.reverb.create()
     this.token = token
     this.x = x
     this.y = y
@@ -8859,7 +9119,7 @@ syngen.prop.base = {
   /**
    * Reverb send for the prop.
    * @instance
-   * @type {syngen.audio.send.reverb}
+   * @type {syngen.audio.mixer.send.reverb}
    */
   reverb: undefined,
   /**

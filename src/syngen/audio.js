@@ -37,12 +37,6 @@ syngen.audio = (() => {
      */
     nyquist: (coefficient = 1) => coefficient * context.sampleRate / 2,
     /**
-     * A collection of circuits that send signals to auxiliary sends.
-     * @namespace syngen.audio.send
-     * @todo Move to syngen.audio.mixer.send
-     */
-    send: {},
-    /**
      * Resumes the main `AudioContext`.
      * Must be called after the first user gesture so playback works in all browsers.
      * @memberof syngen.audio

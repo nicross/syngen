@@ -21,7 +21,7 @@ syngen.prop.base = {
    * Instead they should define an {@link syngen.prop.base#onConstruct|onConstruct} method.
    * @instance
    * @param {Object} [options={}]
-   * @param {AudioDestinationNode|GainNode} [options.destination={@link syngen.audio.mixer.bus.props|syngen.audio.mixer.bus.props()}]
+   * @param {GainNode} [options.destination={@link syngen.audio.mixer.master.input|syngen.audio.mixer.master.input()}]
    * @param {Number} [options.radius]
    *   Defaults to the prototype's radius.
    * @param {String} [options.token={@link syngen.utility.uuid|syngen.utility.uuid()}]
@@ -32,7 +32,7 @@ syngen.prop.base = {
    * @see syngen.props.create
    */
   construct: function ({
-    destination = syngen.audio.mixer.bus.props(),
+    destination = syngen.audio.mixer.master.input(),
     radius = this.radius || 0,
     token = syngen.utility.uuid(),
     x = 0,
@@ -47,7 +47,7 @@ syngen.prop.base = {
     this.periodic = {}
     this.output = context.createGain()
     this.radius = radius
-    this.reverb = syngen.audio.send.reverb.create()
+    this.reverb = syngen.audio.mixer.send.reverb.create()
     this.token = token
     this.x = x
     this.y = y
@@ -269,7 +269,7 @@ syngen.prop.base = {
   /**
    * Reverb send for the prop.
    * @instance
-   * @type {syngen.audio.send.reverb}
+   * @type {syngen.audio.mixer.send.reverb}
    */
   reverb: undefined,
   /**

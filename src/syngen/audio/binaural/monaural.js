@@ -1,18 +1,29 @@
 /**
+ * Provides an interface for processing audio as an observer in a physical space.
+ * Importantly, it models interaural intensity differences, interaural arrival time, and acoustic shadow.
+ * Implementations are currently discouraged from using this directly.
  * @interface
+ * @todo Document private members
  */
 syngen.audio.binaural.monaural = {}
 
 /**
+ * Instantiates a monaural processor.
+ * @param {Object} [options={}]
+ * @param {Number} [options.pan=0]
+ *   Between `[-1, 1]` representing hard-left to hard-right.
+ * @returns {syngen.audio.binaural.monaural}
  * @static
  */
-syngen.audio.binaural.monaural.create = function (...args) {
-  return Object.create(this.prototype).construct(...args)
+syngen.audio.binaural.monaural.create = function (options) {
+  return Object.create(this.prototype).construct(options)
 }
 
 syngen.audio.binaural.monaural.prototype = {
   /**
+   * Initializes the instance.
    * @instance
+   * @private
    */
   construct: function ({
     pan = 0,
@@ -35,6 +46,8 @@ syngen.audio.binaural.monaural.prototype = {
     return this
   },
   /**
+   * Prepares the instance for garbage collection.
+   * Immediately disconnects from all inputs and outputs.
    * @instance
    */
   destroy: function () {
@@ -42,28 +55,40 @@ syngen.audio.binaural.monaural.prototype = {
     return this
   },
   /**
+   * Connects `input` to this with additional `...args`.
    * @instance
+   * @param {AudioNode} input
+   * @param {...*} [...args]
    */
   from: function (input, ...args) {
     input.connect(this.gain, ...args)
     return this
   },
   /**
+   * Connects this to `output` with additional `...args`.
    * @instance
+   * @param {AudioNode} output
+   * @param {...*} [...args]
    */
   to: function (output, ...args) {
     this.filter.connect(output, ...args)
     return this
   },
   /**
+   * Updates the internal circuit with `options` relative to an observer facing 0° at the origin.
    * @instance
+   * @param {Object} [options={}]
+   * @param {ONumber} [options.x=0]
+   * @param {ONumber} [options.y=0]
+   * @param {ONumber} [options.z=0]
+   * @todo Model acoustic shadow as a three-dimensional cone or hemisphere
+   * @todo Simplify so {@link syngen.audio.binaural#update} positions and orients each ear before calling
    */
   update: function ({
     x = 0,
     y = 0,
     z = 0,
   } = {}) {
-    // NOTE: Observer is facing 0° at (0, 0)
     const ear = syngen.utility.vector3d.create({
       x,
       y: y + (this.panSign * syngen.const.binauralHeadWidth / 2),
@@ -77,7 +102,6 @@ syngen.audio.binaural.monaural.prototype = {
       yaw: this.panSign * syngen.const.binauralShadowOffset,
     }).euler()
 
-    // TODO: Simulate shadow as a 3D cone?
     const shadowCos = Math.cos(shadow.yaw)
     const isAhead = shadowCos > 0
 
