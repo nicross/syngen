@@ -1,37 +1,98 @@
 /**
+ * Provides factories that create circuits for effects processing.
+ * Importantly, these are _not_ the only way to create effects for use with syngen.
+ * Implementations can build their own effects or use any external library that supports connecting to its audio graph.
  * @namespace
  */
 syngen.audio.effect = {}
 
 /**
+ * Creates a feedback delay line with a filter inserted into its feedback loop.
+ * @param {Object} [options={}]
+ * @param {Number} [options.delay=0.5]
+ * @param {Number} [options.dry=1]
+ * @param {Number} [options.feedback=0.5]
+ * @param {Number} [options.filterDetune=0]
+ * @param {Number} [options.filterFrequency={@link syngen.const.maxFrequency}]
+ * @param {Number} [options.filterGain=0]
+ * @param {Number} [options.filterQ=1]
+ * @param {String} [options.filterType=lowpass]
+ * @param {Number} [options.maxDelayTime=1]
+ * @param {Number} [options.wet=0.5]
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
 syngen.audio.effect.createDubDelay = function ({
+  delay: delayAmount = 0.5,
+  dry: dryAmount = 1,
+  feedback: feedbackAmount = 0.5,
+  filterDetune = 0,
   filterFrequency = syngen.const.maxFrequency,
+  filterGain = 0,
+  filterQ = 1,
   filterType = 'lowpass',
-  ...options
+  maxDelayTime = 1,
+  wet: wetAmount = 0.5,
 } = {}) {
-  const context = syngen.audio.context(),
-    feedbackDelay = this.createFeedbackDelay(options),
-    filter = context.createBiquadFilter()
+  const context = syngen.audio.context()
 
+  const delay = context.createDelay(maxDelayTime),
+    dry = context.createGain(),
+    feedback = context.createGain(),
+    filter = context.createBiquadFilter(),
+    input = context.createGain(),
+    output = context.createGain(),
+    wet = context.createGain()
+
+  input.connect(delay)
+  input.connect(dry)
+  delay.connect(filter)
+  filter.connect(feedback)
+  filter.connect(wet)
+  feedback.connect(delay)
+  dry.connect(output)
+  wet.connect(output)
+
+  delay.delayTime.value = delayAmount
+  dry.gain.value = dryAmount
+  feedback.gain.value = feedbackAmount
+  filter.detune.value = filterDetune
   filter.frequency.value = filterFrequency
+  filter.gain.value = filterGain
+  filter.Q.value = filterQ
   filter.type = filterType
+  input.gain.value = 1
+  output.gain.value = 1
+  wet.gain.value = wetAmount
 
-  // Rewire filter into feedback loop
-  feedbackDelay.delay.disconnect(feedbackDelay.feedback)
-  feedbackDelay.delay.disconnect(feedbackDelay.wet)
-  feedbackDelay.delay.connect(filter)
-  filter.connect(feedbackDelay.feedback)
-  filter.connect(feedbackDelay.wet)
-
-  feedbackDelay.filter = filter
-  feedbackDelay.param.filterFrequency = filter.frequency
-
-  return feedbackDelay
+  return {
+    input,
+    output,
+    param: {
+      dry: dry.gain,
+      delay: delay.delayTime,
+      feedback: feedback.gain,
+      filter: {
+        detune: filter.detune,
+        gain: filter.gain,
+        frequency: filter.frequency,
+        Q: filter.Q,
+      },
+      gain: output.gain,
+      wet: wet.gain,
+    },
+  }
 }
 
 /**
+ * Creates a feedback delay line.
+ * @param {Object} [options={}]
+ * @param {Number} [options.delay=0.5]
+ * @param {Number} [options.dry=1]
+ * @param {Number} [options.feedback=0.5]
+ * @param {Number} [options.maxDelayTime=1]
+ * @param {Number} [options.wet=0.5]
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
 syngen.audio.effect.createFeedbackDelay = ({
@@ -66,12 +127,8 @@ syngen.audio.effect.createFeedbackDelay = ({
   wet.gain.value = wetAmount
 
   return {
-    delay,
-    dry,
-    feedback,
     input,
     output,
-    wet,
     param: {
       dry: dry.gain,
       delay: delay.delayTime,
@@ -83,6 +140,16 @@ syngen.audio.effect.createFeedbackDelay = ({
 }
 
 /**
+ * Creates a feedback delay line with multiple taps.
+ * @param {Object} [options={}]
+ * @param {Number} [options.dry=1]
+ * @param {Object[]} [options.tap=[]]
+ * @param {Object[]} [options.tap.delay=0.5}
+ * @param {Object[]} [options.tap.feedback=0.5}
+ * @param {Object[]} [options.tap.gain=1}
+ * @param {Object[]} [options.tap.maxDelayTime=1}
+ * @param {Number} [options.wet=1]
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
 syngen.audio.effect.createMultitapFeedbackDelay = ({
@@ -133,57 +200,42 @@ syngen.audio.effect.createMultitapFeedbackDelay = ({
   })
 
   return {
-    dry,
     input,
     output,
-    wet,
     param: {
       dry: dry.gain,
       gain: output.gain,
       tap: taps,
       wet: wet.gain,
     },
-    transition: function (taps = [], duration) {
-      this.param.tap.forEach((tap, i) => {
-        if (!taps[i]) {
-          syngen.utility.ramp.linear(tap.gain, syngen.const.zeroGain, duration)
-          return
-        }
-
-        const {delay, feedback, gain} = taps[i]
-
-        if (typeof delay != 'undefined') {
-          syngen.utility.ramp.linear(tap.delay, delay, duration)
-        }
-
-        if (typeof feedback != 'undefined') {
-          syngen.utility.ramp.linear(tap.feedback, feedback, duration)
-        }
-
-        if (typeof gain != 'undefined') {
-          syngen.utility.ramp.linear(tap.gain, gain, duration)
-        }
-      })
-
-      return this
-    },
   }
 }
 
-// This is not an out-of-the-box solution for phaser, chorus, or flange
-// Depth and rate values must be exact values, e.g. 20ms delayTime, 1ms depth, 1/2hz rate
 /**
+ * Creates a phaser or flange effect.
+ * Beware that this is not an out-of-the-box solution.
+ * Parameter values must be carefully chosen to achieve the desired effect.
+ * @param {Object} [options={}]
+ * @param {Number} [options.dry=0.5]
+ * @param {Number} [options.depth=0.001]
+ * @param {Number} [options.delay=0.01]
+ * @param {Number} [options.feedback={@link syngen.const.zeroGain}]
+ * @param {Number} [options.rate=1]
+ * @param {String} [options.type=sine]
+ * @param {Number} [options.wet=0.5]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
 syngen.audio.effect.createPhaser = ({
-  dry: dryAmount = 1/2,
+  dry: dryAmount = 0.5,
   depth: depthAmount = 0.001,
   delay: delayTimeAmount = 0.01,
   feedback: feedbackAmount = syngen.const.zeroGain,
-  rate: rateAmount = 1,
+  frequency = 1,
   type = 'sine',
-  wet: wetAmount = 1/2,
-  when = 0,
+  wet: wetAmount = 0.5,
+  when = syngen.audio.time(),
 } = {}) => {
   const context = syngen.audio.context(),
     delay = context.createDelay(),
@@ -199,7 +251,7 @@ syngen.audio.effect.createPhaser = ({
   depth.gain.value = depthAmount
   dry.gain.value = dryAmount
   feedback.gain.value = feedbackAmount
-  lfo.frequency.value = rateAmount
+  lfo.frequency.value = frequency
   wet.gain.value = wetAmount
 
   input.connect(dry)
@@ -216,21 +268,15 @@ syngen.audio.effect.createPhaser = ({
   depth.connect(delay.delayTime)
 
   return {
-    delay,
-    depth,
-    dry,
-    feedback,
     input,
-    lfo,
     output,
-    wet,
     param: {
       delay: delay.delayTime,
       depth: depth.gain,
       dry: dry.gain,
       feedback: feedback.gain,
+      frequency: lfo.frequency,
       gain: output.gain,
-      rate: lfo.frequency,
       wet: wet.gain,
     },
     stop: function (when = syngen.audio.time()) {
@@ -241,83 +287,132 @@ syngen.audio.effect.createPhaser = ({
 }
 
 /**
+ * Creates a feedback delay line that bounces between stereo channels.
+ * @param {Object} [options={}]
+ * @param {Number} [options.delay=0.5]
+ * @param {Number} [options.dry=1]
+ * @param {Number} [options.feedback=0.5]
+ * @param {Number} [options.maxDelayTime=1]
+ * @param {Number} [options.wet=0.5]
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
-syngen.audio.effect.createPingPongDelay = function (options) {
-  const context = syngen.audio.context(),
-    feedbackDelay = this.createFeedbackDelay(options),
-    merger = context.createChannelMerger(2),
-    panner = context.createStereoPanner(),
-    splitter = context.createChannelSplitter(2)
+syngen.audio.effect.createPingPongDelay = function ({
+  delay: delayAmount = 0.5,
+  dry: dryAmount = 1,
+  feedback: feedbackAmount = 0.5,
+  maxDelayTime = 1,
+  wet: wetAmount = 0.5,
+} = {}) {
+  const context = syngen.audio.context()
 
-  // XXX: Panner forces mono signals to be stereo so they don't cancel
+  const delay = context.createDelay(maxDelayTime),
+    dry = context.createGain(),
+    feedback = context.createGain(),
+    input = context.createGain(),
+    merger = context.createChannelMerger(2),
+    output = context.createGain(),
+    panner = context.createStereoPanner(),
+    splitter = context.createChannelSplitter(2),
+    wet = context.createGain()
+
+  input.connect(dry)
+  input.connect(panner)
   panner.connect(splitter)
   splitter.connect(merger, 0, 1)
   splitter.connect(merger, 1, 0)
+  merger.connect(delay)
+  delay.connect(feedback)
+  delay.connect(wet)
+  feedback.connect(panner)
+  dry.connect(output)
+  wet.connect(output)
 
-  // Rewire splitter/merger between input and wet
-  feedbackDelay.input.disconnect(feedbackDelay.delay)
-  feedbackDelay.input.connect(panner)
-  feedbackDelay.feedback.disconnect(feedbackDelay.delay)
-  feedbackDelay.feedback.connect(panner)
-  merger.connect(feedbackDelay.delay)
+  delay.delayTime.value = delayAmount
+  dry.gain.value = dryAmount
+  feedback.gain.value = feedbackAmount
+  input.gain.value = 1
+  output.gain.value = 1
+  wet.gain.value = wetAmount
 
-  return feedbackDelay
+  return {
+    input,
+    output,
+    param: {
+      dry: dry.gain,
+      delay: delay.delayTime,
+      feedback: feedback.gain,
+      gain: output.gain,
+      wet: wet.gain,
+    },
+  }
 }
 
 /**
+ * Creates a distortion effect with a configurable `curve`.
+ * @param {Object} [options={}]
+ * @param {Float32Array} [options.curve={@link syngen.audio.shape.warm|syngen.audio.shape.warm()}]
+ * @param {Number} [options.dry=1]
+ * @param {Number} [options.preGain=1]
+ * @param {Number} [options.wet=1]
+ * @returns {syngen.audio.synth~Plugin}
+ * @see syngen.audio.shape
  * @static
  */
 syngen.audio.effect.createShaper = ({
   curve = syngen.audio.shape.warm(),
   dry: dryAmount = 0,
-  inputGain: inputGainAmount = 1,
+  preGain: preGainAmount = 1,
   wet: wetAmount = 1,
 } = {}) => {
   const context = syngen.audio.context(),
     dry = context.createGain(),
     input = context.createGain(),
-    inputGain = context.createGain(),
     output = context.createGain(),
+    preGain = context.createGain(),
     shaper = context.createWaveShaper(),
     wet = context.createGain()
 
   dry.gain.value = dryAmount
-  inputgain.gain.value = inputGainAmount
+  preGain.gain.value = preGainAmount
   shaper.curve = curve
   wet.gain.value = wetAmount
 
   input.connect(dry)
-  input.connect(inputGain)
-  inputGain.connect(shaper)
+  input.connect(preGain)
+  preGain.connect(shaper)
   shaper.connect(wet)
   dry.connect(output)
   wet.connect(output)
 
   return {
-    dry,
     input,
-    inputGain,
-    shaper,
     output,
-    wet,
     param: {
       dry: dry.gain,
-      inputGain: inputGain.gain,
-      outputGain: output.gain,
+      gain: output.gain,
+      preGain: inputGain.gain,
       wet: wet.gain,
     }
   }
 }
 
 /**
+ * Creates a talk box that seamlessly blends between two formants with its `mix` parameter.
+ * @param {Object} [options={}]
+ * @param {Number} [options.dry=0]
+ * @param {syngen.audio.formant~Plugin} [options.format0={@link syngen.audio.formant.createU|syngen.audio.formant.createU()}]
+ * @param {syngen.audio.formant~Plugin} [options.format1={@link syngen.audio.formant.createA|syngen.audio.formant.createA()}]
+ * @param {Number} [options.mix=0.5]
+ * @param {Number} [options.wet=1]
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
 syngen.audio.effect.createTalkbox = ({
   dry: dryAmount = 0,
   formant0 = syngen.audio.formant.createU(),
   formant1 = syngen.audio.formant.createA(),
-  mix: mixAmount = 1/2,
+  mix: mixAmount = 0.5,
   wet: wetAmount = 1,
 } = {}) => {
   const context = syngen.audio.context(),
@@ -354,17 +449,12 @@ syngen.audio.effect.createTalkbox = ({
   wet.connect(output)
 
   return {
-    dry,
-    formant: [
-      formant0,
-      formant1,
-    ],
     input,
-    mix,
     output,
-    wet,
     param: {
       dry: dry.gain,
+      formant0: formant0.param,
+      formant1: formant1.param,
       mix: mix.offset,
       wet: wet.gain,
     },

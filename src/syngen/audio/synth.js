@@ -1,22 +1,39 @@
 /**
- * Provides factories and utilities for building prefabricated synthesizers.
+ * Provides factories for building simple prefabricated synthesizers.
+ * Importantly, these are _not_ the only way to generate audio with syngen.
+ * Implementations can build their own synthesizers or use any external library that supports connecting to its audio graph.
  * @namespace
  */
 syngen.audio.synth = {}
 
 /**
  * Assigns `plugin` to `synth` at `key`, merges its parameters into `synth.param[key]`, and returns `synth`.
+ * If `key` already exists, then those plugins will be wrapped in an array.
  * @param {syngen.audio.synth~Synth} synth
  * @param {String} key
- * @param {Object} plugin
+ * @param {syngen.audio.synth~Plugin} plugin
  * @private
  * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.assign = function (synth, key, plugin) {
-  synth[key] = plugin
-  synth.param = synth.param || {}
-  synth.param[key] = plugin.param || {}
+  if (!synth.param) {
+    synth.param = {}
+  }
+
+  if (key in synth) {
+    if (!Array.isArray(synth[key])) {
+      synth[key] = [synth[key]]
+      synth.param[key] = [synth.param[key]]
+    }
+
+    synth[key].push(plugin)
+    synth.param[key].push(plugin.param || {})
+  } else {
+    synth[key] = plugin
+    synth.param[key] = plugin.param || {}
+  }
+
   return synth
 }
 
@@ -24,7 +41,7 @@ syngen.audio.synth.assign = function (synth, key, plugin) {
  * Adds `plugin` into the output chain for `synth` and returns `synth`.
  * Their stop methods are atuomatically chained.
  * @param {syngen.audio.synth~Synth} synth
- * @param {Object} plugin
+ * @param {syngen.audio.synth~Plugin|AudioNode} plugin
  * @private
  * @returns {syngen.audio.synth~Synth}
  * @static
@@ -65,7 +82,7 @@ syngen.audio.synth.chain = function (synth, plugin) {
  * Chains and assigns `plugin` to `synth` and returns `synth`.
  * @param {syngen.audio.synth~Synth} synth
  * @param {Synth} key
- * @param {Object} plugin
+ * @param {syngen.audio.synth~Plugin|AudioNode} plugin
  * @private
  * @returns {Object}
  * @see syngen.audio.synth.assign
@@ -74,13 +91,14 @@ syngen.audio.synth.chain = function (synth, plugin) {
  */
 syngen.audio.synth.chainAssign = function (synth, key, plugin) {
   this.assign(synth, key, plugin)
-  return this.chain(synth, plugin)
+  this.chain(synth, plugin)
+  return synth
 }
 
 /**
  * Wraps `synth` such that `plugin` stops when it stops and returns `synth`.
  * @param {syngen.audio.synth~Synth} synth
- * @param {Object} plugin
+ * @param {syngen.audio.synth~Plugin} plugin
  * @private
  * @returns {syngen.audio.synth~Synth}
  * @static
@@ -224,6 +242,7 @@ syngen.audio.synth.createAdditive = ({
  * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
  * @returns {syngen.audio.synth~Synth}
  * @static
+ * @todo Leverage {@link syngen.audio.synth.createLfo} internally
  */
 syngen.audio.synth.createAm = ({
   carrierDetune = 0,
@@ -313,6 +332,7 @@ syngen.audio.synth.createAm = ({
  * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
  * @returns {syngen.audio.synth~Synth}
  * @static
+ * @todo Leverage {@link syngen.audio.synth.createLfo} internally
  */
 syngen.audio.synth.createAmBuffer = ({
   buffer,
@@ -480,6 +500,7 @@ syngen.audio.synth.createBuffer = ({
  * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
  * @returns {syngen.audio.synth~Synth}
  * @static
+ * @todo Leverage {@link syngen.audio.synth.createLfo} internally
  */
 syngen.audio.synth.createFm = ({
   carrierDetune = 0,
@@ -619,6 +640,7 @@ syngen.audio.synth.createLfo = ({
  * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
  * @returns {syngen.audio.synth~Synth}
  * @static
+ * @todo Leverage {@link syngen.audio.synth.createLfo} internally
  */
 syngen.audio.synth.createMod = ({
   amodDepth: amodDepthAmount = syngen.const.zeroGain,
@@ -854,12 +876,15 @@ syngen.audio.synth.decorate = (synth = {}) => {
  *   Adds `plugin` to the output chain and ensures they stop together.
  * @property {Function} chainAssign
  *   Assigns and chains `plugin` to `key`.
+ *   This is shorthand for calling both `chain()` and `assign()`.
  * @property {Function} chainStop
  *   Ensures `plugin` stops when the synth is stopped.
+ *   This is called internally by `chain()`.
+ *   Implementations should only call this manually if `plugin` is not part of its output chain.
  * @property {Function} connect
- *   Connects output to node.
+ *   Connects synth output to `node` with optional `...args`.
  * @property {Function} disconnect
- *   Disconnects output from node.
+ *   Disconnects synth output from `node` with optional `...args`.
  * @property {Function} filtered
  *   Adds a `BiquadFilterNode` to the output chain with `options`.
  * @property {GainNode} output
@@ -870,7 +895,7 @@ syngen.audio.synth.decorate = (synth = {}) => {
  *   Adds a `WaveShaperNode` to the output chain with `curve`.
  * @property {Function} stop
  *   Stops the synth and all chained plugins.
- * @todo Improve documentation
+ * @todo Improve documentation as an interface
  * @typedef {Object} syngen.audio.synth~Synth
  */
 syngen.audio.synth.decoration = {
@@ -895,18 +920,10 @@ syngen.audio.synth.decoration = {
     return this
   },
   filtered: function (...args) {
-    if (!this.filter) {
-      return syngen.audio.synth.filtered(this, ...args)
-    }
-
-    return this
+    return syngen.audio.synth.filtered(this, ...args)
   },
   shaped: function (...args) {
-    if (!this.shaper) {
-      return syngen.audio.synth.shaped(this, ...args)
-    }
-
-    return this
+    return syngen.audio.synth.shaped(this, ...args)
   },
 }
 
@@ -919,7 +936,7 @@ syngen.audio.synth.decoration = {
  * @static
  */
 syngen.audio.synth.filtered = function (synth, {
-  detune = 0,
+  detune,
   gain,
   frequency,
   Q,
@@ -970,3 +987,19 @@ syngen.audio.synth.shaped = function (synth, curve) {
   shaper.curve = curve
   return this.chainAssign(synth, 'shaper', shaper)
 }
+
+/**
+ * A plugin compatible with synth chaining.
+ * Typically returned from a {@link syngen.audio.effect} or {@link syngen.audio.formant} factory method.
+ * Implementations can create their own plugins for synths as long as they have an `input` and `output`.
+ * @property {AudioNode} input
+ *   The plugin output.
+ * @property {AudioNode} output
+ *   The plugin output.
+ * @property {Object} [param]
+ *   Hash of all `AudioParam`s.
+ * @property {Function} [stop]
+ *   Stops the plugins.
+ * @todo Improve documentation as an interface
+ * @typedef {Object} syngen.audio.synth~Plugin
+ */

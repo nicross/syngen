@@ -5190,12 +5190,18 @@ syngen.audio.binaural.prototype = {
 }
 
 /**
+ * Provides factories that create miscellaneous audio circuits with practical use cases.
  * @namespace
  */
 syngen.audio.circuit = {}
 
-// Multiplies input by -scale
 /**
+ * Creates a `GainNode` that inverts a signal with `scale`.
+ * @param {Object} [options={}]
+ * @param {AudioNode|AudioParam} [options.from]
+ * @param {Number} [options.scale=1]
+ * @param {AudioNode|AudioParam} [options.to]
+ * @returns {GainNode}
  * @static
  */
 syngen.audio.circuit.invert = ({
@@ -5219,16 +5225,27 @@ syngen.audio.circuit.invert = ({
   return inverter
 }
 
-// Scales input [0,1] to [min,max], e.g. for controlling AudioParams via ConstantSourceNodes
 /**
+ * Creates a circuit that interpolates an input signal linearly within `[0, 1]` to `[min, max]`.
+ * Beware that it leverages `ConstantSourceNode`s.
+ * Pass a `chainStop` or call the returned `stop` method to free resources when no longer in use.
+ * @param {Object} [options={}]
+ * @param {syngen.audio.synth~Synth} [options.chainStop]
+ * @param {AudioNode|AudioParam} [options.from]
+ *  Typically a `ConstantSourceNode`.
+ * @param {Number} [options.max=1]
+ * @param {Number} [options.min=0]
+ * @param {AudioNode|AudioParam} [options.to]
+ *  Typically an `AudioParam`.
+ * @returns {Object}
  * @static
  */
 syngen.audio.circuit.lerp = ({
-  chainStop, // syngen.audio.synth
-  from, // ConstantSourceNode
+  chainStop,
+  from,
   max: maxValue = 1,
   min: minValue = 0,
-  to, // AudioParam
+  to,
   when,
 } = {}) => {
   const context = syngen.audio.context()
@@ -5265,16 +5282,29 @@ syngen.audio.circuit.lerp = ({
   return wrapper
 }
 
-// Scales input [fromMin,fromMax] to [toMin,toMax], e.g. for controlling AudioParams via ConstantSourceNodes
 /**
+ * Creates a circuit that scales an input signal linearly within `[fromMin, fromMax]` to `[toMin, toMax]`.
+ * Beware that it leverages `ConstantSourceNode`s.
+ * Pass a `chainStop` or call the returned `stop` method to free resources when no longer in use.
+ * @param {Object} [options={}]
+ * @param {syngen.audio.synth~Synth} [options.chainStop]
+ * @param {AudioNode|AudioParam} [options.from]
+ *  Typically a `ConstantSourceNode`.
+ * @param {Number} [options.fromMax=1]
+ * @param {Number} [options.fromMin=0]
+ * @param {AudioNode|AudioParam} [options.to]
+ *   Typically an `AudioParam`.
+ * @param {Number} [options.toMax=1]
+ * @param {Number} [options.toMin=0]
+ * @returns {Object}
  * @static
  */
 syngen.audio.circuit.scale = ({
-  chainStop, // syngen.audio.synth
-  from, // ConstantSourceNode
+  chainStop,
+  from,
   fromMax = 1,
   fromMin = 0,
-  to, // AudioParam
+  to,
   toMax = 1,
   toMin = 0,
   when,
@@ -5288,7 +5318,10 @@ syngen.audio.circuit.scale = ({
   scale.gain.value = 1 / (fromMax - fromMin) // Scale down to [0,1]
 
   offset.connect(scale)
-  from.connect(scale)
+
+  if (from) {
+    from.connect(scale)
+  }
 
   offset.start(when)
 
@@ -5317,39 +5350,100 @@ syngen.audio.circuit.scale = ({
 }
 
 /**
+ * Provides factories that create circuits for effects processing.
+ * Importantly, these are _not_ the only way to create effects for use with syngen.
+ * Implementations can build their own effects or use any external library that supports connecting to its audio graph.
  * @namespace
  */
 syngen.audio.effect = {}
 
 /**
+ * Creates a feedback delay line with a filter inserted into its feedback loop.
+ * @param {Object} [options={}]
+ * @param {Number} [options.delay=0.5]
+ * @param {Number} [options.dry=1]
+ * @param {Number} [options.feedback=0.5]
+ * @param {Number} [options.filterDetune=0]
+ * @param {Number} [options.filterFrequency={@link syngen.const.maxFrequency}]
+ * @param {Number} [options.filterGain=0]
+ * @param {Number} [options.filterQ=1]
+ * @param {String} [options.filterType=lowpass]
+ * @param {Number} [options.maxDelayTime=1]
+ * @param {Number} [options.wet=0.5]
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
 syngen.audio.effect.createDubDelay = function ({
+  delay: delayAmount = 0.5,
+  dry: dryAmount = 1,
+  feedback: feedbackAmount = 0.5,
+  filterDetune = 0,
   filterFrequency = syngen.const.maxFrequency,
+  filterGain = 0,
+  filterQ = 1,
   filterType = 'lowpass',
-  ...options
+  maxDelayTime = 1,
+  wet: wetAmount = 0.5,
 } = {}) {
-  const context = syngen.audio.context(),
-    feedbackDelay = this.createFeedbackDelay(options),
-    filter = context.createBiquadFilter()
+  const context = syngen.audio.context()
 
+  const delay = context.createDelay(maxDelayTime),
+    dry = context.createGain(),
+    feedback = context.createGain(),
+    filter = context.createBiquadFilter(),
+    input = context.createGain(),
+    output = context.createGain(),
+    wet = context.createGain()
+
+  input.connect(delay)
+  input.connect(dry)
+  delay.connect(filter)
+  filter.connect(feedback)
+  filter.connect(wet)
+  feedback.connect(delay)
+  dry.connect(output)
+  wet.connect(output)
+
+  delay.delayTime.value = delayAmount
+  dry.gain.value = dryAmount
+  feedback.gain.value = feedbackAmount
+  filter.detune.value = filterDetune
   filter.frequency.value = filterFrequency
+  filter.gain.value = filterGain
+  filter.Q.value = filterQ
   filter.type = filterType
+  input.gain.value = 1
+  output.gain.value = 1
+  wet.gain.value = wetAmount
 
-  // Rewire filter into feedback loop
-  feedbackDelay.delay.disconnect(feedbackDelay.feedback)
-  feedbackDelay.delay.disconnect(feedbackDelay.wet)
-  feedbackDelay.delay.connect(filter)
-  filter.connect(feedbackDelay.feedback)
-  filter.connect(feedbackDelay.wet)
-
-  feedbackDelay.filter = filter
-  feedbackDelay.param.filterFrequency = filter.frequency
-
-  return feedbackDelay
+  return {
+    input,
+    output,
+    param: {
+      dry: dry.gain,
+      delay: delay.delayTime,
+      feedback: feedback.gain,
+      filter: {
+        detune: filter.detune,
+        gain: filter.gain,
+        frequency: filter.frequency,
+        Q: filter.Q,
+      },
+      gain: output.gain,
+      wet: wet.gain,
+    },
+  }
 }
 
 /**
+ * Creates a feedback delay line.
+ * @param {Object} [options={}]
+ * @param {Number} [options.delay=0.5]
+ * @param {Number} [options.dry=1]
+ * @param {Number} [options.feedback=0.5]
+ * @param {Number} [options.maxDelayTime=1]
+ * @param {Number} [options.wet=0.5]
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
 syngen.audio.effect.createFeedbackDelay = ({
@@ -5384,12 +5478,8 @@ syngen.audio.effect.createFeedbackDelay = ({
   wet.gain.value = wetAmount
 
   return {
-    delay,
-    dry,
-    feedback,
     input,
     output,
-    wet,
     param: {
       dry: dry.gain,
       delay: delay.delayTime,
@@ -5401,6 +5491,16 @@ syngen.audio.effect.createFeedbackDelay = ({
 }
 
 /**
+ * Creates a feedback delay line with multiple taps.
+ * @param {Object} [options={}]
+ * @param {Number} [options.dry=1]
+ * @param {Object[]} [options.tap=[]]
+ * @param {Object[]} [options.tap.delay=0.5}
+ * @param {Object[]} [options.tap.feedback=0.5}
+ * @param {Object[]} [options.tap.gain=1}
+ * @param {Object[]} [options.tap.maxDelayTime=1}
+ * @param {Number} [options.wet=1]
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
 syngen.audio.effect.createMultitapFeedbackDelay = ({
@@ -5451,57 +5551,42 @@ syngen.audio.effect.createMultitapFeedbackDelay = ({
   })
 
   return {
-    dry,
     input,
     output,
-    wet,
     param: {
       dry: dry.gain,
       gain: output.gain,
       tap: taps,
       wet: wet.gain,
     },
-    transition: function (taps = [], duration) {
-      this.param.tap.forEach((tap, i) => {
-        if (!taps[i]) {
-          syngen.utility.ramp.linear(tap.gain, syngen.const.zeroGain, duration)
-          return
-        }
-
-        const {delay, feedback, gain} = taps[i]
-
-        if (typeof delay != 'undefined') {
-          syngen.utility.ramp.linear(tap.delay, delay, duration)
-        }
-
-        if (typeof feedback != 'undefined') {
-          syngen.utility.ramp.linear(tap.feedback, feedback, duration)
-        }
-
-        if (typeof gain != 'undefined') {
-          syngen.utility.ramp.linear(tap.gain, gain, duration)
-        }
-      })
-
-      return this
-    },
   }
 }
 
-// This is not an out-of-the-box solution for phaser, chorus, or flange
-// Depth and rate values must be exact values, e.g. 20ms delayTime, 1ms depth, 1/2hz rate
 /**
+ * Creates a phaser or flange effect.
+ * Beware that this is not an out-of-the-box solution.
+ * Parameter values must be carefully chosen to achieve the desired effect.
+ * @param {Object} [options={}]
+ * @param {Number} [options.dry=0.5]
+ * @param {Number} [options.depth=0.001]
+ * @param {Number} [options.delay=0.01]
+ * @param {Number} [options.feedback={@link syngen.const.zeroGain}]
+ * @param {Number} [options.rate=1]
+ * @param {String} [options.type=sine]
+ * @param {Number} [options.wet=0.5]
+ * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
 syngen.audio.effect.createPhaser = ({
-  dry: dryAmount = 1/2,
+  dry: dryAmount = 0.5,
   depth: depthAmount = 0.001,
   delay: delayTimeAmount = 0.01,
   feedback: feedbackAmount = syngen.const.zeroGain,
-  rate: rateAmount = 1,
+  frequency = 1,
   type = 'sine',
-  wet: wetAmount = 1/2,
-  when = 0,
+  wet: wetAmount = 0.5,
+  when = syngen.audio.time(),
 } = {}) => {
   const context = syngen.audio.context(),
     delay = context.createDelay(),
@@ -5517,7 +5602,7 @@ syngen.audio.effect.createPhaser = ({
   depth.gain.value = depthAmount
   dry.gain.value = dryAmount
   feedback.gain.value = feedbackAmount
-  lfo.frequency.value = rateAmount
+  lfo.frequency.value = frequency
   wet.gain.value = wetAmount
 
   input.connect(dry)
@@ -5534,21 +5619,15 @@ syngen.audio.effect.createPhaser = ({
   depth.connect(delay.delayTime)
 
   return {
-    delay,
-    depth,
-    dry,
-    feedback,
     input,
-    lfo,
     output,
-    wet,
     param: {
       delay: delay.delayTime,
       depth: depth.gain,
       dry: dry.gain,
       feedback: feedback.gain,
+      frequency: lfo.frequency,
       gain: output.gain,
-      rate: lfo.frequency,
       wet: wet.gain,
     },
     stop: function (when = syngen.audio.time()) {
@@ -5559,83 +5638,132 @@ syngen.audio.effect.createPhaser = ({
 }
 
 /**
+ * Creates a feedback delay line that bounces between stereo channels.
+ * @param {Object} [options={}]
+ * @param {Number} [options.delay=0.5]
+ * @param {Number} [options.dry=1]
+ * @param {Number} [options.feedback=0.5]
+ * @param {Number} [options.maxDelayTime=1]
+ * @param {Number} [options.wet=0.5]
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
-syngen.audio.effect.createPingPongDelay = function (options) {
-  const context = syngen.audio.context(),
-    feedbackDelay = this.createFeedbackDelay(options),
-    merger = context.createChannelMerger(2),
-    panner = context.createStereoPanner(),
-    splitter = context.createChannelSplitter(2)
+syngen.audio.effect.createPingPongDelay = function ({
+  delay: delayAmount = 0.5,
+  dry: dryAmount = 1,
+  feedback: feedbackAmount = 0.5,
+  maxDelayTime = 1,
+  wet: wetAmount = 0.5,
+} = {}) {
+  const context = syngen.audio.context()
 
-  // XXX: Panner forces mono signals to be stereo so they don't cancel
+  const delay = context.createDelay(maxDelayTime),
+    dry = context.createGain(),
+    feedback = context.createGain(),
+    input = context.createGain(),
+    merger = context.createChannelMerger(2),
+    output = context.createGain(),
+    panner = context.createStereoPanner(),
+    splitter = context.createChannelSplitter(2),
+    wet = context.createGain()
+
+  input.connect(dry)
+  input.connect(panner)
   panner.connect(splitter)
   splitter.connect(merger, 0, 1)
   splitter.connect(merger, 1, 0)
+  merger.connect(delay)
+  delay.connect(feedback)
+  delay.connect(wet)
+  feedback.connect(panner)
+  dry.connect(output)
+  wet.connect(output)
 
-  // Rewire splitter/merger between input and wet
-  feedbackDelay.input.disconnect(feedbackDelay.delay)
-  feedbackDelay.input.connect(panner)
-  feedbackDelay.feedback.disconnect(feedbackDelay.delay)
-  feedbackDelay.feedback.connect(panner)
-  merger.connect(feedbackDelay.delay)
+  delay.delayTime.value = delayAmount
+  dry.gain.value = dryAmount
+  feedback.gain.value = feedbackAmount
+  input.gain.value = 1
+  output.gain.value = 1
+  wet.gain.value = wetAmount
 
-  return feedbackDelay
+  return {
+    input,
+    output,
+    param: {
+      dry: dry.gain,
+      delay: delay.delayTime,
+      feedback: feedback.gain,
+      gain: output.gain,
+      wet: wet.gain,
+    },
+  }
 }
 
 /**
+ * Creates a distortion effect with a configurable `curve`.
+ * @param {Object} [options={}]
+ * @param {Float32Array} [options.curve={@link syngen.audio.shape.warm|syngen.audio.shape.warm()}]
+ * @param {Number} [options.dry=1]
+ * @param {Number} [options.preGain=1]
+ * @param {Number} [options.wet=1]
+ * @returns {syngen.audio.synth~Plugin}
+ * @see syngen.audio.shape
  * @static
  */
 syngen.audio.effect.createShaper = ({
   curve = syngen.audio.shape.warm(),
   dry: dryAmount = 0,
-  inputGain: inputGainAmount = 1,
+  preGain: preGainAmount = 1,
   wet: wetAmount = 1,
 } = {}) => {
   const context = syngen.audio.context(),
     dry = context.createGain(),
     input = context.createGain(),
-    inputGain = context.createGain(),
     output = context.createGain(),
+    preGain = context.createGain(),
     shaper = context.createWaveShaper(),
     wet = context.createGain()
 
   dry.gain.value = dryAmount
-  inputgain.gain.value = inputGainAmount
+  preGain.gain.value = preGainAmount
   shaper.curve = curve
   wet.gain.value = wetAmount
 
   input.connect(dry)
-  input.connect(inputGain)
-  inputGain.connect(shaper)
+  input.connect(preGain)
+  preGain.connect(shaper)
   shaper.connect(wet)
   dry.connect(output)
   wet.connect(output)
 
   return {
-    dry,
     input,
-    inputGain,
-    shaper,
     output,
-    wet,
     param: {
       dry: dry.gain,
-      inputGain: inputGain.gain,
-      outputGain: output.gain,
+      gain: output.gain,
+      preGain: inputGain.gain,
       wet: wet.gain,
     }
   }
 }
 
 /**
+ * Creates a talk box that seamlessly blends between two formants with its `mix` parameter.
+ * @param {Object} [options={}]
+ * @param {Number} [options.dry=0]
+ * @param {syngen.audio.formant~Plugin} [options.format0={@link syngen.audio.formant.createU|syngen.audio.formant.createU()}]
+ * @param {syngen.audio.formant~Plugin} [options.format1={@link syngen.audio.formant.createA|syngen.audio.formant.createA()}]
+ * @param {Number} [options.mix=0.5]
+ * @param {Number} [options.wet=1]
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
 syngen.audio.effect.createTalkbox = ({
   dry: dryAmount = 0,
   formant0 = syngen.audio.formant.createU(),
   formant1 = syngen.audio.formant.createA(),
-  mix: mixAmount = 1/2,
+  mix: mixAmount = 0.5,
   wet: wetAmount = 1,
 } = {}) => {
   const context = syngen.audio.context(),
@@ -5672,17 +5800,12 @@ syngen.audio.effect.createTalkbox = ({
   wet.connect(output)
 
   return {
-    dry,
-    formant: [
-      formant0,
-      formant1,
-    ],
     input,
-    mix,
     output,
-    wet,
     param: {
       dry: dry.gain,
+      formant0: formant0.param,
+      formant1: formant1.param,
       mix: mix.offset,
       wet: wet.gain,
     },
@@ -5745,32 +5868,34 @@ syngen.audio.export = ({
   return recorder
 }
 
-// SEE: https://www.soundonsound.com/techniques/formant-synthesis
-// SEE: https://www.researchgate.net/figure/Target-and-reproduced-vowel-formant-frequencies_tbl1_2561802
-// SEE: https://www.reasonstudios.com/blog/thor-demystified-17-filters-pt-5-formant-filters
-// SEE: http://www.ipachart.com
-
 /**
+ * Provides factories that define and create circuits that model human vowel sounds.
  * @namespace
  */
 syngen.audio.formant = {}
 
 /**
+ * Returns a blend of formants `a` and `b` with `mix`.
+ * @param {syngen.audio.formant~Definition} a
+ * @param {syngen.audio.formant~Definition} b
+ * @param {Number} mix
+ *   Expects a number within `[0, 1]`.
  * @static
  */
 syngen.audio.formant.blend = (a, b, mix = 0) => {
   const getFrequency = (array, index) => (array[index] && array[index].frequency) || syngen.const.zero
   const getGain = (array, index) => (array[index] && array[index].gain) || syngen.const.zeroGain
-  const getQ = (array, index) => (array[index] && array[index].q) || 1
+  const getQ = (array, index) => (array[index] && array[index].Q) || 1
 
   return [...Array(Math.max(a.length, b.length))].map((_, i) => ({
     frequency: syngen.utility.lerp(getFrequency(a, i), getFrequency(b, i), mix),
     gain: syngen.utility.lerp(getGain(a, i), getGain(b, i), mix),
-    q: syngen.utility.lerp(getQ(a, i), getQ(b, i), mix),
+    Q: syngen.utility.lerp(getQ(a, i), getQ(b, i), mix),
   }))
 }
 
 /**
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
 syngen.audio.formant.create = (frequencies = []) => {
@@ -5779,10 +5904,14 @@ syngen.audio.formant.create = (frequencies = []) => {
   const input = context.createGain(),
     output = context.createGain()
 
-  const filters = frequencies.map(({frequency = 10, gain = 1, q = 1}) => {
+  const filters = frequencies.map(({
+    frequency = 0,
+    gain = 1,
+    Q = 1,
+  } = {}) => {
     const filter = context.createBiquadFilter()
     filter.frequency.value = frequency
-    filter.Q.value = q
+    filter.Q.value = Q
     filter.type = 'bandpass'
 
     const gainNode = context.createGain()
@@ -5793,74 +5922,103 @@ syngen.audio.formant.create = (frequencies = []) => {
     gainNode.connect(output)
 
     return {
-      filter,
+      filter: {
+        frequency: filter.frequency,
+        Q: filter.Q,
+      },
       gain: gainNode,
     }
   })
 
   return {
-    filters,
     input,
     output,
+    param: {
+      filter: filters,
+    },
   }
 }
 
 /**
+ * Creates a formant effect for the vowel A.
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
-syngen.audio.formant.createA = () => {
-  return syngen.audio.formant.create(
-    syngen.audio.formant.a()
+syngen.audio.formant.createA = function () {
+  return this.create(
+    this.a()
   )
 }
 
 /**
+ * Creates a formant effect for the vowel E.
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
-syngen.audio.formant.createE = () => {
-  return syngen.audio.formant.create(
-    syngen.audio.formant.e()
+syngen.audio.formant.createE = function () {
+  return this.create(
+    this.e()
   )
 }
 
 /**
+ * Creates a formant effect for the vowel I.
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
-syngen.audio.formant.createI = () => {
-  return syngen.audio.formant.create(
-    syngen.audio.formant.i()
+syngen.audio.formant.createI = function () {
+  return this.create(
+    this.i()
   )
 }
 
 /**
+ * Creates a formant effect for the vowel O.
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
-syngen.audio.formant.createO = () => {
-  return syngen.audio.formant.create(
-    syngen.audio.formant.o()
+syngen.audio.formant.createO = function () {
+  return this.create(
+    this.o()
   )
 }
 
 /**
+ * Creates a formant effect for the vowel U.
+ * @returns {syngen.audio.synth~Plugin}
  * @static
  */
-syngen.audio.formant.createU = () => {
-  return syngen.audio.formant.create(
-    syngen.audio.formant.u()
+syngen.audio.formant.createU = function () {
+  return this.create(
+    this.u()
   )
 }
 
 /**
+ * Transitions formant `plugin` to `definition` over `duration` seconds.
+ * Returns a promise that resolves when the transition is complete.
+ * The `plugin` can either be an instance or its parameter hash.
+ * @param {syngen.audio.formant~Plugin|Object} plugin
+ * @param {syngen.audio.formant~Definition} [definition=[]]
+ * @param {Number} [duration={@link syngen.const.zeroTime}]
+ * @returns {Promise}
  * @static
  */
-syngen.audio.formant.transition = function(formant, frequencies = [], duration) {
-  formant.filters.forEach((filter, i) => {
-    if (!frequencies[i]) {
+syngen.audio.formant.transition = function(plugin, definition = [], duration = syngen.const.zeroTime) {
+  // Look for formant parameters or expect it directly
+  const bank = plugin.param ? plugin.param.filter : plugin
+
+  if (!Array.isArray(bank) || !(bank[0] && bank[0].filter)) {
+    throw new Error('Invalid plugin')
+  }
+
+  bank.forEach((filter, i) => {
+    if (!definition[i]) {
       syngen.audio.ramp.linear(filter.gain.gain, syngen.const.zeroGain, duration)
       return
     }
 
-    const {frequency, gain, q} = frequencies[i]
+    const {frequency, gain, Q} = definition[i]
 
     if (typeof frequency != 'undefined') {
       syngen.audio.ramp.exponential(filter.filter.frequency, frequency, duration)
@@ -5870,8 +6028,8 @@ syngen.audio.formant.transition = function(formant, frequencies = [], duration) 
       syngen.audio.ramp.linear(filter.gain.gain, gain, duration)
     }
 
-    if (typeof q != 'undefined') {
-      syngen.audio.ramp.exponential(filter.filter.Q, q, duration)
+    if (typeof Q != 'undefined') {
+      syngen.audio.ramp.exponential(filter.filter.Q, Q, duration)
     }
   })
 
@@ -5879,134 +6037,159 @@ syngen.audio.formant.transition = function(formant, frequencies = [], duration) 
 }
 
 /**
+ * Returns a formant definition for the vowel A.
+ * @returns {syngen.audio.formant~Definition}
  * @static
  */
 syngen.audio.formant.a = () => [
   {
     frequency: 599,
     gain: 1,
-    q: 5,
+    Q: 5,
   },
   {
     frequency: 1001,
     gain: 1,
-    q: 20,
+    Q: 20,
   },
   {
     frequency: 2045,
     gain: 1,
-    q: 50,
+    Q: 50,
   },
   {
     frequency: 2933,
     gain: 1,
-    q: 80,
+    Q: 80,
   },
 ]
 
 /**
+ * Returns a formant definition for the vowel E.
+ * @returns {syngen.audio.formant~Definition}
  * @static
  */
 syngen.audio.formant.e = () => [
   {
     frequency: 469,
     gain: 1,
-    q: 5,
+    Q: 5,
   },
   {
     frequency: 2150,
     gain: 1,
-    q: 20,
+    Q: 20,
   },
   {
     frequency: 2836,
     gain: 1,
-    q: 50,
+    Q: 50,
   },
   {
     frequency: 3311,
     gain: 1,
-    q: 80,
+    Q: 80,
   },
 ]
 
 /**
+ * Returns a formant definition for the vowel I.
+ * @returns {syngen.audio.formant~Definition}
  * @static
  */
 syngen.audio.formant.i = () => [
   {
     frequency: 274,
     gain: 1,
-    q: 5,
+    Q: 5,
   },
   {
     frequency: 1704,
     gain: 1,
-    q: 20,
+    Q: 20,
   },
   {
     frequency: 2719,
     gain: 1,
-    q: 50,
+    Q: 50,
   },
   {
     frequency: 3404,
     gain: 1,
-    q: 80,
+    Q: 80,
   },
 ]
 
 /**
+ * Returns a formant definition for the vowel O.
+ * @returns {syngen.audio.formant~Definition}
  * @static
  */
 syngen.audio.formant.o = () => [
   {
     frequency: 411,
     gain: 1,
-    q: 5,
+    Q: 5,
   },
   {
     frequency: 784,
     gain: 1,
-    q: 20,
+    Q: 20,
   },
   {
     frequency: 2176,
     gain: 1,
-    q: 50,
+    Q: 50,
   },
   {
     frequency: 2987,
     gain: 1,
-    q: 80,
+    Q: 80,
   },
 ]
 
 /**
+ * Returns a formant definition for the vowel U.
+ * @returns {syngen.audio.formant~Definition}
  * @static
  */
 syngen.audio.formant.u = () => [
   {
     frequency: 290,
     gain: 1,
-    q: 5,
+    Q: 5,
   },
   {
     frequency: 685,
     gain: 1,
-    q: 20,
+    Q: 20,
   },
   {
     frequency: 2190,
     gain: 1,
-    q: 50,
+    Q: 50,
   },
   {
     frequency: 3154,
     gain: 1,
-    q: 80,
+    Q: 80,
   },
 ]
+
+/**
+ * Formant definition that consists of an array of bandpass filter parameters.
+ * @property {Number} frequency
+ * @property {Number} gain
+ * @property {Number} Q
+ * @type {Object[]}
+ * @typedef syngen.audio.formant~Definition
+ */
+
+/**
+ * Formant effect that consists of a bank of finely tuned bandpass filters.
+ * @type {syngen.audio.synth~Plugin}
+ * @typedef syngen.audio.formant~Plugin
+ */
 
 /**
  * Provides a mastering process and utilities for routing audio into it like a virtual mixing board.
@@ -6228,13 +6411,16 @@ syngen.audio.ramp.set = function (audioParam, value) {
 }
 
 /**
+ * Provides a variety of curves and curve generators that can be used with `WaveShaperNode`s.
  * @namespace
  */
 syngen.audio.shape = (() => {
-  const crush6 = createBitcrush(6),
+  const crush4 = createBitcrush(4),
+    crush6 = createBitcrush(6),
     crush8 = createBitcrush(8),
     crush12 = createBitcrush(12),
     distort = createSigmoid(Math.PI * 8),
+    dither = createNoise(syngen.const.zeroGain),
     double = createTuple(2),
     doublePulse = createTuplePulse(2),
     equalFadeIn = new Float32Array(2 ** 16),
@@ -6247,7 +6433,6 @@ syngen.audio.shape = (() => {
     noise8 = createNoise(syngen.utility.fromDb(-9)),
     noise16 = createNoise(syngen.utility.fromDb(-12)),
     noise32 = createNoise(syngen.utility.fromDb(-15)),
-    noiseZero = createNoise(syngen.const.zeroGain),
     one = new Float32Array([1, 1]),
     pulse = new Float32Array([0, 0, 1]),
     rectify = new Float32Array([1, 0, 1]),
@@ -6269,7 +6454,11 @@ syngen.audio.shape = (() => {
   }
 
   /**
+   * Generates a linear curve of arbitrary bit `depth` of `samples` length.
+   * @param {Number} [depth=16]
+   * @param {Number} [samples=2**16]
    * @memberof syngen.audio.shape
+   * @returns {Float32Array}
    */
   function createBitcrush(depth = 16, samples = 2 ** 16) {
     const factor = 2 ** (depth - 1),
@@ -6286,13 +6475,17 @@ syngen.audio.shape = (() => {
   }
 
   /**
+   * Generates a linear curve with noise at `gain` of `samples` length.
    * @memberof syngen.audio.shape
+   * @param {Number} [gain=1]
+   * @param {Number} [samples=2**16]
+   * @returns {Float32Array}
    */
-  function createNoise(variance = 2, samples = 2 ** 16) {
+  function createNoise(gain = 1, samples = 2 ** 16) {
     const shape = new Float32Array(samples),
-      srand = syngen.utility.srand('syngen.audio.shape.createNoise')
+      srand = syngen.utility.srand('syngen.audio.shape.createNoise', gain)
 
-    const noise = () => srand(-variance, variance),
+    const noise = () => srand(-gain, gain),
       y = (x) => syngen.utility.wrapAlternate(x + noise(), 0, 2) - 1
 
     for (let i = 0; i < shape.length; i += 1) {
@@ -6306,22 +6499,30 @@ syngen.audio.shape = (() => {
   }
 
   /**
+   * Generates a curve having random `steps` with `seed`.
    * @memberof syngen.audio.shape
+   * @param {Number} [steps=3]
+   * @param {String} [seed]
+   * @returns {Float32Array}
    */
-  function createRandom(samples = 2, seed = '') {
+  function createRandom(steps = 2, seed = '') {
     const shape = new Float32Array(samples),
       srand = syngen.utility.srand('syngen.audio.shape.createRandom', seed)
 
-    for (let i = 0; i < samples; i += 1) {
+    for (let i = 0; i < steps; i += 1) {
       shape[i] = srand(-1, 1)
     }
 
     return shape
   }
 
-  // NOTE: amount should be in radians
   /**
+   * Generates a sigmoid curve with `amount` in radians of `samples` length.
+   * Smaller values tend to be warmer, whereas larger values tend to be more distorted.
    * @memberof syngen.audio.shape
+   * @param {Number} [amount=0]
+   * @param {Number} [samples=2**16]
+   * @returns {Float32Array}
    */
   function createSigmoid(amount = 0, samples = 2 ** 16) {
     const shape = new Float32Array(samples)
@@ -6335,7 +6536,11 @@ syngen.audio.shape = (() => {
   }
 
   /**
+   * Generates a curve that bounces a number of `times` before its zero crossing.
+   * This effectively adds `times` harmonics to a signal at decreasing amplitudes similar to a sawtooth wave.
    * @memberof syngen.audio.shape
+   * @param [times=1]
+   * @returns {Float32Array}
    */
   function createTuple(times = 1) {
     const samples = (times * 4) - 1,
@@ -6359,7 +6564,10 @@ syngen.audio.shape = (() => {
   }
 
   /**
+   * Generates a rectified curve that bounces a number of `times`.
    * @memberof syngen.audio.shape
+   * @param [times=1]
+   * @returns {Float32Array}
    */
   function createTuplePulse(times = 1) {
     const samples = times * 2,
@@ -6373,155 +6581,261 @@ syngen.audio.shape = (() => {
   }
 
   return {
+    /**
+     * Generates a curve that applies constant `offset`.
+     * @memberof syngen.audio.shape
+     * @param {Number} [offset=0]
+     * @returns {Float32Array}
+     */
+    constant: (offset = 0) => new Float32Array([offset, offset]),
     createBitcrush,
     createNoise,
     createRandom,
     createSigmoid,
     createTuple,
     createTuplePulse,
+    /**
+     * Applies a 12-bit resolution.
+     * @memberof syngen.audio.shape
+     * @returns {Float32Array}
+     */
     crush12: () => crush12,
     /**
+     * Applies a 4-bit resolution.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
+     */
+    crush4: () => crush4,
+    /**
+     * Applies a 6-bit resolution.
+     * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     crush6: () => crush6,
     /**
+     * Applies an 8-bit resolution.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     crush8: () => crush8,
     /**
+     * Applies a heavy overdrive.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     distort: () => distort,
     /**
+     * Applies dither, or -96 decibels of noise.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
+     */
+    dither: () => dither,
+    /**
+     * A double tuple.
+     * The result of `{@link syngen.audio.shape.createTuple|syngen.audio.shape.createTuple(2)}`
+     * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     double: () => double,
     /**
+     * A double pulse tuple.
+     * The result of `{@link syngen.audio.shape.createTuplePulse|syngen.audio.shape.createTuplePulse(2)}`
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     doublePulse: () => doublePulse,
     /**
+     * Returns an equal-power fade-in curve.
+     * This is useful
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     equalFadeIn: () => equalFadeIn,
     /**
+     * Returns an equal-power fade-out curve.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     equalFadeOut: () => equalFadeOut,
     /**
+     * Applies a moderate overdrive.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     hot: () => hot,
     /**
+     * Inverts a signal.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     invert: () => invert,
     /**
+     * Returns an inverted copy of `shape`.
      * @memberof syngen.audio.shape
+     * @param {}
+     * @returns {Float32Array}
      */
-    invertShape: (shape) => new Float32Array([...shape].reverse()),
+    invertShape: (shape) => shape.map((value) => -value),
     /**
+     * Identity curve resulting in no shaping.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     linear: () => linear,
     /**
+     * Noise curve with 0 decibels of noise.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     noise: () => noise,
     /**
+     * Applies -3 decibels of noise.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     noise2: () => noise2,
     /**
+     * Applies -6 decibels of noise.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     noise4: () => noise4,
     /**
+     * Applies -9 decibels of noise.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     noise8: () => noise8,
     /**
+     * Applies -12 decibels of noise.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     noise16: () => noise16,
     /**
+     * Applies -15 decibels of noise.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     noise32: () => noise32,
     /**
+     * Applies a constant `offset` to a copy of `shape`.
      * @memberof syngen.audio.shape
+     * @param {Float32Array} shape
+     * @param {Number} [offset=0]
+     * @returns {Float32Array}
      */
-    noiseZero: () => noiseZero,
+    offsetShape: (shape, offset = 0) => shape.map((value) => value + offset),
     /**
+     * Always one.
      * @memberof syngen.audio.shape
-     */
-    offset: (offset = syngen.const.zeroGain) => new Float32Array([offset, offset]),
-    /**
-     * @memberof syngen.audio.shape
-     */
-    offsetShape: (shape, offset = syngen.const.zeroGain) => shape.map((value) => value + offset),
-    /**
-     * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     one: () => one,
     /**
+     * Omits troughs so only positive values are audible.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     pulse: () => pulse,
     /**
+     * Returns a copy of `shape` with troughs set to zero.
      * @memberof syngen.audio.shape
+     * @param {Float32Array} shape
+     * @returns {Float32Array}
+     */
+    pulseShape: (shape) => shape.map((value) => value > 0 ? value : 0),
+    /**
+     * Rectifies a signal so it's always positive.
+     * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     rectify: () => rectify,
     /**
+     * Returns a rectified copy of `shape`.
      * @memberof syngen.audio.shape
+     * @param {Float32Array} shape
+     * @returns {Float32Array}
      */
     rectifyShape: (shape) => shape.map(Math.abs),
     /**
+     * Returns a reversed copy of `shape`.
      * @memberof syngen.audio.shape
+     * @param {Float32Array} shape
+     * @returns {Float32Array}
      */
     reverseShape: (shape) => shape.slice().reverse(),
     /**
+     * Applies a hard threshold where values round to -1 or 1.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     square: () => square,
     /**
+     * A triple tuple.
+     * The result of `{@link syngen.audio.shape.createTuple|syngen.audio.shape.createTuple(3)}`
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     triple: () => triple,
     /**
+     * A triple pulse tuple.
+     * The result of `{@link syngen.audio.shape.createTuplePulse|syngen.audio.shape.createTuplePulse(3)}`
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     triplePulse: () => triplePulse,
     /**
+     * Applies a slight overdrive
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     warm: () => warm,
     /**
+     * Always zero.
      * @memberof syngen.audio.shape
+     * @returns {Float32Array}
      */
     zero: () => zero,
   }
 })()
 
 /**
- * Provides factories and utilities for building prefabricated synthesizers.
+ * Provides factories for building simple prefabricated synthesizers.
+ * Importantly, these are _not_ the only way to generate audio with syngen.
+ * Implementations can build their own synthesizers or use any external library that supports connecting to its audio graph.
  * @namespace
  */
 syngen.audio.synth = {}
 
 /**
  * Assigns `plugin` to `synth` at `key`, merges its parameters into `synth.param[key]`, and returns `synth`.
+ * If `key` already exists, then those plugins will be wrapped in an array.
  * @param {syngen.audio.synth~Synth} synth
  * @param {String} key
- * @param {Object} plugin
+ * @param {syngen.audio.synth~Plugin} plugin
  * @private
  * @returns {syngen.audio.synth~Synth}
  * @static
  */
 syngen.audio.synth.assign = function (synth, key, plugin) {
-  synth[key] = plugin
-  synth.param = synth.param || {}
-  synth.param[key] = plugin.param || {}
+  if (!synth.param) {
+    synth.param = {}
+  }
+
+  if (key in synth) {
+    if (!Array.isArray(synth[key])) {
+      synth[key] = [synth[key]]
+      synth.param[key] = [synth.param[key]]
+    }
+
+    synth[key].push(plugin)
+    synth.param[key].push(plugin.param || {})
+  } else {
+    synth[key] = plugin
+    synth.param[key] = plugin.param || {}
+  }
+
   return synth
 }
 
@@ -6529,7 +6843,7 @@ syngen.audio.synth.assign = function (synth, key, plugin) {
  * Adds `plugin` into the output chain for `synth` and returns `synth`.
  * Their stop methods are atuomatically chained.
  * @param {syngen.audio.synth~Synth} synth
- * @param {Object} plugin
+ * @param {syngen.audio.synth~Plugin|AudioNode} plugin
  * @private
  * @returns {syngen.audio.synth~Synth}
  * @static
@@ -6570,7 +6884,7 @@ syngen.audio.synth.chain = function (synth, plugin) {
  * Chains and assigns `plugin` to `synth` and returns `synth`.
  * @param {syngen.audio.synth~Synth} synth
  * @param {Synth} key
- * @param {Object} plugin
+ * @param {syngen.audio.synth~Plugin|AudioNode} plugin
  * @private
  * @returns {Object}
  * @see syngen.audio.synth.assign
@@ -6579,13 +6893,14 @@ syngen.audio.synth.chain = function (synth, plugin) {
  */
 syngen.audio.synth.chainAssign = function (synth, key, plugin) {
   this.assign(synth, key, plugin)
-  return this.chain(synth, plugin)
+  this.chain(synth, plugin)
+  return synth
 }
 
 /**
  * Wraps `synth` such that `plugin` stops when it stops and returns `synth`.
  * @param {syngen.audio.synth~Synth} synth
- * @param {Object} plugin
+ * @param {syngen.audio.synth~Plugin} plugin
  * @private
  * @returns {syngen.audio.synth~Synth}
  * @static
@@ -6729,6 +7044,7 @@ syngen.audio.synth.createAdditive = ({
  * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
  * @returns {syngen.audio.synth~Synth}
  * @static
+ * @todo Leverage {@link syngen.audio.synth.createLfo} internally
  */
 syngen.audio.synth.createAm = ({
   carrierDetune = 0,
@@ -6818,6 +7134,7 @@ syngen.audio.synth.createAm = ({
  * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
  * @returns {syngen.audio.synth~Synth}
  * @static
+ * @todo Leverage {@link syngen.audio.synth.createLfo} internally
  */
 syngen.audio.synth.createAmBuffer = ({
   buffer,
@@ -6985,6 +7302,7 @@ syngen.audio.synth.createBuffer = ({
  * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
  * @returns {syngen.audio.synth~Synth}
  * @static
+ * @todo Leverage {@link syngen.audio.synth.createLfo} internally
  */
 syngen.audio.synth.createFm = ({
   carrierDetune = 0,
@@ -7124,6 +7442,7 @@ syngen.audio.synth.createLfo = ({
  * @param {Number} [options.when={@link syngen.audio.time|syngen.audio.time()}]
  * @returns {syngen.audio.synth~Synth}
  * @static
+ * @todo Leverage {@link syngen.audio.synth.createLfo} internally
  */
 syngen.audio.synth.createMod = ({
   amodDepth: amodDepthAmount = syngen.const.zeroGain,
@@ -7359,12 +7678,15 @@ syngen.audio.synth.decorate = (synth = {}) => {
  *   Adds `plugin` to the output chain and ensures they stop together.
  * @property {Function} chainAssign
  *   Assigns and chains `plugin` to `key`.
+ *   This is shorthand for calling both `chain()` and `assign()`.
  * @property {Function} chainStop
  *   Ensures `plugin` stops when the synth is stopped.
+ *   This is called internally by `chain()`.
+ *   Implementations should only call this manually if `plugin` is not part of its output chain.
  * @property {Function} connect
- *   Connects output to node.
+ *   Connects synth output to `node` with optional `...args`.
  * @property {Function} disconnect
- *   Disconnects output from node.
+ *   Disconnects synth output from `node` with optional `...args`.
  * @property {Function} filtered
  *   Adds a `BiquadFilterNode` to the output chain with `options`.
  * @property {GainNode} output
@@ -7375,7 +7697,7 @@ syngen.audio.synth.decorate = (synth = {}) => {
  *   Adds a `WaveShaperNode` to the output chain with `curve`.
  * @property {Function} stop
  *   Stops the synth and all chained plugins.
- * @todo Improve documentation
+ * @todo Improve documentation as an interface
  * @typedef {Object} syngen.audio.synth~Synth
  */
 syngen.audio.synth.decoration = {
@@ -7400,18 +7722,10 @@ syngen.audio.synth.decoration = {
     return this
   },
   filtered: function (...args) {
-    if (!this.filter) {
-      return syngen.audio.synth.filtered(this, ...args)
-    }
-
-    return this
+    return syngen.audio.synth.filtered(this, ...args)
   },
   shaped: function (...args) {
-    if (!this.shaper) {
-      return syngen.audio.synth.shaped(this, ...args)
-    }
-
-    return this
+    return syngen.audio.synth.shaped(this, ...args)
   },
 }
 
@@ -7424,7 +7738,7 @@ syngen.audio.synth.decoration = {
  * @static
  */
 syngen.audio.synth.filtered = function (synth, {
-  detune = 0,
+  detune,
   gain,
   frequency,
   Q,
@@ -7475,6 +7789,94 @@ syngen.audio.synth.shaped = function (synth, curve) {
   shaper.curve = curve
   return this.chainAssign(synth, 'shaper', shaper)
 }
+
+/**
+ * A plugin compatible with synth chaining.
+ * Typically returned from a {@link syngen.audio.effect} or {@link syngen.audio.formant} factory method.
+ * Implementations can create their own plugins for synths as long as they have an `input` and `output`.
+ * @property {AudioNode} input
+ *   The plugin output.
+ * @property {AudioNode} output
+ *   The plugin output.
+ * @property {Object} [param]
+ *   Hash of all `AudioParam`s.
+ * @property {Function} [stop]
+ *   Stops the plugins.
+ * @todo Improve documentation as an interface
+ * @typedef {Object} syngen.audio.synth~Plugin
+ */
+
+/**
+ * Returns a large reverb impulse.
+ * @method
+ * @returns {AudioBuffer}
+ */
+syngen.audio.buffer.impulse.large = (() => {
+  const context = syngen.audio.context()
+
+  const sampleRate = context.sampleRate,
+    size = 4 * sampleRate
+
+  const buffer = context.createBuffer(1, size, sampleRate)
+
+  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
+    const data = buffer.getChannelData(n)
+    for (let i = 0; i < size; i += 1) {
+      const factor = ((size - i) / size) ** 8
+      data[i] = factor * ((2 * Math.random()) - 1)
+    }
+  }
+
+  return () => buffer
+})()
+
+/**
+ * Returns a medium reverb impulse.
+ * @method
+ * @returns {AudioBuffer}
+ */
+syngen.audio.buffer.impulse.medium = (() => {
+  const context = syngen.audio.context()
+
+  const sampleRate = context.sampleRate,
+    size = 2 * sampleRate
+
+  const buffer = context.createBuffer(1, size, sampleRate)
+
+  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
+    const data = buffer.getChannelData(n)
+    for (let i = 0; i < size; i += 1) {
+      const factor = ((size - i) / size) ** 6
+      data[i] = factor * ((2 * Math.random()) - 1)
+    }
+  }
+
+  return () => buffer
+})()
+
+/**
+ * Returns a small reverb impulse.
+ * @method
+ * @returns {AudioBuffer}
+ */
+syngen.audio.buffer.impulse.small = (() => {
+  const context = syngen.audio.context()
+
+  const sampleRate = context.sampleRate,
+    size = 1 * sampleRate
+
+  const buffer = context.createBuffer(1, size, sampleRate)
+
+  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
+    const data = buffer.getChannelData(n)
+    for (let i = 0; i < size; i += 1) {
+      const factor = ((size - i) / size) ** 4
+      data[i] = factor * ((2 * Math.random()) - 1)
+    }
+  }
+
+  return () => buffer
+})()
 
 /**
  * Returns Brownian noise with intensity inversely proportional to the frequency squared.
@@ -7568,75 +7970,115 @@ syngen.audio.buffer.noise.white = (() => {
 })()
 
 /**
- * Returns a large reverb impulse.
- * @method
- * @returns {AudioBuffer}
+ * Provides a auxiliary send for global reverb processing.
+ * Because `ConvolverNode`s are quite intensive, implementations are encouraged to leverage this to provide a single global reverb.
+ * @augments syngen.utility.pubsub
+ * @namespace
+ * @see syngen.audio.mixer.send.reverb
+ * @todo Add highpass, lowpass, and pre-delay to processing with parameters
+ * @todo Add resetFilters method
  */
-syngen.audio.buffer.impulse.large = (() => {
-  const context = syngen.audio.context()
+syngen.audio.mixer.auxiliary.reverb = (() => {
+  const context = syngen.audio.context(),
+    input = context.createGain(),
+    output = syngen.audio.mixer.createBus(),
+    pubsub = syngen.utility.pubsub.create()
 
-  const sampleRate = context.sampleRate,
-    size = 4 * sampleRate
+  let active = true,
+    convolver = context.createConvolver()
 
-  const buffer = context.createBuffer(1, size, sampleRate)
-
-  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
-    const data = buffer.getChannelData(n)
-    for (let i = 0; i < size; i += 1) {
-      const factor = ((size - i) / size) ** 8
-      data[i] = factor * ((2 * Math.random()) - 1)
-    }
+  if (active) {
+    input.connect(convolver)
   }
 
-  return () => buffer
-})()
+  convolver.buffer = syngen.audio.buffer.impulse.small()
+  convolver.connect(output)
 
-/**
- * Returns a medium reverb impulse.
- * @method
- * @returns {AudioBuffer}
- */
-syngen.audio.buffer.impulse.medium = (() => {
-  const context = syngen.audio.context()
+  return syngen.utility.pubsub.decorate({
+    /**
+     * Creates a `GainNode` that's connected to the reverb input.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @returns {GainNode}
+     */
+    createSend: () => {
+      const gain = context.createGain()
+      gain.connect(input)
+      return gain
+    },
+    /**
+     * Returns whether the processing is active.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @returns {Boolean}
+     */
+    isActive: () => active,
+    /**
+     * Returns the output node for the send.
+     * @deprecated
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @returns {GainNode}
+     */
+    output: () => output,
+    /**
+     * Exposes the parameters associated with reverb processing.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @property {AudioParam} gain
+     */
+    param: {
+      gain: output.gain,
+    },
+    /**
+     * Sets the active state.
+     * Implementations can disable processing for a performance boost.
+     * @fires syngen.audio.mixer.auxiliary.reverb#event:activate
+     * @fires syngen.audio.mixer.auxiliary.reverb#event:deactivate
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @param {Boolean} state
+     */
+    setActive: function (state) {
+      if (active == state) {
+        return this
+      }
 
-  const sampleRate = context.sampleRate,
-    size = 2 * sampleRate
+      active = Boolean(state)
 
-  const buffer = context.createBuffer(1, size, sampleRate)
+      if (active) {
+        /**
+         * Fired whenever the send is activated.
+         * @event syngen.audio.mixer.auxiliary.reverb#event:activate
+         */
+        pubsub.emit('activate')
+        input.connect(convolver)
+      } else {
+        /**
+         * Fired whenever the send is deactivated.
+         * @event syngen.audio.mixer.auxiliary.reverb#event:deactivate
+         */
+        pubsub.emit('deactivate')
+        input.disconnect(convolver)
+      }
 
-  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
-    const data = buffer.getChannelData(n)
-    for (let i = 0; i < size; i += 1) {
-      const factor = ((size - i) / size) ** 6
-      data[i] = factor * ((2 * Math.random()) - 1)
-    }
-  }
+      return this
+    },
+    /**
+     * Sets the impulse buffer for the inner `ConvolverNode`.
+     * To prevent pops and clicks, the tail of the previous buffer persists until it fades out.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @param {BufferSource} buffer
+     */
+    setImpulse: function (buffer) {
+      input.disconnect()
 
-  return () => buffer
-})()
+      convolver = context.createConvolver()
+      convolver.buffer = buffer
+      convolver.connect(output)
 
-/**
- * Returns a small reverb impulse.
- * @method
- * @returns {AudioBuffer}
- */
-syngen.audio.buffer.impulse.small = (() => {
-  const context = syngen.audio.context()
+      if (active) {
+        input.connect(convolver)
+      }
 
-  const sampleRate = context.sampleRate,
-    size = 1 * sampleRate
-
-  const buffer = context.createBuffer(1, size, sampleRate)
-
-  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
-    const data = buffer.getChannelData(n)
-    for (let i = 0; i < size; i += 1) {
-      const factor = ((size - i) / size) ** 4
-      data[i] = factor * ((2 * Math.random()) - 1)
-    }
-  }
-
-  return () => buffer
+      return this
+    },
+  }, pubsub)
 })()
 
 /**
@@ -7765,118 +8207,6 @@ syngen.audio.mixer.send.reverb.prototype = {
     return this
   },
 }
-
-/**
- * Provides a auxiliary send for global reverb processing.
- * Because `ConvolverNode`s are quite intensive, implementations are encouraged to leverage this to provide a single global reverb.
- * @augments syngen.utility.pubsub
- * @namespace
- * @see syngen.audio.mixer.send.reverb
- * @todo Add highpass, lowpass, and pre-delay to processing with parameters
- * @todo Add resetFilters method
- */
-syngen.audio.mixer.auxiliary.reverb = (() => {
-  const context = syngen.audio.context(),
-    input = context.createGain(),
-    output = syngen.audio.mixer.createBus(),
-    pubsub = syngen.utility.pubsub.create()
-
-  let active = true,
-    convolver = context.createConvolver()
-
-  if (active) {
-    input.connect(convolver)
-  }
-
-  convolver.buffer = syngen.audio.buffer.impulse.small()
-  convolver.connect(output)
-
-  return syngen.utility.pubsub.decorate({
-    /**
-     * Creates a `GainNode` that's connected to the reverb input.
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @returns {GainNode}
-     */
-    createSend: () => {
-      const gain = context.createGain()
-      gain.connect(input)
-      return gain
-    },
-    /**
-     * Returns whether the processing is active.
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @returns {Boolean}
-     */
-    isActive: () => active,
-    /**
-     * Returns the output node for the send.
-     * @deprecated
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @returns {GainNode}
-     */
-    output: () => output,
-    /**
-     * Exposes the parameters associated with reverb processing.
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @property {AudioParam} gain
-     */
-    param: {
-      gain: output.gain,
-    },
-    /**
-     * Sets the active state.
-     * Implementations can disable processing for a performance boost.
-     * @fires syngen.audio.mixer.auxiliary.reverb#event:activate
-     * @fires syngen.audio.mixer.auxiliary.reverb#event:deactivate
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @param {Boolean} state
-     */
-    setActive: function (state) {
-      if (active == state) {
-        return this
-      }
-
-      active = Boolean(state)
-
-      if (active) {
-        /**
-         * Fired whenever the send is activated.
-         * @event syngen.audio.mixer.auxiliary.reverb#event:activate
-         */
-        pubsub.emit('activate')
-        input.connect(convolver)
-      } else {
-        /**
-         * Fired whenever the send is deactivated.
-         * @event syngen.audio.mixer.auxiliary.reverb#event:deactivate
-         */
-        pubsub.emit('deactivate')
-        input.disconnect(convolver)
-      }
-
-      return this
-    },
-    /**
-     * Sets the impulse buffer for the inner `ConvolverNode`.
-     * To prevent pops and clicks, the tail of the previous buffer persists until it fades out.
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @param {BufferSource} buffer
-     */
-    setImpulse: function (buffer) {
-      input.disconnect()
-
-      convolver = context.createConvolver()
-      convolver.buffer = buffer
-      convolver.connect(output)
-
-      if (active) {
-        input.connect(convolver)
-      }
-
-      return this
-    },
-  }, pubsub)
-})()
 
 /**
  * Provides an interface for processing audio as an observer in a physical space.
