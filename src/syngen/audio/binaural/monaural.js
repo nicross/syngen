@@ -33,25 +33,23 @@ syngen.audio.binaural.monaural.prototype = {
     this.panSign = syngen.utility.sign(pan)
     this.angleOffset = -this.panSign * Math.PI / 2
 
+    this.delay = context.createDelay()
     this.filter = context.createBiquadFilter()
     this.gain = context.createGain()
 
     this.filter.frequency.value = syngen.const.maxFrequency
     this.gain.gain.value = syngen.const.zeroGain
 
-    this.delay = context.createDelay()
-    this.gain.connect(this.delay)
     this.delay.connect(this.filter)
+    this.filter.connect(this.gain)
 
     return this
   },
   /**
    * Prepares the instance for garbage collection.
-   * Immediately disconnects from all inputs and outputs.
    * @instance
    */
   destroy: function () {
-    this.filter.disconnect()
     return this
   },
   /**
@@ -61,7 +59,7 @@ syngen.audio.binaural.monaural.prototype = {
    * @param {...*} [...args]
    */
   from: function (input, ...args) {
-    input.connect(this.gain, ...args)
+    input.connect(this.delay, ...args)
     return this
   },
   /**
@@ -71,7 +69,7 @@ syngen.audio.binaural.monaural.prototype = {
    * @param {...*} [...args]
    */
   to: function (output, ...args) {
-    this.filter.connect(output, ...args)
+    this.gain.connect(output, ...args)
     return this
   },
   /**

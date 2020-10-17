@@ -47,13 +47,11 @@ syngen.audio.binaural.prototype = {
   },
   /**
    * Prepares the instance for garbage collection.
-   * Immediately disconnects from all inputs and outputs.
    * @instance
    */
   destroy: function () {
     this.left.destroy()
     this.right.destroy()
-    this.merger.disconnect()
     return this
   },
   /**

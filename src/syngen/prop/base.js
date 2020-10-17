@@ -81,7 +81,11 @@ syngen.prop.base = {
     setTimeout(() => {
       this.output.disconnect()
       this.binaural.destroy()
-      this.reverb.destroy()
+
+      if (this.reverb) {
+        this.reverb.destroy()
+      }
+
       this.onDestroy()
     }, (syngen.const.audioLookaheadTime + this.fadeOutDuration) * 1000)
 

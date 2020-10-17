@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>syngen example: effects</title>
+    <script src="../dist/syngen.js"></script>
+  </head>
+  <body>
+    <p>This example demonstrates some of the stock effects plugins.</p>
+    <button type="button">Resume audio context</button>
+
+    <script>
+      // Resume the audio context after a user gesture
+      window.addEventListener('click', () => syngen.audio.start())
+
+      // Create a bus
+      const bus = syngen.audio.mixer.createBus()
+      bus.gain.value = syngen.utility.fromDb(-3)
+
+      // Build an effects chain
+      const delay = syngen.audio.effect.createDubDelay({
+        delay: 1,
+        dry: 1,
+        feedback: 0.75,
+        filterFrequency: 10000,
+        filterQ: 0.1,
+        filterType: 'bandpass',
+        wet: 0.75,
+      })
+
+      const phaser = syngen.audio.effect.createPhaser({
+        delay: 0.001,
+        dry: 0.5,
+        feedback: 0.5,
+        frequency: 1/8,
+        wet: 0.5,
+      })
+
+      delay.output.connect(phaser.input)
+      phaser.output.connect(bus)
+
+      // Play a sound
+      function trigger() {
+        // Define a synth with an effects chain
+        const synth = syngen.audio.synth.createBuffer({
+          buffer: syngen.audio.buffer.noise.white(),
+        }).shaped(
+          syngen.audio.shape.distort()
+        ).chainAssign('talkbox', syngen.audio.effect.createTalkbox({
+          formant0: syngen.audio.formant.createU(),
+          formant1: syngen.audio.formant.createI(),
+          mix: 0,
+        })).connect(delay.input)
+
+        // Ramp its parameters
+        const now = syngen.audio.time()
+
+        synth.param.gain.exponentialRampToValueAtTime(1, now + 1/16)
+        synth.param.gain.linearRampToValueAtTime(syngen.const.zeroGain, now + 1)
+
+        synth.param.talkbox.mix.linearRampToValueAtTime(1, now + 1)
+
+        // Stop synth when complete
+        synth.stop(now + 1)
+      }
+
+      // Trigger the sound periodically
+      setInterval(trigger, 4000)
+      trigger()
+    </script>
+  </body>
+</html>
