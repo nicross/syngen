@@ -25,7 +25,7 @@ syngen.utility.perlin2d.prototype = {
    */
   construct: function (...seeds) {
     this.gradient = new Map()
-    this.seed = seeds.join(syngen.const.seedSeparator)
+    this.seed = seeds
     return this
   },
   /**
@@ -36,7 +36,7 @@ syngen.utility.perlin2d.prototype = {
    * @private
    */
   generateGradient: function (x, y) {
-    const srand = syngen.utility.srand('perlin', this.seed, x, y)
+    const srand = syngen.utility.srand('perlin', ...this.seed, x, y)
 
     if (!this.gradient.has(x)) {
       this.gradient.set(x, new Map())

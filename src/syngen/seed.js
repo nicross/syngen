@@ -5,9 +5,20 @@
  * @namespace
  */
 syngen.seed = (() => {
-  let seed
+  let seed,
+    separator = '~'
 
   return {
+    /**
+     * Concatenates variadic `seeds`
+     * @memberof syngen.seed
+     * @param {...String} [...seeds]
+     * @returns {String}
+     */
+    concat: (...seeds) => {
+      seeds.unshift(seed)
+      return seeds.join(separator)
+    },
     /**
      * Returns the seed value.
      * @listens syngen.state#event.import
@@ -15,6 +26,12 @@ syngen.seed = (() => {
      * @returns {String}
      */
     get: () => seed,
+    /**
+     * Returns the separator value.
+     * @memberof syngen.seed
+     * @returns {String}
+     */
+    getSeparator: () => separator,
     /**
      * Sets the seed value.
      * @listens syngen.state#event:import
@@ -24,6 +41,18 @@ syngen.seed = (() => {
      */
     set: function (value) {
       seed = value
+      return this
+    },
+    /**
+     * Sets the separator value.
+     * @memberof syngen.seed
+     * @param {String} value
+     */
+    setSeparator: function (value) {
+      if (typeof value == 'string') {
+        separator = value
+      }
+
       return this
     },
     /**

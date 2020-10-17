@@ -116,12 +116,6 @@ syngen.const = {
   */
   propFadeDuration: 0.005,
   /**
-   * Separator used when joining array seeds.
-   * @todo Move into syngen.seed
-   * @type {String}
-  */
-  seedSeparator: '~',
-  /**
    * The speed of sound, in meters per second.
    * @type {Number}
   */
@@ -152,7 +146,7 @@ syngen.const = {
   */
   unit4: Math.sqrt(4) / 4,
   /**
-   * Close enough to zero for
+   * Close enough to zero for most calculations that can't use zero, like ramping `AudioParam`s exponentially to zero.
    * @type {Number}
   */
   zero: 10 ** -32,

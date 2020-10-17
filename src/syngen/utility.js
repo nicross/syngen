@@ -680,10 +680,7 @@ syngen.utility.srand = (...seeds) => {
     rotate = (seed) => ((seed * multiplier) + increment) % modulus
 
   let seed = syngen.utility.hash(
-    [
-      syngen.seed.get(),
-      ...seeds,
-    ].join(syngen.const.seedSeparator)
+    syngen.seed.concat(...seeds)
   )
 
   seed = rotate(seed)

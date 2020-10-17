@@ -720,10 +720,7 @@ syngen.utility.srand = (...seeds) => {
     rotate = (seed) => ((seed * multiplier) + increment) % modulus
 
   let seed = syngen.utility.hash(
-    [
-      syngen.seed.get(),
-      ...seeds,
-    ].join(syngen.const.seedSeparator)
+    syngen.seed.concat(...seeds)
   )
 
   seed = rotate(seed)
@@ -2121,7 +2118,7 @@ syngen.utility.perlin1d.prototype = {
    */
   construct: function (...seeds) {
     this.gradient = new Map()
-    this.seed = seeds.join(syngen.const.seedSeparator)
+    this.seed = seeds
     return this
   },
   /**
@@ -2131,7 +2128,7 @@ syngen.utility.perlin1d.prototype = {
    * @private
    */
   generateGradient: function (x) {
-    const srand = syngen.utility.srand('perlin', this.seed, x)
+    const srand = syngen.utility.srand('perlin', ...this.seed, x)
     this.gradient.set(x, srand(0, 1))
     return this
   },
@@ -2266,7 +2263,7 @@ syngen.utility.perlin2d.prototype = {
    */
   construct: function (...seeds) {
     this.gradient = new Map()
-    this.seed = seeds.join(syngen.const.seedSeparator)
+    this.seed = seeds
     return this
   },
   /**
@@ -2277,7 +2274,7 @@ syngen.utility.perlin2d.prototype = {
    * @private
    */
   generateGradient: function (x, y) {
-    const srand = syngen.utility.srand('perlin', this.seed, x, y)
+    const srand = syngen.utility.srand('perlin', ...this.seed, x, y)
 
     if (!this.gradient.has(x)) {
       this.gradient.set(x, new Map())
@@ -2474,7 +2471,7 @@ syngen.utility.perlin3d.prototype = {
    */
   construct: function (...seeds) {
     this.gradient = new Map()
-    this.seed = seeds.join(syngen.const.seedSeparator)
+    this.seed = seeds
     return this
   },
   /**
@@ -2486,7 +2483,7 @@ syngen.utility.perlin3d.prototype = {
    * @private
    */
   generateGradient: function (x, y, z) {
-    const srand = syngen.utility.srand('perlin', this.seed, x, y, z)
+    const srand = syngen.utility.srand('perlin', ...this.seed, x, y, z)
 
     if (!this.gradient.has(x)) {
       this.gradient.set(x, new Map())
@@ -2726,7 +2723,7 @@ syngen.utility.perlin4d.prototype = {
    */
   construct: function (...seeds) {
     this.gradient = new Map()
-    this.seed = seeds.join(syngen.const.seedSeparator)
+    this.seed = seeds
     return this
   },
   /**
@@ -2739,7 +2736,7 @@ syngen.utility.perlin4d.prototype = {
    * @private
    */
   generateGradient: function (x, y, z, t) {
-    const srand = syngen.utility.srand('perlin', this.seed, x, y, z, t)
+    const srand = syngen.utility.srand('perlin', ...this.seed, x, y, z, t)
 
     if (!this.gradient.has(x)) {
       this.gradient.set(x, new Map())
@@ -4872,12 +4869,6 @@ syngen.const = {
   */
   propFadeDuration: 0.005,
   /**
-   * Separator used when joining array seeds.
-   * @todo Move into syngen.seed
-   * @type {String}
-  */
-  seedSeparator: '~',
-  /**
    * The speed of sound, in meters per second.
    * @type {Number}
   */
@@ -4908,7 +4899,7 @@ syngen.const = {
   */
   unit4: Math.sqrt(4) / 4,
   /**
-   * Close enough to zero for
+   * Close enough to zero for most calculations that can't use zero, like ramping `AudioParam`s exponentially to zero.
    * @type {Number}
   */
   zero: 10 ** -32,
@@ -4999,9 +4990,20 @@ syngen.state = syngen.utility.pubsub.decorate({
  * @namespace
  */
 syngen.seed = (() => {
-  let seed
+  let seed,
+    separator = '~'
 
   return {
+    /**
+     * Concatenates variadic `seeds`
+     * @memberof syngen.seed
+     * @param {...String} [...seeds]
+     * @returns {String}
+     */
+    concat: (...seeds) => {
+      seeds.unshift(seed)
+      return seeds.join(separator)
+    },
     /**
      * Returns the seed value.
      * @listens syngen.state#event.import
@@ -5009,6 +5011,12 @@ syngen.seed = (() => {
      * @returns {String}
      */
     get: () => seed,
+    /**
+     * Returns the separator value.
+     * @memberof syngen.seed
+     * @returns {String}
+     */
+    getSeparator: () => separator,
     /**
      * Sets the seed value.
      * @listens syngen.state#event:import
@@ -5018,6 +5026,18 @@ syngen.seed = (() => {
      */
     set: function (value) {
       seed = value
+      return this
+    },
+    /**
+     * Sets the separator value.
+     * @memberof syngen.seed
+     * @param {String} value
+     */
+    setSeparator: function (value) {
+      if (typeof value == 'string') {
+        separator = value
+      }
+
       return this
     },
     /**
