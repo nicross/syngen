@@ -110,12 +110,6 @@ syngen.const = {
   */
   positionRadius: 0.25,
   /**
-   * Duration, in seconds, that props fade in and out when instantiated and destroyed.
-   * @todo Move into syngen.prop.base
-   * @type {Number}
-  */
-  propFadeDuration: 0.005,
-  /**
    * The speed of sound, in meters per second.
    * @type {Number}
   */

@@ -5,7 +5,6 @@
  * @augments syngen.utility.physical
  * @interface
  * @todo Allow reverb to be optional with a flag on the prototype
- * @todo Move {@link syngen.const.propFadeDuration} to a static property
  * @todo Remove periodic methods as they are specific to example projects
  */
 syngen.prop.base = {
@@ -53,18 +52,18 @@ syngen.prop.base = {
     this.y = y
     this.z = z
 
+    this.output.gain.value = syngen.const.zeroGain
+
     this.binaural.from(this.output)
     this.binaural.to(destination)
-
     this.reverb.from(this.output)
-
-    this.output.gain.value = syngen.const.zeroGain
-    syngen.audio.ramp.linear(this.output.gain, 1, syngen.const.propFadeDuration)
 
     syngen.utility.physical.decorate(this)
 
     this.recalculate()
     this.onConstruct(options)
+
+    syngen.audio.ramp.linear(this.output.gain, 1, this.fadeInDuration)
 
     return this
   },
@@ -77,14 +76,14 @@ syngen.prop.base = {
    * @see syngen.props.destroy
    */
   destroy: function () {
-    syngen.audio.ramp.linear(this.output.gain, syngen.const.zeroGain, syngen.const.propFadeDuration)
+    syngen.audio.ramp.linear(this.output.gain, syngen.const.zeroGain, this.fadeOutDuration)
 
     setTimeout(() => {
       this.output.disconnect()
       this.binaural.destroy()
       this.reverb.destroy()
       this.onDestroy()
-    }, syngen.const.propFadeDuration * 1000)
+    }, (syngen.const.audioLookaheadTime + this.fadeOutDuration) * 1000)
 
     return this
   },
@@ -94,6 +93,16 @@ syngen.prop.base = {
    * @type {Number}
    */
   distance: undefined,
+  /**
+   * Duration of fade in when instantiated.
+   * @type {Number}
+   */
+  fadeInDuration: syngen.const.zeroTime,
+  /**
+   * Duration of fade out when destroyed.
+   * @type {Number}
+   */
+  fadeOutDuration: syngen.const.zeroTime,
   /**
    * @deprecated
    * @instance
@@ -201,7 +210,7 @@ syngen.prop.base = {
   /**
    * Main output for audio synthesis and playback.
    * This is not connected directly to the main audio destination; rather, it's routed through the binaural and reverb sends.
-   * On creation and destruction its gain is ramped to fade in and out per {@link syngen.const.propFadeDuration}.
+   * On creation and destruction its gain is ramped to fade in and out.
    * It's not recommended to modify its gain directly.
    * @instance
    * @type {GainNode}
