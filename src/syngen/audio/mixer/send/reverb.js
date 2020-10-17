@@ -9,11 +9,15 @@ syngen.audio.mixer.send.reverb = {}
 
 /**
  * Creates a reverb send.
+ * @param {Object} [options]
+ * @param {Number} [options.x=0]
+ * @param {Number} [options.y=0]
+ * @param {Number} [options.z=0]
  * @returns {syngen.audio.mixer.send.reverb}
  * @static
  */
-syngen.audio.mixer.send.reverb.create = function () {
-  return Object.create(this.prototype).construct()
+syngen.audio.mixer.send.reverb.create = function (options) {
+  return Object.create(this.prototype).construct(options)
 }
 
 syngen.audio.mixer.send.reverb.prototype = {
@@ -22,7 +26,7 @@ syngen.audio.mixer.send.reverb.prototype = {
    * @instance
    * @private
    */
-  construct: function () {
+  construct: function (options) {
     const context = syngen.audio.context()
 
     this.delay = context.createDelay()
@@ -30,7 +34,7 @@ syngen.audio.mixer.send.reverb.prototype = {
     this.relative = syngen.utility.vector3d.create()
     this.send = syngen.audio.mixer.auxiliary.reverb.createSend()
 
-    this.input.gain.value = syngen.const.zeroGain
+    this.send.gain.value = syngen.const.zeroGain
 
     this.onSendActivate = this.onSendActivate.bind(this)
     syngen.audio.mixer.auxiliary.reverb.on('activate', this.onSendActivate)
@@ -43,6 +47,8 @@ syngen.audio.mixer.send.reverb.prototype = {
     } else {
       this.onSendDeactivate()
     }
+
+    this.update(options)
 
     return this
   },
@@ -113,13 +119,13 @@ syngen.audio.mixer.send.reverb.prototype = {
     }
 
     const distance = this.relative.distance(),
-      power = syngen.utility.distanceToPower(distance)
+      power = Math.min(syngen.utility.distanceToPower(distance), syngen.utility.fromDb(-1))
 
     const delayTime = syngen.utility.clamp(distance / syngen.const.speedOfSound, syngen.const.zeroTime, 1),
-      inputGain = syngen.utility.clamp((1 - (power ** 0.25)) * power, syngen.const.zeroGain, 1)
+      gain = syngen.utility.clamp((power ** 0.75) * (1 - (power ** 0.75)), syngen.const.zeroGain, 1)
 
     syngen.audio.ramp.set(this.delay.delayTime, delayTime)
-    syngen.audio.ramp.set(this.input.gain, inputGain)
+    syngen.audio.ramp.set(this.send.gain, gain)
 
     return this
   },

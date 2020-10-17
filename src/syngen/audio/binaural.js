@@ -9,11 +9,15 @@ syngen.audio.binaural = {}
 
 /**
  * Instantiates a new binaural processor.
+ * @param {Object} [options]
+ * @param {Number} [options.x=0]
+ * @param {Number} [options.y=0]
+ * @param {Number} [options.z=0]
  * @returns {syngen.audio.binaural}
  * @static
  */
-syngen.audio.binaural.create = function () {
-  return Object.create(this.prototype).construct()
+syngen.audio.binaural.create = function (options) {
+  return Object.create(this.prototype).construct(options)
 }
 
 syngen.audio.binaural.prototype = {
@@ -22,7 +26,7 @@ syngen.audio.binaural.prototype = {
    * @instance
    * @private
    */
-  construct: function () {
+  construct: function (options) {
     const context = syngen.audio.context()
 
     this.left = syngen.audio.binaural.monaural.create({
@@ -36,6 +40,8 @@ syngen.audio.binaural.prototype = {
     this.merger = context.createChannelMerger()
     this.left.to(this.merger, 0, 0)
     this.right.to(this.merger, 0, 1)
+
+    this.update(options)
 
     return this
   },

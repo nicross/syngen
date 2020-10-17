@@ -30,10 +30,10 @@ syngen.props = (() => {
     /**
      * Destroys the passed prop(s).
      * @memberof syngen.props
-     * @param {...syngen.prop.base} ...props
+     * @param {...syngen.prop.base} ...values
      */
-    destroy: function (...props) {
-      for (const prop of props) {
+    destroy: function (...values) {
+      for (const prop of values) {
         if (prop.destroy) {
           prop.destroy()
         }
