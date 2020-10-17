@@ -14,8 +14,10 @@
 
       // Invent the prop, inherits from syngen.prop.base
       const tone = syngen.prop.base.invent({
+        fadeInDuration: 2,
         name: 'tone',
         radius: 1,
+        reverb: false,
         onConstruct: function ({
           color = 1,
           frequency = 440,
@@ -37,8 +39,8 @@
 
       // Instantiate props with options
       syngen.props.create(tone, {
-        frequency: syngen.utility.midiToFrequency(57),
         color: 8,
+        frequency: syngen.utility.midiToFrequency(57),
         gain: syngen.utility.fromDb(-3),
         type: 'triangle',
         x: 5 * Math.cos(0),
@@ -46,8 +48,8 @@
       })
 
       syngen.props.create(tone, {
-        frequency: syngen.utility.midiToFrequency(61),
         color: 12,
+        frequency: syngen.utility.midiToFrequency(61),
         gain: syngen.utility.fromDb(-4),
         type: 'square',
         x: 5 * Math.cos(Math.PI * 2/3),
@@ -55,8 +57,8 @@
       })
 
       syngen.props.create(tone, {
-        frequency: syngen.utility.midiToFrequency(64),
         color: 16,
+        frequency: syngen.utility.midiToFrequency(64),
         gain: syngen.utility.fromDb(-5),
         type: 'sawtooth',
         x: 5 * Math.cos(Math.PI * 4/3),

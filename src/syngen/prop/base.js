@@ -4,7 +4,6 @@
  * Instances _should_ be created and destroyed via {@link syngen.props}.
  * @augments syngen.utility.physical
  * @interface
- * @todo Allow reverb to be optional with a flag on the prototype
  */
 syngen.prop.base = {
   /**
@@ -44,7 +43,6 @@ syngen.prop.base = {
     this.instantiated = true
     this.output = context.createGain()
     this.radius = radius
-    this.reverb = syngen.audio.mixer.send.reverb.create()
     this.token = token
     this.x = x
     this.y = y
@@ -54,7 +52,11 @@ syngen.prop.base = {
 
     this.binaural.from(this.output)
     this.binaural.to(destination)
-    this.reverb.from(this.output)
+
+    if (this.reverb) {
+      this.reverb = syngen.audio.mixer.send.reverb.create()
+      this.reverb.from(this.output)
+    }
 
     syngen.utility.physical.decorate(this)
 
@@ -182,7 +184,10 @@ syngen.prop.base = {
     this.distance = this.relative.distance()
 
     this.binaural.update({...this.relative})
-    this.reverb.update({...this.relative})
+
+    if (this.reverb) {
+      this.reverb.update({...this.relative})
+    }
 
     return this
   },
@@ -209,10 +214,11 @@ syngen.prop.base = {
   relative: undefined,
   /**
    * Reverb send for the prop.
+   * Implementations can disable reverb for certain prototypes by explicitly setting this to `false`.
    * @instance
-   * @type {syngen.audio.mixer.send.reverb}
+   * @type {syngen.audio.mixer.send.reverb|Boolean}
    */
-  reverb: undefined,
+  reverb: true,
   /**
    * Universally unique identifier provided during instantiation.
    * @instance
