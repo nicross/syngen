@@ -7984,6 +7984,118 @@ syngen.audio.buffer.noise.white = (() => {
 })()
 
 /**
+ * Provides a auxiliary send for global reverb processing.
+ * Because `ConvolverNode`s are quite intensive, implementations are encouraged to leverage this to provide a single global reverb.
+ * @augments syngen.utility.pubsub
+ * @namespace
+ * @see syngen.audio.mixer.send.reverb
+ * @todo Add highpass, lowpass, and pre-delay to processing with parameters
+ * @todo Add resetFilters method
+ */
+syngen.audio.mixer.auxiliary.reverb = (() => {
+  const context = syngen.audio.context(),
+    input = context.createGain(),
+    output = syngen.audio.mixer.createBus(),
+    pubsub = syngen.utility.pubsub.create()
+
+  let active = true,
+    convolver = context.createConvolver()
+
+  if (active) {
+    input.connect(convolver)
+  }
+
+  convolver.buffer = syngen.audio.buffer.impulse.small()
+  convolver.connect(output)
+
+  return syngen.utility.pubsub.decorate({
+    /**
+     * Creates a `GainNode` that's connected to the reverb input.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @returns {GainNode}
+     */
+    createSend: () => {
+      const gain = context.createGain()
+      gain.connect(input)
+      return gain
+    },
+    /**
+     * Returns whether the processing is active.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @returns {Boolean}
+     */
+    isActive: () => active,
+    /**
+     * Returns the output node for the send.
+     * @deprecated
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @returns {GainNode}
+     */
+    output: () => output,
+    /**
+     * Exposes the parameters associated with reverb processing.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @property {AudioParam} gain
+     */
+    param: {
+      gain: output.gain,
+    },
+    /**
+     * Sets the active state.
+     * Implementations can disable processing for a performance boost.
+     * @fires syngen.audio.mixer.auxiliary.reverb#event:activate
+     * @fires syngen.audio.mixer.auxiliary.reverb#event:deactivate
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @param {Boolean} state
+     */
+    setActive: function (state) {
+      if (active == state) {
+        return this
+      }
+
+      active = Boolean(state)
+
+      if (active) {
+        /**
+         * Fired whenever the send is activated.
+         * @event syngen.audio.mixer.auxiliary.reverb#event:activate
+         */
+        pubsub.emit('activate')
+        input.connect(convolver)
+      } else {
+        /**
+         * Fired whenever the send is deactivated.
+         * @event syngen.audio.mixer.auxiliary.reverb#event:deactivate
+         */
+        pubsub.emit('deactivate')
+        input.disconnect(convolver)
+      }
+
+      return this
+    },
+    /**
+     * Sets the impulse buffer for the inner `ConvolverNode`.
+     * To prevent pops and clicks, the tail of the previous buffer persists until it fades out.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @param {BufferSource} buffer
+     */
+    setImpulse: function (buffer) {
+      input.disconnect()
+
+      convolver = context.createConvolver()
+      convolver.buffer = buffer
+      convolver.connect(output)
+
+      if (active) {
+        input.connect(convolver)
+      }
+
+      return this
+    },
+  }, pubsub)
+})()
+
+/**
  * Provides an interface for routing audio to the global reverb auxiliary send.
  * Importantly, it models physical space to add pre-delay and attenuate based on distance.
  * @interface
@@ -8109,118 +8221,6 @@ syngen.audio.mixer.send.reverb.prototype = {
     return this
   },
 }
-
-/**
- * Provides a auxiliary send for global reverb processing.
- * Because `ConvolverNode`s are quite intensive, implementations are encouraged to leverage this to provide a single global reverb.
- * @augments syngen.utility.pubsub
- * @namespace
- * @see syngen.audio.mixer.send.reverb
- * @todo Add highpass, lowpass, and pre-delay to processing with parameters
- * @todo Add resetFilters method
- */
-syngen.audio.mixer.auxiliary.reverb = (() => {
-  const context = syngen.audio.context(),
-    input = context.createGain(),
-    output = syngen.audio.mixer.createBus(),
-    pubsub = syngen.utility.pubsub.create()
-
-  let active = true,
-    convolver = context.createConvolver()
-
-  if (active) {
-    input.connect(convolver)
-  }
-
-  convolver.buffer = syngen.audio.buffer.impulse.small()
-  convolver.connect(output)
-
-  return syngen.utility.pubsub.decorate({
-    /**
-     * Creates a `GainNode` that's connected to the reverb input.
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @returns {GainNode}
-     */
-    createSend: () => {
-      const gain = context.createGain()
-      gain.connect(input)
-      return gain
-    },
-    /**
-     * Returns whether the processing is active.
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @returns {Boolean}
-     */
-    isActive: () => active,
-    /**
-     * Returns the output node for the send.
-     * @deprecated
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @returns {GainNode}
-     */
-    output: () => output,
-    /**
-     * Exposes the parameters associated with reverb processing.
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @property {AudioParam} gain
-     */
-    param: {
-      gain: output.gain,
-    },
-    /**
-     * Sets the active state.
-     * Implementations can disable processing for a performance boost.
-     * @fires syngen.audio.mixer.auxiliary.reverb#event:activate
-     * @fires syngen.audio.mixer.auxiliary.reverb#event:deactivate
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @param {Boolean} state
-     */
-    setActive: function (state) {
-      if (active == state) {
-        return this
-      }
-
-      active = Boolean(state)
-
-      if (active) {
-        /**
-         * Fired whenever the send is activated.
-         * @event syngen.audio.mixer.auxiliary.reverb#event:activate
-         */
-        pubsub.emit('activate')
-        input.connect(convolver)
-      } else {
-        /**
-         * Fired whenever the send is deactivated.
-         * @event syngen.audio.mixer.auxiliary.reverb#event:deactivate
-         */
-        pubsub.emit('deactivate')
-        input.disconnect(convolver)
-      }
-
-      return this
-    },
-    /**
-     * Sets the impulse buffer for the inner `ConvolverNode`.
-     * To prevent pops and clicks, the tail of the previous buffer persists until it fades out.
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @param {BufferSource} buffer
-     */
-    setImpulse: function (buffer) {
-      input.disconnect()
-
-      convolver = context.createConvolver()
-      convolver.buffer = buffer
-      convolver.connect(output)
-
-      if (active) {
-        input.connect(convolver)
-      }
-
-      return this
-    },
-  }, pubsub)
-})()
 
 /**
  * Provides an interface for processing audio as an observer in a physical space.
@@ -9199,7 +9199,6 @@ syngen.state.on('reset', () => syngen.position.reset())
  * @augments syngen.utility.physical
  * @interface
  * @todo Allow reverb to be optional with a flag on the prototype
- * @todo Remove periodic methods as they are specific to example projects
  */
 syngen.prop.base = {
   /**
@@ -9237,7 +9236,6 @@ syngen.prop.base = {
 
     this.binaural = syngen.audio.binaural.create()
     this.instantiated = true
-    this.periodic = {}
     this.output = context.createGain()
     this.radius = radius
     this.reverb = syngen.audio.mixer.send.reverb.create()
@@ -9298,50 +9296,6 @@ syngen.prop.base = {
    */
   fadeOutDuration: syngen.const.zeroTime,
   /**
-   * @deprecated
-   * @instance
-   */
-  handlePeriodic: function ({
-    delay = () => 0,
-    key = '',
-    trigger = () => Promise.resolve(),
-  } = {}) {
-    if (!(key in this.periodic)) {
-      this.periodic[key] = {
-        active: false,
-        timer: delay() * Math.random(),
-      }
-    }
-
-    const periodic = this.periodic[key]
-
-    if (periodic.active) {
-      return this
-    }
-
-    if (periodic.timer < 0) {
-      periodic.timer = delay()
-    }
-
-    periodic.timer -= syngen.loop.delta()
-
-    if (periodic.timer <= 0) {
-      const result = trigger() || Promise.resolve()
-      periodic.active = true
-      periodic.timer = -Infinity // XXX: Force delay() next inactive frame
-      result.then(() => periodic.active = false)
-    }
-
-    return this
-  },
-  /**
-   * @deprecated
-   * @instance
-   */
-  hasPeriodic: function (key) {
-    return key in this.periodic
-  },
-  /**
    * Indicates whether the prop has been instantiated.
    * @instance
    * @type {Boolean}
@@ -9359,20 +9313,6 @@ syngen.prop.base = {
     }
 
     return Object.setPrototypeOf({...definition}, this)
-  },
-  /**
-   * @deprecated
-   * @instance
-   */
-  isPeriodicActive: function (key) {
-    return this.periodic[key] && this.periodic[key].active
-  },
-  /**
-   * @deprecated
-   * @instance
-   */
-  isPeriodicPending: function (key) {
-    return this.periodic[key] && !this.periodic[key].active
   },
   /**
    * Identifier of the prop type.
@@ -9461,14 +9401,6 @@ syngen.prop.base = {
    * @type {syngen.utility.vector3d}
    */
   relative: undefined,
-  /**
-   * @deprecated
-   * @instance
-   */
-  resetPeriodic: function (key) {
-    delete this.periodic[key]
-    return this
-  },
   /**
    * Reverb send for the prop.
    * @instance

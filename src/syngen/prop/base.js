@@ -5,7 +5,6 @@
  * @augments syngen.utility.physical
  * @interface
  * @todo Allow reverb to be optional with a flag on the prototype
- * @todo Remove periodic methods as they are specific to example projects
  */
 syngen.prop.base = {
   /**
@@ -43,7 +42,6 @@ syngen.prop.base = {
 
     this.binaural = syngen.audio.binaural.create()
     this.instantiated = true
-    this.periodic = {}
     this.output = context.createGain()
     this.radius = radius
     this.reverb = syngen.audio.mixer.send.reverb.create()
@@ -104,50 +102,6 @@ syngen.prop.base = {
    */
   fadeOutDuration: syngen.const.zeroTime,
   /**
-   * @deprecated
-   * @instance
-   */
-  handlePeriodic: function ({
-    delay = () => 0,
-    key = '',
-    trigger = () => Promise.resolve(),
-  } = {}) {
-    if (!(key in this.periodic)) {
-      this.periodic[key] = {
-        active: false,
-        timer: delay() * Math.random(),
-      }
-    }
-
-    const periodic = this.periodic[key]
-
-    if (periodic.active) {
-      return this
-    }
-
-    if (periodic.timer < 0) {
-      periodic.timer = delay()
-    }
-
-    periodic.timer -= syngen.loop.delta()
-
-    if (periodic.timer <= 0) {
-      const result = trigger() || Promise.resolve()
-      periodic.active = true
-      periodic.timer = -Infinity // XXX: Force delay() next inactive frame
-      result.then(() => periodic.active = false)
-    }
-
-    return this
-  },
-  /**
-   * @deprecated
-   * @instance
-   */
-  hasPeriodic: function (key) {
-    return key in this.periodic
-  },
-  /**
    * Indicates whether the prop has been instantiated.
    * @instance
    * @type {Boolean}
@@ -165,20 +119,6 @@ syngen.prop.base = {
     }
 
     return Object.setPrototypeOf({...definition}, this)
-  },
-  /**
-   * @deprecated
-   * @instance
-   */
-  isPeriodicActive: function (key) {
-    return this.periodic[key] && this.periodic[key].active
-  },
-  /**
-   * @deprecated
-   * @instance
-   */
-  isPeriodicPending: function (key) {
-    return this.periodic[key] && !this.periodic[key].active
   },
   /**
    * Identifier of the prop type.
@@ -267,14 +207,6 @@ syngen.prop.base = {
    * @type {syngen.utility.vector3d}
    */
   relative: undefined,
-  /**
-   * @deprecated
-   * @instance
-   */
-  resetPeriodic: function (key) {
-    delete this.periodic[key]
-    return this
-  },
   /**
    * Reverb send for the prop.
    * @instance
