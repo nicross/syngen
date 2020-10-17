@@ -12,7 +12,10 @@
       // Resume the audio context after a user gesture
       window.addEventListener('click', () => syngen.audio.start())
 
-      // Set the large reverb impulse
+      // Configure the reverb send
+      syngen.audio.mixer.auxiliary.reverb.param.delay.value = 1/16
+      syngen.audio.mixer.auxiliary.reverb.param.highpass.frequency.value = syngen.utility.midiToFrequency(36)
+
       syngen.audio.mixer.auxiliary.reverb.setImpulse(
         syngen.audio.buffer.impulse.large()
       )
@@ -23,15 +26,15 @@
 
       // Create a low drone
       syngen.audio.synth.createAm({
-        carrierFrequency: syngen.utility.midiToFrequency(36),
+        carrierFrequency: syngen.utility.midiToFrequency(24),
         carrierGain: 0.75,
-        gain: syngen.utility.fromDb(-13.5),
+        gain: syngen.utility.fromDb(-9),
         modDepth: 0.25,
         modFrequency: 1/16,
       }).shaped(
         syngen.audio.shape.noise()
       ).filtered({
-        frequency: syngen.utility.midiToFrequency(48),
+        frequency: syngen.utility.midiToFrequency(36),
       }).connect(droneBus)
 
       // Invent a prop, inherits from syngen.prop.base

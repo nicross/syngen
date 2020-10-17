@@ -125,11 +125,12 @@ syngen.audio.mixer = (() => {
      * Implementations can proactively check for invalid states with an {@link https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode|AnalyserNode} or {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode|AudioWorkletNode}.
      * Beware that the nodes that caused the issue may also need reset.
      * @memberof syngen.audio.mixer
-     * @todo Reset reverb filters once implemented
      */
     rebuildFilters: function () {
       const highpassFrequency = masterHighpass.frequency.value,
         lowpassFrequency = masterLowpass.frequency.value
+
+      this.auxiliary.reverb.rebuildFilters()
 
       destroyFilters()
       createFilters(highpassFrequency, lowpassFrequency)

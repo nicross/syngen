@@ -6336,11 +6336,12 @@ syngen.audio.mixer = (() => {
      * Implementations can proactively check for invalid states with an {@link https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode|AnalyserNode} or {@link https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode|AudioWorkletNode}.
      * Beware that the nodes that caused the issue may also need reset.
      * @memberof syngen.audio.mixer
-     * @todo Reset reverb filters once implemented
      */
     rebuildFilters: function () {
       const highpassFrequency = masterHighpass.frequency.value,
         lowpassFrequency = masterLowpass.frequency.value
+
+      this.auxiliary.reverb.rebuildFilters()
 
       destroyFilters()
       createFilters(highpassFrequency, lowpassFrequency)
@@ -7825,78 +7826,6 @@ syngen.audio.synth.shaped = function (synth, curve) {
  */
 
 /**
- * Returns a large reverb impulse.
- * @method
- * @returns {AudioBuffer}
- */
-syngen.audio.buffer.impulse.large = (() => {
-  const context = syngen.audio.context()
-
-  const sampleRate = context.sampleRate,
-    size = 4 * sampleRate
-
-  const buffer = context.createBuffer(1, size, sampleRate)
-
-  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
-    const data = buffer.getChannelData(n)
-    for (let i = 0; i < size; i += 1) {
-      const factor = ((size - i) / size) ** 8
-      data[i] = factor * ((2 * Math.random()) - 1)
-    }
-  }
-
-  return () => buffer
-})()
-
-/**
- * Returns a medium reverb impulse.
- * @method
- * @returns {AudioBuffer}
- */
-syngen.audio.buffer.impulse.medium = (() => {
-  const context = syngen.audio.context()
-
-  const sampleRate = context.sampleRate,
-    size = 2 * sampleRate
-
-  const buffer = context.createBuffer(1, size, sampleRate)
-
-  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
-    const data = buffer.getChannelData(n)
-    for (let i = 0; i < size; i += 1) {
-      const factor = ((size - i) / size) ** 6
-      data[i] = factor * ((2 * Math.random()) - 1)
-    }
-  }
-
-  return () => buffer
-})()
-
-/**
- * Returns a small reverb impulse.
- * @method
- * @returns {AudioBuffer}
- */
-syngen.audio.buffer.impulse.small = (() => {
-  const context = syngen.audio.context()
-
-  const sampleRate = context.sampleRate,
-    size = 1 * sampleRate
-
-  const buffer = context.createBuffer(1, size, sampleRate)
-
-  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
-    const data = buffer.getChannelData(n)
-    for (let i = 0; i < size; i += 1) {
-      const factor = ((size - i) / size) ** 4
-      data[i] = factor * ((2 * Math.random()) - 1)
-    }
-  }
-
-  return () => buffer
-})()
-
-/**
  * Returns Brownian noise with intensity inversely proportional to the frequency squared.
  * @method
  * @returns {AudioBuffer}
@@ -7985,6 +7914,243 @@ syngen.audio.buffer.noise.white = (() => {
   }
 
   return () => buffer
+})()
+
+/**
+ * Returns a large reverb impulse.
+ * @method
+ * @returns {AudioBuffer}
+ */
+syngen.audio.buffer.impulse.large = (() => {
+  const context = syngen.audio.context()
+
+  const sampleRate = context.sampleRate,
+    size = 4 * sampleRate
+
+  const buffer = context.createBuffer(1, size, sampleRate)
+
+  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
+    const data = buffer.getChannelData(n)
+    for (let i = 0; i < size; i += 1) {
+      const factor = ((size - i) / size) ** 8
+      data[i] = factor * ((2 * Math.random()) - 1)
+    }
+  }
+
+  return () => buffer
+})()
+
+/**
+ * Returns a medium reverb impulse.
+ * @method
+ * @returns {AudioBuffer}
+ */
+syngen.audio.buffer.impulse.medium = (() => {
+  const context = syngen.audio.context()
+
+  const sampleRate = context.sampleRate,
+    size = 2 * sampleRate
+
+  const buffer = context.createBuffer(1, size, sampleRate)
+
+  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
+    const data = buffer.getChannelData(n)
+    for (let i = 0; i < size; i += 1) {
+      const factor = ((size - i) / size) ** 6
+      data[i] = factor * ((2 * Math.random()) - 1)
+    }
+  }
+
+  return () => buffer
+})()
+
+/**
+ * Returns a small reverb impulse.
+ * @method
+ * @returns {AudioBuffer}
+ */
+syngen.audio.buffer.impulse.small = (() => {
+  const context = syngen.audio.context()
+
+  const sampleRate = context.sampleRate,
+    size = 1 * sampleRate
+
+  const buffer = context.createBuffer(1, size, sampleRate)
+
+  for (let n = 0; n < buffer.numberOfChannels; n += 1) {
+    const data = buffer.getChannelData(n)
+    for (let i = 0; i < size; i += 1) {
+      const factor = ((size - i) / size) ** 4
+      data[i] = factor * ((2 * Math.random()) - 1)
+    }
+  }
+
+  return () => buffer
+})()
+
+/**
+ * Provides a auxiliary send for global reverb processing.
+ * Because `ConvolverNode`s are quite intensive, implementations are encouraged to leverage this to provide a single global reverb.
+ * @augments syngen.utility.pubsub
+ * @namespace
+ * @see syngen.audio.mixer.send.reverb
+ */
+syngen.audio.mixer.auxiliary.reverb = (() => {
+  const context = syngen.audio.context(),
+    delay = context.createDelay(),
+    input = context.createGain(),
+    output = syngen.audio.mixer.createBus(),
+    pubsub = syngen.utility.pubsub.create()
+
+  let active = true,
+    convolver = context.createConvolver(),
+    highpass,
+    lowpass
+
+  convolver.buffer = syngen.audio.buffer.impulse.small()
+  delay.delayTime.value = 1/64
+
+  input.connect(delay)
+  createFilters()
+  convolver.connect(output)
+
+  function createFilters(highpassFrequency = syngen.const.minFrequency, lowpassFrequency = syngen.const.maxFrequency) {
+    highpass = context.createBiquadFilter()
+    highpass.type = 'highpass'
+    highpass.frequency.value = highpassFrequency
+
+    lowpass = context.createBiquadFilter()
+    lowpass.type = 'lowpass'
+    lowpass.frequency.value = lowpassFrequency
+
+    delay.connect(highpass)
+    highpass.connect(lowpass)
+    lowpass.connect(convolver)
+  }
+
+  function destroyFilters() {
+    delay.disconnect()
+    lowpass.disconnect()
+    lowpass = null
+    highpass.disconnect()
+    highpass = null
+  }
+
+  return syngen.utility.pubsub.decorate({
+    /**
+     * Creates a `GainNode` that's connected to the reverb input.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @returns {GainNode}
+     */
+    createSend: () => {
+      const gain = context.createGain()
+      gain.connect(input)
+      return gain
+    },
+    /**
+     * Returns whether the processing is active.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @returns {Boolean}
+     */
+    isActive: () => active,
+    /**
+     * Returns the output node for the send.
+     * @deprecated
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @returns {GainNode}
+     */
+    output: () => output,
+    /**
+     * Exposes the parameters associated with reverb processing.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @property {AudioParam} delay
+     * @property {AudioParam} gain
+     * @property {Object} highpass
+     * @property {AudioParam} highpass.frequency
+     * @property {Object} lowpass
+     * @property {AudioParam} lowpass.frequency
+     */
+    param: {
+      delay: delay.delayTime,
+      gain: output.gain,
+      highpass: {
+        frequency: highpass.frequency,
+      },
+      lowpass: {
+        frequency: lowpass.frequency,
+      },
+    },
+    /**
+     * Occasionally the filters can enter an unstable or bad state.
+     * This provides a solution for replacing them with stable filters.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @see syngen.audio.mixer.rebuildFilters
+     */
+    rebuildFilters: function () {
+      const highpassFrequency = highpass.frequency.value,
+        lowpassFrequency = lowpass.frequency.value
+
+      destroyFilters()
+      createFilters(highpassFrequency, lowpassFrequency)
+
+      this.param.highpass.frequency = highpass.frequency
+      this.param.lowpass.frequency = lowpass.frequency
+
+      return this
+    },
+    /**
+     * Sets the active state.
+     * Implementations can disable processing for a performance boost.
+     * @fires syngen.audio.mixer.auxiliary.reverb#event:activate
+     * @fires syngen.audio.mixer.auxiliary.reverb#event:deactivate
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @param {Boolean} state
+     */
+    setActive: function (state) {
+      if (active == state) {
+        return this
+      }
+
+      active = Boolean(state)
+
+      if (active) {
+        /**
+         * Fired whenever the send is activated.
+         * @event syngen.audio.mixer.auxiliary.reverb#event:activate
+         */
+        pubsub.emit('activate')
+        input.connect(convolver)
+      } else {
+        /**
+         * Fired whenever the send is deactivated.
+         * @event syngen.audio.mixer.auxiliary.reverb#event:deactivate
+         */
+        pubsub.emit('deactivate')
+        input.disconnect(convolver)
+      }
+
+      return this
+    },
+    /**
+     * Sets the impulse buffer for the inner `ConvolverNode`.
+     * To prevent pops and clicks, the tail of the previous buffer persists until it fades out.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @param {BufferSource} buffer
+     */
+    setImpulse: function (buffer) {
+      input.disconnect()
+
+      convolver = context.createConvolver()
+      convolver.buffer = buffer
+      convolver.connect(output)
+
+      if (active) {
+        input.connect(convolver)
+      }
+
+      return this
+    },
+  }, pubsub)
 })()
 
 /**
@@ -8119,118 +8285,6 @@ syngen.audio.mixer.send.reverb.prototype = {
     return this
   },
 }
-
-/**
- * Provides a auxiliary send for global reverb processing.
- * Because `ConvolverNode`s are quite intensive, implementations are encouraged to leverage this to provide a single global reverb.
- * @augments syngen.utility.pubsub
- * @namespace
- * @see syngen.audio.mixer.send.reverb
- * @todo Add highpass, lowpass, and pre-delay to processing with parameters
- * @todo Add resetFilters method
- */
-syngen.audio.mixer.auxiliary.reverb = (() => {
-  const context = syngen.audio.context(),
-    input = context.createGain(),
-    output = syngen.audio.mixer.createBus(),
-    pubsub = syngen.utility.pubsub.create()
-
-  let active = true,
-    convolver = context.createConvolver()
-
-  if (active) {
-    input.connect(convolver)
-  }
-
-  convolver.buffer = syngen.audio.buffer.impulse.small()
-  convolver.connect(output)
-
-  return syngen.utility.pubsub.decorate({
-    /**
-     * Creates a `GainNode` that's connected to the reverb input.
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @returns {GainNode}
-     */
-    createSend: () => {
-      const gain = context.createGain()
-      gain.connect(input)
-      return gain
-    },
-    /**
-     * Returns whether the processing is active.
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @returns {Boolean}
-     */
-    isActive: () => active,
-    /**
-     * Returns the output node for the send.
-     * @deprecated
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @returns {GainNode}
-     */
-    output: () => output,
-    /**
-     * Exposes the parameters associated with reverb processing.
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @property {AudioParam} gain
-     */
-    param: {
-      gain: output.gain,
-    },
-    /**
-     * Sets the active state.
-     * Implementations can disable processing for a performance boost.
-     * @fires syngen.audio.mixer.auxiliary.reverb#event:activate
-     * @fires syngen.audio.mixer.auxiliary.reverb#event:deactivate
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @param {Boolean} state
-     */
-    setActive: function (state) {
-      if (active == state) {
-        return this
-      }
-
-      active = Boolean(state)
-
-      if (active) {
-        /**
-         * Fired whenever the send is activated.
-         * @event syngen.audio.mixer.auxiliary.reverb#event:activate
-         */
-        pubsub.emit('activate')
-        input.connect(convolver)
-      } else {
-        /**
-         * Fired whenever the send is deactivated.
-         * @event syngen.audio.mixer.auxiliary.reverb#event:deactivate
-         */
-        pubsub.emit('deactivate')
-        input.disconnect(convolver)
-      }
-
-      return this
-    },
-    /**
-     * Sets the impulse buffer for the inner `ConvolverNode`.
-     * To prevent pops and clicks, the tail of the previous buffer persists until it fades out.
-     * @memberof syngen.audio.mixer.auxiliary.reverb
-     * @param {BufferSource} buffer
-     */
-    setImpulse: function (buffer) {
-      input.disconnect()
-
-      convolver = context.createConvolver()
-      convolver.buffer = buffer
-      convolver.connect(output)
-
-      if (active) {
-        input.connect(convolver)
-      }
-
-      return this
-    },
-  }, pubsub)
-})()
 
 /**
  * Provides an interface for processing audio as an observer in a physical space.

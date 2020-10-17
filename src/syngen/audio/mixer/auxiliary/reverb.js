@@ -4,24 +4,47 @@
  * @augments syngen.utility.pubsub
  * @namespace
  * @see syngen.audio.mixer.send.reverb
- * @todo Add highpass, lowpass, and pre-delay to processing with parameters
- * @todo Add resetFilters method
  */
 syngen.audio.mixer.auxiliary.reverb = (() => {
   const context = syngen.audio.context(),
+    delay = context.createDelay(),
     input = context.createGain(),
     output = syngen.audio.mixer.createBus(),
     pubsub = syngen.utility.pubsub.create()
 
   let active = true,
-    convolver = context.createConvolver()
-
-  if (active) {
-    input.connect(convolver)
-  }
+    convolver = context.createConvolver(),
+    highpass,
+    lowpass
 
   convolver.buffer = syngen.audio.buffer.impulse.small()
+  delay.delayTime.value = 1/64
+
+  input.connect(delay)
+  createFilters()
   convolver.connect(output)
+
+  function createFilters(highpassFrequency = syngen.const.minFrequency, lowpassFrequency = syngen.const.maxFrequency) {
+    highpass = context.createBiquadFilter()
+    highpass.type = 'highpass'
+    highpass.frequency.value = highpassFrequency
+
+    lowpass = context.createBiquadFilter()
+    lowpass.type = 'lowpass'
+    lowpass.frequency.value = lowpassFrequency
+
+    delay.connect(highpass)
+    highpass.connect(lowpass)
+    lowpass.connect(convolver)
+  }
+
+  function destroyFilters() {
+    delay.disconnect()
+    lowpass.disconnect()
+    lowpass = null
+    highpass.disconnect()
+    highpass = null
+  }
 
   return syngen.utility.pubsub.decorate({
     /**
@@ -50,10 +73,40 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
     /**
      * Exposes the parameters associated with reverb processing.
      * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @property {AudioParam} delay
      * @property {AudioParam} gain
+     * @property {Object} highpass
+     * @property {AudioParam} highpass.frequency
+     * @property {Object} lowpass
+     * @property {AudioParam} lowpass.frequency
      */
     param: {
+      delay: delay.delayTime,
       gain: output.gain,
+      highpass: {
+        frequency: highpass.frequency,
+      },
+      lowpass: {
+        frequency: lowpass.frequency,
+      },
+    },
+    /**
+     * Occasionally the filters can enter an unstable or bad state.
+     * This provides a solution for replacing them with stable filters.
+     * @memberof syngen.audio.mixer.auxiliary.reverb
+     * @see syngen.audio.mixer.rebuildFilters
+     */
+    rebuildFilters: function () {
+      const highpassFrequency = highpass.frequency.value,
+        lowpassFrequency = lowpass.frequency.value
+
+      destroyFilters()
+      createFilters(highpassFrequency, lowpassFrequency)
+
+      this.param.highpass.frequency = highpass.frequency
+      this.param.lowpass.frequency = lowpass.frequency
+
+      return this
     },
     /**
      * Sets the active state.
