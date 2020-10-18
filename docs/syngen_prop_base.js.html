@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: syngen/prop/base.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: syngen/prop/base.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * The most basic prop that exists on the soundstage.
+ * With its {@link syngen.prop.base.invent|invent} method, implementations can extend and create a hierarchy of prototypes with a variety of sounds and behaviors.
+ * Instances _should_ be created and destroyed via {@link syngen.props}.
+ * @augments syngen.utility.physical
+ * @interface
+ */
+syngen.prop.base = {
+  /**
+   * Binaural processor for the prop.
+   * @instance
+   * @type {syngen.audio.binaural}
+   */
+  binaural: undefined,
+  /**
+   * Initializes the prop with `options` and fades in its volume.
+   * Derivative props are discouraged from overriding this method.
+   * Instead they should define an {@link syngen.prop.base#onConstruct|onConstruct} method.
+   * @instance
+   * @param {Object} [options={}]
+   * @param {GainNode} [options.destination={@link syngen.audio.mixer.master.input|syngen.audio.mixer.master.input()}]
+   * @param {Number} [options.radius]
+   *   Defaults to the prototype's radius.
+   * @param {String} [options.token={@link syngen.utility.uuid|syngen.utility.uuid()}]
+   * @param {Number} [options.x=0]
+   * @param {Number} [options.y=0]
+   * @param {Number} [options.z=0]
+   * @see syngen.prop.base#onConstruct
+   * @see syngen.props.create
+   */
+  construct: function ({
+    destination = syngen.audio.mixer.master.input(),
+    radius = this.radius || 0,
+    token = syngen.utility.uuid(),
+    x = 0,
+    y = 0,
+    z = 0,
+    ...options
+  } = {}) {
+    const context = syngen.audio.context()
+
+    this.binaural = syngen.audio.binaural.create()
+    this.instantiated = true
+    this.output = context.createGain()
+    this.radius = radius
+    this.token = token
+    this.x = x
+    this.y = y
+    this.z = z
+
+    this.output.gain.value = syngen.const.zeroGain
+
+    this.binaural.from(this.output)
+    this.binaural.to(destination)
+
+    if (this.reverb) {
+      this.reverb = syngen.audio.mixer.send.reverb.create()
+      this.reverb.from(this.output)
+    }
+
+    syngen.utility.physical.decorate(this)
+
+    this.recalculate()
+    this.onConstruct(options)
+
+    syngen.audio.ramp.linear(this.output.gain, 1, this.fadeInDuration)
+
+    return this
+  },
+  /**
+   * Prepares the instance for garbage collection and fades out its volume.
+   * Derivative props are discouraged from overriding this method.
+   * Instead they should define an {@link syngen.prop.base#onConstruct|onDestroy} method.
+   * @instance
+   * @see syngen.prop.base#onDestroy
+   * @see syngen.props.destroy
+   */
+  destroy: function () {
+    syngen.audio.ramp.linear(this.output.gain, syngen.const.zeroGain, this.fadeOutDuration)
+
+    setTimeout(() => {
+      this.output.disconnect()
+      this.binaural.destroy()
+
+      if (this.reverb) {
+        this.reverb.destroy()
+      }
+
+      this.onDestroy()
+    }, (syngen.const.audioLookaheadTime + this.fadeOutDuration) * 1000)
+
+    return this
+  },
+  /**
+   * The distance of the prop relative to the observer's coordinates.
+   * @instance
+   * @type {Number}
+   */
+  distance: undefined,
+  /**
+   * Duration of fade in when instantiated.
+   * @type {Number}
+   */
+  fadeInDuration: syngen.const.zeroTime,
+  /**
+   * Duration of fade out when destroyed.
+   * @type {Number}
+   */
+  fadeOutDuration: syngen.const.zeroTime,
+  /**
+   * Indicates whether the prop has been instantiated.
+   * @instance
+   * @type {Boolean}
+   */
+  instantiated: false,
+  /**
+   * Invents a new prototype with `definition` that inherits the prototype from this prop.
+   * @param {Object} definition
+   * @returns {syngen.prop.base}
+   * @static
+   */
+  invent: function (definition = {}) {
+    if (typeof definition == 'function') {
+      definition = definition(this)
+    }
+
+    return Object.setPrototypeOf({...definition}, this)
+  },
+  /**
+   * Identifier of the prop type.
+   * Instances are discouraged from modifying this.
+   * @type {String}
+   */
+  name: 'base',
+  /**
+   * Called after a prop is instantiated.
+   * Props should define this method to perform setup tasks after being constructed.
+   * @instance
+   * @see syngen.prop.base#construct
+   */
+  onConstruct: () => {},
+  /**
+   * Called before a prop is destroyed.
+   * Props should define this method to perform tear tasks before being destroyed.
+   * @instance
+   * @see syngen.prop.base#destroy
+   */
+  onDestroy: () => {},
+  /**
+   * Called when a prop is updated.
+   * Props should define this method to perform tasks every frame.
+   * @instance
+   * @see syngen.prop.base#update
+   */
+  onUpdate: () => {},
+  /**
+   * Main output for audio synthesis and playback.
+   * This is not connected directly to the main audio destination; rather, it's routed through the binaural and reverb sends.
+   * On creation and destruction its gain is ramped to fade in and out.
+   * It's not recommended to modify its gain directly.
+   * @instance
+   * @type {GainNode}
+   */
+  output: undefined,
+  /**
+   * Radius of the prop, in meters.
+   * @instance
+   * @type {Number}
+   */
+  radius: 0,
+  /**
+   * Recalculates the prop's relative coordinates and distance, binaural circuit, and reverb send.
+   * @instance
+   * @see syngen.prop.base#binaural
+   * @see syngen.prop.base#distance
+   * @see syngen.prop.base#relative
+   * @see syngen.prop.base#reverb
+   */
+  recalculate: function () {
+    const positionQuaternion = syngen.position.getQuaternion(),
+      positionVector = syngen.position.getVector()
+
+    this.relative = this.vector()
+      .subtract(positionVector)
+      .subtractRadius(this.radius)
+      .rotateQuaternion(positionQuaternion.conjugate())
+
+    this.distance = this.relative.distance()
+
+    this.binaural.update({...this.relative})
+
+    if (this.reverb) {
+      this.reverb.update({...this.relative})
+    }
+
+    return this
+  },
+  /**
+   * Returns the rectangular prism surrounding the prop.
+   * @instance
+   * @returns {Object}
+   */
+  rect: function () {
+    return {
+      depth: this.radius * 2,
+      height: this.radius * 2,
+      width: this.radius * 2,
+      x: this.x - this.radius,
+      y: this.y - this.radius,
+      z: this.y - this.radius,
+    }
+  },
+  /**
+   * The coordinates of the prop relative to the observer's coordinates and orientation.
+   * @instance
+   * @type {syngen.utility.vector3d}
+   */
+  relative: undefined,
+  /**
+   * Reverb send for the prop.
+   * Implementations can disable reverb for certain prototypes by explicitly setting this to `false`.
+   * @instance
+   * @type {syngen.audio.mixer.send.reverb|Boolean}
+   */
+  reverb: true,
+  /**
+   * Universally unique identifier provided during instantiation.
+   * @instance
+   * @name syngen.prop.base#token
+   * @type {String}
+   */
+   token: undefined,
+  /**
+   * Called every frame.
+   * Derivative props are discouraged from overriding this method.
+   * Instead they should define an {@link syngen.prop.base#onConstruct|onUpdate} method.
+   * @instance
+   * @see syngen.prop.base#onUpdate
+   * @see syngen.props.update
+   */
+  update: function ({
+    paused,
+  } = {}) {
+    this.onUpdate.apply(this, arguments)
+
+    if (paused) {
+      return this
+    }
+
+    this.updatePhysics()
+    this.recalculate()
+
+    return this
+  },
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="syngen.html">syngen</a></li><li><a href="syngen.audio.html">syngen.audio</a></li><li><a href="syngen.audio.buffer.html">syngen.audio.buffer</a></li><li><a href="syngen.audio.buffer.impulse.html">syngen.audio.buffer.impulse</a></li><li><a href="syngen.audio.buffer.noise.html">syngen.audio.buffer.noise</a></li><li><a href="syngen.audio.circuit.html">syngen.audio.circuit</a></li><li><a href="syngen.audio.effect.html">syngen.audio.effect</a></li><li><a href="syngen.audio.formant.html">syngen.audio.formant</a></li><li><a href="syngen.audio.mixer.html">syngen.audio.mixer</a></li><li><a href="syngen.audio.mixer.auxiliary.html">syngen.audio.mixer.auxiliary</a></li><li><a href="syngen.audio.mixer.auxiliary.reverb.html">syngen.audio.mixer.auxiliary.reverb</a></li><li><a href="syngen.audio.mixer.send.html">syngen.audio.mixer.send</a></li><li><a href="syngen.audio.ramp.html">syngen.audio.ramp</a></li><li><a href="syngen.audio.shape.html">syngen.audio.shape</a></li><li><a href="syngen.audio.synth.html">syngen.audio.synth</a></li><li><a href="syngen.const.html">syngen.const</a></li><li><a href="syngen.input.html">syngen.input</a></li><li><a href="syngen.input.gamepad.html">syngen.input.gamepad</a></li><li><a href="syngen.input.keyboard.html">syngen.input.keyboard</a></li><li><a href="syngen.input.mouse.html">syngen.input.mouse</a></li><li><a href="syngen.loop.html">syngen.loop</a></li><li><a href="syngen.performance.html">syngen.performance</a></li><li><a href="syngen.position.html">syngen.position</a></li><li><a href="syngen.prop.html">syngen.prop</a></li><li><a href="syngen.props.html">syngen.props</a></li><li><a href="syngen.seed.html">syngen.seed</a></li><li><a href="syngen.state.html">syngen.state</a></li><li><a href="syngen.streamer.html">syngen.streamer</a></li><li><a href="syngen.utility.html">syngen.utility</a></li><li><a href="syngen.utility.random.html">syngen.utility.random</a></li><li><a href="syngen.utility.timing.html">syngen.utility.timing</a></li></ul><h3>Interfaces</h3><ul><li><a href="syngen.audio.binaural.html">syngen.audio.binaural</a></li><li><a href="syngen.audio.binaural.monaural.html">syngen.audio.binaural.monaural</a></li><li><a href="syngen.audio.mixer.send.reverb.html">syngen.audio.mixer.send.reverb</a></li><li><a href="syngen.prop.base.html">syngen.prop.base</a></li><li><a href="syngen.prop.null.html">syngen.prop.null</a></li><li><a href="syngen.utility.bitree.html">syngen.utility.bitree</a></li><li><a href="syngen.utility.euler.html">syngen.utility.euler</a></li><li><a href="syngen.utility.machine.html">syngen.utility.machine</a></li><li><a href="syngen.utility.octree.html">syngen.utility.octree</a></li><li><a href="syngen.utility.perlin1d.html">syngen.utility.perlin1d</a></li><li><a href="syngen.utility.perlin2d.html">syngen.utility.perlin2d</a></li><li><a href="syngen.utility.perlin3d.html">syngen.utility.perlin3d</a></li><li><a href="syngen.utility.perlin4d.html">syngen.utility.perlin4d</a></li><li><a href="syngen.utility.pubsub.html">syngen.utility.pubsub</a></li><li><a href="syngen.utility.quadtree.html">syngen.utility.quadtree</a></li><li><a href="syngen.utility.quaternion.html">syngen.utility.quaternion</a></li><li><a href="syngen.utility.vector2d.html">syngen.utility.vector2d</a></li><li><a href="syngen.utility.vector3d.html">syngen.utility.vector3d</a></li></ul><h3>Events</h3><ul><li><a href="syngen.audio.mixer.auxiliary.reverb.html#event:event:activate">syngen.audio.mixer.auxiliary.reverb#activate</a></li><li><a href="syngen.audio.mixer.auxiliary.reverb.html#event:event:deactivate">syngen.audio.mixer.auxiliary.reverb#deactivate</a></li><li><a href="syngen.loop.html#event:event:frame">syngen.loop#frame</a></li><li><a href="syngen.loop.html#event:event:pause">syngen.loop#pause</a></li><li><a href="syngen.loop.html#event:event:resume">syngen.loop#resume</a></li><li><a href="syngen.loop.html#event:event:start">syngen.loop#start</a></li><li><a href="syngen.loop.html#event:event:stop">syngen.loop#stop</a></li><li><a href="syngen.state.html#event:event:export">syngen.state#export</a></li><li><a href="syngen.state.html#event:event:import">syngen.state#import</a></li><li><a href="syngen.state.html#event:event:reset">syngen.state#reset</a></li><li><a href="syngen.utility.machine.html#event:event:after">syngen.utility.machine#after</a></li><li><a href="syngen.utility.machine.html#event:event:after-%257Bevent%257D">syngen.utility.machine#after-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:after-%257Bstate%257D-%257Bevent%257D">syngen.utility.machine#after-{state}-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:before">syngen.utility.machine#before</a></li><li><a href="syngen.utility.machine.html#event:event:before-%257Bevent%257D">syngen.utility.machine#before-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:before-%257Bstate%257D-%257Bevent%257D">syngen.utility.machine#before-{state}-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:enter">syngen.utility.machine#enter</a></li><li><a href="syngen.utility.machine.html#event:event:enter-%257Bstate%257D">syngen.utility.machine#enter-{state}</a></li><li><a href="syngen.utility.machine.html#event:event:exit">syngen.utility.machine#exit</a></li><li><a href="syngen.utility.machine.html#event:event:exit-%257Bstate%257D">syngen.utility.machine#exit-{state}</a></li></ul><h3>Mixins</h3><ul><li><a href="syngen.utility.physical.html">syngen.utility.physical</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: syngen/utility/timing.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: syngen/utility/timing.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Provides methods that simplify working with timers.
+ * @namespace
+ */
+syngen.utility.timing = {}
+
+/**
+ * Returns a cancelable promise that resolves after `duration` milliseconds.
+ * @param {Number} duration
+ * @returns {Promise}
+ *   Has a `cancel` method that can reject itself prematurely.
+ * @static
+ */
+syngen.utility.timing.cancelablePromise = (duration) => {
+  const scope = {}
+
+  const promise = new Promise((resolve, reject) => {
+    scope.reject = reject
+    scope.resolve = resolve
+  })
+
+  const timeout = setTimeout(scope.resolve, duration)
+
+  promise.cancel = function () {
+    scope.reject()
+    clearTimeout(timeout)
+    return this
+  }
+
+  promise.catch(() => {})
+
+  return promise
+}
+
+/**
+ * Returns a promise that resolves after `duration` milliseconds.
+ * @param {Number} duration
+ * @returns {Promise}
+ * @static
+ */
+syngen.utility.timing.promise = (duration) => new Promise((resolve) => setTimeout(resolve, duration))
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="syngen.html">syngen</a></li><li><a href="syngen.audio.html">syngen.audio</a></li><li><a href="syngen.audio.buffer.html">syngen.audio.buffer</a></li><li><a href="syngen.audio.buffer.impulse.html">syngen.audio.buffer.impulse</a></li><li><a href="syngen.audio.buffer.noise.html">syngen.audio.buffer.noise</a></li><li><a href="syngen.audio.circuit.html">syngen.audio.circuit</a></li><li><a href="syngen.audio.effect.html">syngen.audio.effect</a></li><li><a href="syngen.audio.formant.html">syngen.audio.formant</a></li><li><a href="syngen.audio.mixer.html">syngen.audio.mixer</a></li><li><a href="syngen.audio.mixer.auxiliary.html">syngen.audio.mixer.auxiliary</a></li><li><a href="syngen.audio.mixer.auxiliary.reverb.html">syngen.audio.mixer.auxiliary.reverb</a></li><li><a href="syngen.audio.mixer.send.html">syngen.audio.mixer.send</a></li><li><a href="syngen.audio.ramp.html">syngen.audio.ramp</a></li><li><a href="syngen.audio.shape.html">syngen.audio.shape</a></li><li><a href="syngen.audio.synth.html">syngen.audio.synth</a></li><li><a href="syngen.const.html">syngen.const</a></li><li><a href="syngen.input.html">syngen.input</a></li><li><a href="syngen.input.gamepad.html">syngen.input.gamepad</a></li><li><a href="syngen.input.keyboard.html">syngen.input.keyboard</a></li><li><a href="syngen.input.mouse.html">syngen.input.mouse</a></li><li><a href="syngen.loop.html">syngen.loop</a></li><li><a href="syngen.performance.html">syngen.performance</a></li><li><a href="syngen.position.html">syngen.position</a></li><li><a href="syngen.prop.html">syngen.prop</a></li><li><a href="syngen.props.html">syngen.props</a></li><li><a href="syngen.seed.html">syngen.seed</a></li><li><a href="syngen.state.html">syngen.state</a></li><li><a href="syngen.streamer.html">syngen.streamer</a></li><li><a href="syngen.utility.html">syngen.utility</a></li><li><a href="syngen.utility.random.html">syngen.utility.random</a></li><li><a href="syngen.utility.timing.html">syngen.utility.timing</a></li></ul><h3>Interfaces</h3><ul><li><a href="syngen.audio.binaural.html">syngen.audio.binaural</a></li><li><a href="syngen.audio.binaural.monaural.html">syngen.audio.binaural.monaural</a></li><li><a href="syngen.audio.mixer.send.reverb.html">syngen.audio.mixer.send.reverb</a></li><li><a href="syngen.prop.base.html">syngen.prop.base</a></li><li><a href="syngen.prop.null.html">syngen.prop.null</a></li><li><a href="syngen.utility.bitree.html">syngen.utility.bitree</a></li><li><a href="syngen.utility.euler.html">syngen.utility.euler</a></li><li><a href="syngen.utility.machine.html">syngen.utility.machine</a></li><li><a href="syngen.utility.octree.html">syngen.utility.octree</a></li><li><a href="syngen.utility.perlin1d.html">syngen.utility.perlin1d</a></li><li><a href="syngen.utility.perlin2d.html">syngen.utility.perlin2d</a></li><li><a href="syngen.utility.perlin3d.html">syngen.utility.perlin3d</a></li><li><a href="syngen.utility.perlin4d.html">syngen.utility.perlin4d</a></li><li><a href="syngen.utility.pubsub.html">syngen.utility.pubsub</a></li><li><a href="syngen.utility.quadtree.html">syngen.utility.quadtree</a></li><li><a href="syngen.utility.quaternion.html">syngen.utility.quaternion</a></li><li><a href="syngen.utility.vector2d.html">syngen.utility.vector2d</a></li><li><a href="syngen.utility.vector3d.html">syngen.utility.vector3d</a></li></ul><h3>Events</h3><ul><li><a href="syngen.audio.mixer.auxiliary.reverb.html#event:event:activate">syngen.audio.mixer.auxiliary.reverb#activate</a></li><li><a href="syngen.audio.mixer.auxiliary.reverb.html#event:event:deactivate">syngen.audio.mixer.auxiliary.reverb#deactivate</a></li><li><a href="syngen.loop.html#event:event:frame">syngen.loop#frame</a></li><li><a href="syngen.loop.html#event:event:pause">syngen.loop#pause</a></li><li><a href="syngen.loop.html#event:event:resume">syngen.loop#resume</a></li><li><a href="syngen.loop.html#event:event:start">syngen.loop#start</a></li><li><a href="syngen.loop.html#event:event:stop">syngen.loop#stop</a></li><li><a href="syngen.state.html#event:event:export">syngen.state#export</a></li><li><a href="syngen.state.html#event:event:import">syngen.state#import</a></li><li><a href="syngen.state.html#event:event:reset">syngen.state#reset</a></li><li><a href="syngen.utility.machine.html#event:event:after">syngen.utility.machine#after</a></li><li><a href="syngen.utility.machine.html#event:event:after-%257Bevent%257D">syngen.utility.machine#after-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:after-%257Bstate%257D-%257Bevent%257D">syngen.utility.machine#after-{state}-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:before">syngen.utility.machine#before</a></li><li><a href="syngen.utility.machine.html#event:event:before-%257Bevent%257D">syngen.utility.machine#before-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:before-%257Bstate%257D-%257Bevent%257D">syngen.utility.machine#before-{state}-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:enter">syngen.utility.machine#enter</a></li><li><a href="syngen.utility.machine.html#event:event:enter-%257Bstate%257D">syngen.utility.machine#enter-{state}</a></li><li><a href="syngen.utility.machine.html#event:event:exit">syngen.utility.machine#exit</a></li><li><a href="syngen.utility.machine.html#event:event:exit-%257Bstate%257D">syngen.utility.machine#exit-{state}</a></li></ul><h3>Mixins</h3><ul><li><a href="syngen.utility.physical.html">syngen.utility.physical</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -10,6 +10,12 @@ Use at your own risk.
 Its event loop fires each frame to update props and core systems.
 Additional utilities provide tools for engineering custom systems that hook into its API to deliver rich experiences.
 
+### Getting started
+Please clone this repository or install with your favorite package manager:
+```sh
+npm install syngen
+```
+
 ### Example usage
 This library _must_ be used within a browser environment so it can access the `window` object.
 It can be imported or required as a UMD module, or accessed from the `syngen` global.
@@ -44,10 +50,16 @@ Please browse the `example` directory or the projects below for more elaborate r
 - [soundStrider](https://soundstrider.shiftbacktick.io) – Psychedelic audio exploration game
 
 #### See also
+- [API Documentation](https://syngen.shiftbacktick.io)
 - [syngen-template](https://github.com/nicross/syngen-template) - Template for audio game development
 
 ## Development
-To get started, please  use [npm](https://nodejs.org) to install the required dependencies:
+To get started, please clone this repository:
+```sh
+git clone https://github.com/nicross/syngen.git
+```
+
+Then use [npm](https://nodejs.org) to install the required dependencies
 ```sh
 npm install
 ```

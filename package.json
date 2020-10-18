@@ -1,18 +1,16 @@
 {
-  "name": "syngen",
+  "name": "@nicross/syngen",
   "version": "0.1.0",
   "description": "A spatial sound and synthesis framework for audio game development and experience design.",
   "license": "Unlicense",
   "main": "dist/syngen.js",
   "bugs": "https://github.com/nicross/syngen/issues",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nicross/syngen.git"
-  },
+  "repository": "git://github.com/nicross/syngen.git",
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
+    "registry": "https://npm.pkg.github.com/@nicross"
   },
   "devDependencies": {
+    "del": "^6.0.0",
     "gulp": "^4.0.2",
     "gulp-concat": "^2.6.1",
     "gulp-header": "^2.0.9",
