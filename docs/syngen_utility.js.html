@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: syngen/utility.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: syngen/utility.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * A collection of useful utility methods.
+ * @namespace
+ */
+syngen.utility = {}
+
+/**
+ * Adds a musical `interval` to a `frequency`, in Hertz.
+ * @param {Number} frequency
+ * @param {Number} interval
+ *   Each integer multiple represents an octave.
+ *   For example, `2` raises the frequency by two octaves.
+ *   Likewise, `-1/12` lowers by one half-step, whereas `-1/100` lowers by one cent.
+ * @static
+ */
+syngen.utility.addInterval = (frequency, interval) => frequency * (2 ** interval)
+
+/**
+ * Returns whether `value` is between `min` and `max` (inclusive).
+ * @param {Number} value
+ * @param {Number} min
+ * @param {Number} max
+ * @returns {Boolean}
+ * @static
+ */
+syngen.utility.between = (value, min, max) => value >= min &amp;&amp; value &lt;= max
+
+/**
+ * Calculates the geometric center of variadic vectors or vector-likes.
+ * @param {syngen.utility.vector3d[]|syngen.utility.vector2d[]|Object[]} vectors
+ * @returns {syngen.utility.vector3d}
+ * @static
+ */
+syngen.utility.centroid = (vectors = []) => {
+  // NOTE: Returns origin if empty set
+  if (!vectors.length) {
+    return syngen.utility.vector3d.create()
+  }
+
+  let xSum = 0,
+    ySum = 0,
+    zSum = 0
+
+  for (const vector of vectors) {
+    xSum += vector.x || 0
+    ySum += vector.y || 0
+    zSum += vector.z || 0
+  }
+
+  return syngen.utility.vector3d.create({
+    x: xSum / vectors.length,
+    y: ySum / vectors.length,
+    z: zSum / vectors.length,
+  })
+}
+
+/**
+ * Returns the element of `options` at the index determined by percentage `value`.
+ * @param {Array} options
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @returns {*}
+ * @static
+ */
+syngen.utility.choose = (options = [], value = 0) => {
+  value = syngen.utility.clamp(value, 0, 1)
+
+  const index = Math.round(value * (options.length - 1))
+  return options[index]
+}
+
+/**
+ * Splices and returns the element of `options` at the index determined by percentage `value`.
+ * Beward that this mutates the passed array.
+ * @param {Array} options
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @returns {*}
+ * @static
+ */
+syngen.utility.chooseSplice = (options = [], value = 0) => {
+  value = syngen.utility.clamp(value, 0, 1)
+
+  const index = Math.round(value * (options.length - 1))
+  return options.splice(index, 1)[0]
+}
+
+/**
+ * Returns the element of `options` at the index determined by weighted percentage `value`.
+ * @param {Array} options
+ *   Each element is expected to have a `weight` key which is a positive number.
+ *   Higher weights are more likely to be chosen.
+ *   Beware that elements are not sorted by weight before selection.
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @returns {*}
+ * @static
+ */
+syngen.utility.chooseWeighted = (options = [], value = 0) => {
+  // SEE: https://medium.com/@peterkellyonline/weighted-random-selection-3ff222917eb6
+  value = syngen.utility.clamp(value, 0, 1)
+
+  const totalWeight = options.reduce((total, option) => {
+    return total + (option.weight || 0)
+  }, 0)
+
+  let weight = value * totalWeight
+
+  for (const option of options) {
+    weight -= option.weight || 0
+
+    if (weight &lt;= 0) {
+      return option
+    }
+  }
+}
+
+/**
+ * Returns `value` clamped between `min` and `max`.
+ * @param {Number} value
+ * @param {Number} min
+ * @param {Number} max
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.clamp = (value, min, max) => {
+  if (value > max) {
+    return max
+  }
+
+  if (value &lt; min) {
+    return min
+  }
+
+  return value
+}
+
+/**
+ * Returns whichever value, `a` or `b`, that is closer to `x`.
+ * @param {Number} x
+ * @param {Number} a
+ * @param {Number} b
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.closer = (x, a, b) => {
+  return Math.abs(x - a) &lt;= Math.abs(x - b) ? a : b
+}
+
+/**
+ * Returns the closest value to `x` in the array `values`.
+ * @param {Number} x
+ * @param {Number[]} values
+ * @returns {Number}
+ * @static
+ * @todo Improve performance with a version for pre-sorted arrays
+ */
+syngen.utility.closest = function (x, values = []) {
+  return values.reduce((closest, value) => syngen.utility.closer(x, closest, value))
+}
+
+/**
+ * Instantiates `octaves` Perlin noise generators of `type` with `seed` and returns a wrapper object that calculates their combined values.
+ * @param {syngen.utility.perlin1d|syngen.utility.perlin2d|syngen.utility.perlin3d|syngen.utility.perlin4d} type
+ *   Must be a Perlin noise utility, and not a factory method or an instance.
+ * @param {*} seed
+ * @param {Number} [octaves=2]
+ * @returns {Object}
+ * @static
+ * @todo Port into individual perlin utilities for clarity
+ */
+syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
+  const compensation = 1 / (1 - (2 ** -octaves)),
+    perlins = []
+
+  if (!Array.isArray(seed)) {
+    seed = [seed]
+  }
+
+  for (let i = 0; i &lt; octaves; i += 1) {
+    perlins.push(
+      type.create(...seed, 'octave', i)
+    )
+  }
+
+  return {
+    perlin: perlins,
+    reset: function () {
+      for (let perlin of this.perlin) {
+        perlin.reset()
+      }
+      return this
+    },
+    value: function (...args) {
+      let amplitude = 1/2,
+        frequency = 1,
+        sum = 0
+
+      for (let perlin of this.perlin) {
+        sum += perlin.value(...args.map((value) => value * frequency)) * amplitude
+        amplitude /= 2
+        frequency *= 2
+      }
+
+      sum *= compensation
+
+      return sum
+    },
+  }
+}
+
+/**
+ * Converts `degrees` to radians.
+ * @param {Number} degrees
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.degreesToRadians = (degrees) => degrees * Math.PI / 180
+
+/**
+ * Adds a musical interval to `frequency` in `cents`.
+ * @param {Number} frequency
+ * @param {Number} [cents=0]
+ *   Every 1200 represents an octave.
+ *   For example, `2400` raises the frequency by two octaves.
+ *   Likewise, `-100` lowers by one half-step, whereas `-1` lowers by one cent.
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.detune = (frequency, cents = 0) => frequency * (2 ** (cents / 1200))
+
+/**
+ * Calculates the distance between two vectors or vector-likes.
+ * @param {syngen.utility.vector2d|syngen.utility.vector3d|Object} a
+ * @param {syngen.utility.vector2d|syngen.utility.vector3d|Object} b
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.distance = (a, b) => Math.sqrt(syngen.utility.distance2(a, b))
+
+/**
+ * Calculates the squared distance between two vectors or vector-likes.
+ * @param {syngen.utility.vector2d|syngen.utility.vector3d|Object} a
+ * @param {syngen.utility.vector2d|syngen.utility.vector3d|Object} b
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.distance2 = ({
+  x: x1 = 0,
+  y: y1 = 0,
+  z: z1 = 0,
+} = {}, {
+  x: x2 = 0,
+  y: y2 = 0,
+  z: z2 = 0,
+} = {}) => ((x2 - x1) ** 2) + ((y2 - y1) ** 2) + ((z2 - z1) ** 2)
+
+/**
+ * Calculated the gain for a sound source `distance` meters away, normalized to zero decibels.
+ * The distance model is determined by the values of several constants.
+ * Importantly, it is a combination of inverse-squared and linear functions.
+ * @param {Number} [distance=0]
+ * @returns {Number}
+ * @see syngen.const.distancePower
+ * @see syngen.const.distancePowerHorizon
+ * @see syngen.const.distancePowerHorizonExponent
+ * @see syngen.streamer.getRadius
+ * @static
+ * @todo Move to dedicated distance models
+ */
+syngen.utility.distanceToPower = (distance = 0) => {
+  // XXX: One is added so all distances yield sensible values
+  distance = Math.max(1, distance + 1)
+
+  const distancePower = distance ** -syngen.const.distancePower
+  let horizonPower = 1
+
+  if (syngen.const.distancePowerHorizon) {
+    // XXX: One is added because of above
+    const distancePowerHorizon = syngen.streamer.getRadius() + 1
+    horizonPower = Math.max(0, distancePowerHorizon - distance) / distancePowerHorizon
+    horizonPower **= syngen.const.distancePowerHorizonExponent
+  }
+
+  return distancePower * horizonPower
+}
+
+/**
+ * Converts `frequency`, in Hertz, to its corresponding MIDI note number.
+ * The returned value is not rounded.
+ * @param {Number} frequency
+ * @returns {Number}
+ * @see syngen.const.midiReferenceFrequency
+ * @see syngen.const.midiReferenceNote
+ * @static
+ */
+syngen.utility.frequencyToMidi = (frequency) => (Math.log2(frequency / syngen.const.midiReferenceFrequency) * 12) + syngen.const.midiReferenceNote
+
+/**
+ * Converts `decibels` to its equivalent gain value.
+ * @param {Number} decibels
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.fromDb = (decibels) => 10 ** (decibels / 10)
+
+/**
+ * Converts `value` to an integer via the Jenkins hash function.
+ * @param {String} value
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.hash = (value) => {
+  value = String(value)
+
+  let hash = 0,
+    i = value.length
+
+  while (i--) {
+    hash += value.charCodeAt(i)
+    hash += hash &lt;&lt; 10
+    hash ^= hash >> 6
+  }
+
+  hash += (hash &lt;&lt; 3)
+  hash ^= (hash >> 11)
+  hash += (hash &lt;&lt; 15)
+
+	return Math.abs(hash)
+}
+
+/**
+ * Adds a random value to `baseValue` within the range of negative to positive `amount`.
+ * @param {Number} baseValue
+ * @param {Number} amount
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.humanize = (baseValue = 1, amount = 0) => {
+  return baseValue + syngen.utility.random.float(-amount, amount)
+}
+
+/**
+ * Adds a random gain to `baseGain` within the range of negative to positive `decibels`, first converted to gain.
+ * @param {Number} baseGain
+ * @param {Number} decibels
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.humanizeDb = (baseGain = 1, decibels = 0) => {
+  const amount = syngen.utility.fromDb(decibels)
+  return baseGain * syngen.utility.random.float(1 - amount, 1 + amount)
+}
+
+/**
+ * Returns whether rectangular prisms `a` and `b` intersect.
+ * A rectangular prism has a bottom-left vertex with coordinates `(x, y, z)` and `width`, `height`, and `depth` along those axes respectively.
+ * An intersection occurs if their faces intersect, they share vertices, or one is contained within the other.
+ * This function works for one- and two-dimensional shapes as well.
+ * @param {Object} a
+ * @param {Object} b
+ * @returns {Boolean}
+ * @static
+ * @todo Define a rectangular prism utility or type
+ */
+syngen.utility.intersects = ({
+  depth: depth1 = 0,
+  height: height1 = 0,
+  width: width1 = 0,
+  x: x1 = 0,
+  y: y1 = 0,
+  z: z1 = 0,
+} = {}, {
+  depth: depth2 = 0,
+  height: height2 = 0,
+  width: width2 = 0,
+  x: x2 = 0,
+  y: y2 = 0,
+  z: z2 = 0,
+} = {}) => {
+  const between = syngen.utility.between
+
+  const xOverlap = between(x1, x2, x2 + width2)
+    || between(x2, x1, x1 + width1)
+
+  const yOverlap = between(y1, y2, y2 + height2)
+    || between(y2, y1, y1 + height1)
+
+  const zOverlap = between(z1, z2, z2 + depth2)
+    || between(z2, z1, z1 + depth1)
+
+  return xOverlap &amp;&amp; yOverlap &amp;&amp; zOverlap
+}
+
+/**
+ * Linearly interpolates between `min` and `max` with `value`.
+ * @param {Number} min
+ * @param {Number} max
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.lerp = (min, max, value = 0) => (min * (1 - value)) + (max * value)
+
+/**
+ * Linearly interpolates between `min` and `max` with `value` raised to `power`.
+ * @param {Number} min
+ * @param {Number} max
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @param {Number} [power=2]
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.lerpExp = (min, max, value = 0, power = 2) => {
+  return syngen.utility.lerp(min, max, value ** power)
+}
+
+/**
+ * Returns a random value within the range where the lower bound is the interpolated value within `[lowMin, highMin]`, the upper bound is the interpolated value within `[lowMax, highMax]`.
+ * Values are interpolated with {@link syngen.utility.lerpExpRandom|lerpExpRandom}.
+ * @param {Number[]} lowRange
+ *   Expects `[lowMin, lowMax]`.
+ * @param {Number[]} highRange
+ *   Expects `[highMin, highMax]`.
+ * @param {Number} [value]
+ * @param {Number} [power]
+ * @returns {Number}
+ * @see syngen.utility.lerpExp
+ * @static
+ */
+syngen.utility.lerpExpRandom = ([lowMin, lowMax], [highMin, highMax], value, power) => {
+  return syngen.utility.random.float(
+    syngen.utility.lerpExp(lowMin, highMin, value, power),
+    syngen.utility.lerpExp(lowMax, highMax, value, power),
+  )
+}
+
+/**
+ * Linearly interpolates between `min` and `max` with `value` logarithmically with `base`.
+ * @param {Number} min
+ * @param {Number} max
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @param {Number} [base=2]
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.lerpLog = (min, max, value = 0, base = 2) => {
+  value *= base - 1
+  return syngen.utility.lerp(min, max, Math.log(1 + value) / Math.log(base))
+}
+
+/**
+ * Linearly interpolates between `min` and `max` with `value` logarithmically with `base`.
+ * This function is shorthand for `{@link syngen.utility.lerpLog|lerpLog}(min, max, 1 - value, 1 / base)` which results in curve that inversely favors larger values.
+ * This is similar to but distinct from {@link syngen.utility.lerpExp|lerpExp}.
+ * @param {Number} min
+ * @param {Number} max
+ * @param {Number} [value=0]
+ *   Float within `[0, 1]`.
+ * @param {Number} [base=2]
+ * @returns {Number}
+ * @see syngen.utility.lerpLog
+ * @static
+ */
+syngen.utility.lerpLogi = (min, max, value, base) => {
+  return syngen.utility.lerpLog(max, min, 1 - value, base)
+}
+
+/**
+ * Returns a random value within the range where the lower bound is the interpolated value within `[lowMin, highMin]`, the upper bound is the interpolated value within `[lowMax, highMax]`.
+ * Values are interpolated with {@link syngen.utility.lerpLogi|lerpLogi}.
+ * @param {Number[]} lowRange
+ *   Expects `[lowMin, lowMax]`.
+ * @param {Number[]} highRange
+ *   Expects `[highMin, highMax]`.
+ * @param {Number} [value]
+ * @param {Number} [power]
+ * @returns {Number}
+ * @see syngen.utility.lerpLogi
+ * @static
+ */
+syngen.utility.lerpLogiRandom = ([lowMin, lowMax], [highMin, highMax], value) => {
+  return syngen.utility.random.float(
+    syngen.utility.lerpLogi(lowMin, highMin, value),
+    syngen.utility.lerpLogi(lowMax, highMax, value),
+  )
+}
+
+/**
+ * Returns a random value within the range where the lower bound is the interpolated value within `[lowMin, highMin]`, the upper bound is the interpolated value within `[lowMax, highMax]`.
+ * Values are interpolated with {@link syngen.utility.lerpLog|lerpLog}.
+ * @param {Number[]} lowRange
+ *   Expects `[lowMin, lowMax]`.
+ * @param {Number[]} highRange
+ *   Expects `[highMin, highMax]`.
+ * @param {Number} [value]
+ * @param {Number} [base]
+ * @returns {Number}
+ * @see syngen.utility.lerpLog
+ * @static
+ */
+syngen.utility.lerpLogRandom = ([lowMin, lowMax], [highMin, highMax], value, base) => {
+  return syngen.utility.random.float(
+    syngen.utility.lerpLog(lowMin, highMin, value, base),
+    syngen.utility.lerpLog(lowMax, highMax, value, base),
+  )
+}
+
+/**
+ * Returns a random value within the range where the lower bound is the interpolated value within `[lowMin, highMin]`, the upper bound is the interpolated value within `[lowMax, highMax]`.
+ * Values are interpolated with {@link syngen.utility.lerp|lerp}.
+ * @param {Number[]} lowRange
+ *   Expects `[lowMin, lowMax]`.
+ * @param {Number[]} highRange
+ *   Expects `[highMin, highMax]`.
+ * @param {Number} [value]
+ * @param {Number} [base]
+ * @returns {Number}
+ * @see syngen.utility.lerp
+ * @static
+ */
+syngen.utility.lerpRandom = ([lowMin, lowMax], [highMin, highMax], value) => {
+  return syngen.utility.random.float(
+    syngen.utility.lerp(lowMin, highMin, value),
+    syngen.utility.lerp(lowMax, highMax, value),
+  )
+}
+
+/**
+ * Converts a MIDI `note` number to its frequency, in Hertz.
+ * @param {Number} note
+ * @returns {Number}
+ * @see syngen.const.midiReferenceFrequency
+ * @see syngen.const.midiReferenceNote
+ * @static
+ */
+syngen.utility.midiToFrequency = (note) => {
+  return syngen.const.midiReferenceFrequency * Math.pow(2, (note - syngen.const.midiReferenceNote) / 12)
+}
+
+/**
+ * Normalizes `angle` within therange of `[0, 2π]`.
+ * @param {Number} angle
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.normalizeAngle = (angle = 0) => {
+  const tau = Math.PI * 2
+
+  if (angle > tau) {
+    angle %= tau
+  } else if (angle &lt; 0) {
+    angle %= tau
+    angle += tau
+  }
+
+  return angle
+}
+
+/**
+ * Normalizes `angle` within the range of `[-π, +π]`.
+ * @param {Number} angle
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.normalizeAngleSigned = (angle) => {
+  const tau = 2 * Math.PI
+
+  angle %= tau
+
+  if (angle > Math.PI) {
+    angle -= tau
+  }
+
+  if (angle &lt; -Math.PI) {
+    angle += tau
+  }
+
+  return angle
+}
+
+/**
+ * Calculates the real solutions to the quadratic equation with coefficients `a`, `b`, and `c`.
+ * @param {Number} a
+ * @param {Number} b
+ * @param {Number} c
+ * @returns {Number[]}
+ *   Typically there are two real solutions; however, implementations must check for imaginary solutions with {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/isNaN|isNaN}.
+ * @static
+ */
+syngen.utility.quadratic = (a, b, c) => {
+  return [
+    (-1 * b + Math.sqrt(Math.pow(b, 2) - (4 * a * c))) / (2 * a),
+    (-1 * b - Math.sqrt(Math.pow(b, 2) - (4 * a * c))) / (2 * a),
+  ]
+}
+
+/**
+ * Converts `radians` to degrees.
+ * @param {Number} radians
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.radiansToDegrees = (radians) => radians * 180 / Math.PI
+
+/**
+ * Calculates the interior angle of a regular polygon with `sides`.
+ * @param {Number} sides
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.regularPolygonInteriorAngle = (sides) => (sides - 2) * Math.PI / sides
+
+/**
+ * Rounds `value` to `precision` places.
+ * Beward that `precision` is an inverse power of ten.
+ * For example, `3` rounds to the nearest thousandth, whereas `-3` rounds to the nearest thousand.
+ * @param {Number} value
+ * @param {Number} precision
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.round = (value, precision = 0) => {
+  precision = 10 ** precision
+  return Math.round(value * precision) / precision
+}
+
+/**
+ * Scales `value` within the range `[min, max]` to an equivalent value between `[a, b]`.
+ * @param {Number} value
+ * @param {Number} min
+ * @param {Number} max
+ * @param {Number} a
+ * @param {Number} b
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.scale = (value, min, max, a, b) => ((b - a) * (value - min) / (max - min)) + a
+
+/**
+ * Returns a shuffled shallow copy of `array` using `random` algorithm.
+ * For example, implementations could leverage {@link syngen.utility.srand|srand()} to produce the same results each time given the same seed value.
+ * @param {Array} array
+ * @param {Function} [random=Math.random]
+ * @static
+ */
+syngen.utility.shuffle = (array, random = Math.random) => {
+  array = [].slice.call(array)
+
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]]
+  }
+
+  return array
+}
+
+/**
+ * Returns the sign of `value` as positive or negative `1`.
+ * @param {Number} value
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.sign = (value) => value >= 0 ? 1 : -1
+
+/**
+ * Returns a pseudo-random, linear congruential, seeded random number generator with variadic `seeds`.
+ * Seeds are prepended with the global {@link syngen.seed} and concatenated with {@link syngen.const.seedSeparator}.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.srandGenerator}
+ * @static
+ */
+syngen.utility.srand = (...seeds) => {
+  const increment = 1,
+    modulus = 34359738337,
+    multiplier = 185852,
+    rotate = (seed) => ((seed * multiplier) + increment) % modulus
+
+  let seed = syngen.utility.hash(
+    syngen.seed.concat(...seeds)
+  )
+
+  seed = rotate(seed)
+
+  /**
+   * A pseudo-random, linear congruential, seeded random number generator that returns a value within `[min, max]`.
+   * @param {Number} [min=0]
+   * @param {Number} [max=1]
+   * @returns {Number}
+   * @type {Function}
+   * @typedef syngen.utility.srandGenerator
+   */
+  const generator = (min = 0, max = 1) => {
+    seed = rotate(seed)
+    return min + ((seed / modulus) * (max - min))
+  }
+
+  return generator
+}
+
+/**
+ * Calculates the musical interval between two frequencies, in cents.
+ * @param {Number} a
+ * @param {Number} b
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.toCents = (a, b) => (b - a) / a * 1200
+
+/**
+ * Converts `gain` to its equivalent decibel value.
+ * @param {Number} gain
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.toDb = (gain) => 10 * Math.log10(gain)
+
+/**
+ * Scales `frequency` by integer multiples so it's an audible frequency within the sub-bass range.
+ * @param {Number} frequency
+ * @param {Number} [subFrequency={@link syngen.const.subFrequency}]
+ * @param {Number} [minFrequency={@link syngen.const.minFrequency}]
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.toSubFrequency = (frequency, subFrequency = syngen.const.subFrequency, minFrequency = syngen.const.minFrequency) => {
+  while (frequency > subFrequency) {
+    frequency /= 2
+  }
+
+  while (frequency &lt; minFrequency) {
+    frequency *= 2
+  }
+
+  return frequency
+}
+
+/**
+ * Generates a universally unique identifier.
+ * @returns {String}
+ * @static
+ */
+syngen.utility.uuid = () => {
+  // SEE: https://stackoverflow.com/a/2117523
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] &amp; 15 >> c / 4).toString(16)
+  )
+}
+
+/**
+ * Wraps `value` around the range `[min, max)` with modular arithmetic.
+ * Beware that `min` is congruent to `max`, so returned values will approach the limit of `max` before wrapping back to `min`.
+ * A way to visualize this operation is that the range repeats along the number line.
+ * @param {Number} value
+ * @param {Number} [min=0]
+ * @param {Number} [max=1]
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.wrap = (value, min = 0, max = 1) => {
+  const range = max - min
+
+  if (value >= max) {
+    return min + ((value - min) % range)
+  }
+
+  if (value &lt; min) {
+    return min + ((value + max) % range)
+  }
+
+  return value
+}
+
+/**
+ * Maps `value` to an alternating oscillation of the range `[min, max]`.
+ * A way to visualize this operation is that the range repeats alternately along the number line, such that `min` goes to `max` back to `min`.
+ * @param {Number} value
+ * @param {Number} [min=0]
+ * @param {Number} [max=1]
+ * @returns {Number}
+ * @static
+ */
+syngen.utility.wrapAlternate = (value, min = 0, max = 1) => {
+  const range = max - min
+  const period = range * 2
+
+  if (value > max) {
+    value -= min
+
+    if (value % period &lt; range) {
+      return min + (value % range)
+    }
+
+    return max - (value % range)
+  }
+
+  if (value &lt; min) {
+    if (Math.abs(value % period) &lt; range) {
+      return max - range + Math.abs(value % range)
+    }
+
+    return min + range - Math.abs(value % range)
+  }
+
+  return value
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="syngen.html">syngen</a></li><li><a href="syngen.audio.html">syngen.audio</a></li><li><a href="syngen.audio.buffer.html">syngen.audio.buffer</a></li><li><a href="syngen.audio.buffer.impulse.html">syngen.audio.buffer.impulse</a></li><li><a href="syngen.audio.buffer.noise.html">syngen.audio.buffer.noise</a></li><li><a href="syngen.audio.circuit.html">syngen.audio.circuit</a></li><li><a href="syngen.audio.effect.html">syngen.audio.effect</a></li><li><a href="syngen.audio.formant.html">syngen.audio.formant</a></li><li><a href="syngen.audio.mixer.html">syngen.audio.mixer</a></li><li><a href="syngen.audio.mixer.auxiliary.html">syngen.audio.mixer.auxiliary</a></li><li><a href="syngen.audio.mixer.auxiliary.reverb.html">syngen.audio.mixer.auxiliary.reverb</a></li><li><a href="syngen.audio.mixer.send.html">syngen.audio.mixer.send</a></li><li><a href="syngen.audio.ramp.html">syngen.audio.ramp</a></li><li><a href="syngen.audio.shape.html">syngen.audio.shape</a></li><li><a href="syngen.audio.synth.html">syngen.audio.synth</a></li><li><a href="syngen.const.html">syngen.const</a></li><li><a href="syngen.input.html">syngen.input</a></li><li><a href="syngen.input.gamepad.html">syngen.input.gamepad</a></li><li><a href="syngen.input.keyboard.html">syngen.input.keyboard</a></li><li><a href="syngen.input.mouse.html">syngen.input.mouse</a></li><li><a href="syngen.loop.html">syngen.loop</a></li><li><a href="syngen.performance.html">syngen.performance</a></li><li><a href="syngen.position.html">syngen.position</a></li><li><a href="syngen.prop.html">syngen.prop</a></li><li><a href="syngen.props.html">syngen.props</a></li><li><a href="syngen.seed.html">syngen.seed</a></li><li><a href="syngen.state.html">syngen.state</a></li><li><a href="syngen.streamer.html">syngen.streamer</a></li><li><a href="syngen.utility.html">syngen.utility</a></li><li><a href="syngen.utility.random.html">syngen.utility.random</a></li><li><a href="syngen.utility.timing.html">syngen.utility.timing</a></li></ul><h3>Interfaces</h3><ul><li><a href="syngen.audio.binaural.html">syngen.audio.binaural</a></li><li><a href="syngen.audio.binaural.monaural.html">syngen.audio.binaural.monaural</a></li><li><a href="syngen.audio.mixer.send.reverb.html">syngen.audio.mixer.send.reverb</a></li><li><a href="syngen.prop.base.html">syngen.prop.base</a></li><li><a href="syngen.prop.null.html">syngen.prop.null</a></li><li><a href="syngen.utility.bitree.html">syngen.utility.bitree</a></li><li><a href="syngen.utility.euler.html">syngen.utility.euler</a></li><li><a href="syngen.utility.machine.html">syngen.utility.machine</a></li><li><a href="syngen.utility.octree.html">syngen.utility.octree</a></li><li><a href="syngen.utility.perlin1d.html">syngen.utility.perlin1d</a></li><li><a href="syngen.utility.perlin2d.html">syngen.utility.perlin2d</a></li><li><a href="syngen.utility.perlin3d.html">syngen.utility.perlin3d</a></li><li><a href="syngen.utility.perlin4d.html">syngen.utility.perlin4d</a></li><li><a href="syngen.utility.pubsub.html">syngen.utility.pubsub</a></li><li><a href="syngen.utility.quadtree.html">syngen.utility.quadtree</a></li><li><a href="syngen.utility.quaternion.html">syngen.utility.quaternion</a></li><li><a href="syngen.utility.vector2d.html">syngen.utility.vector2d</a></li><li><a href="syngen.utility.vector3d.html">syngen.utility.vector3d</a></li></ul><h3>Events</h3><ul><li><a href="syngen.audio.mixer.auxiliary.reverb.html#event:event:activate">syngen.audio.mixer.auxiliary.reverb#activate</a></li><li><a href="syngen.audio.mixer.auxiliary.reverb.html#event:event:deactivate">syngen.audio.mixer.auxiliary.reverb#deactivate</a></li><li><a href="syngen.loop.html#event:event:frame">syngen.loop#frame</a></li><li><a href="syngen.loop.html#event:event:pause">syngen.loop#pause</a></li><li><a href="syngen.loop.html#event:event:resume">syngen.loop#resume</a></li><li><a href="syngen.loop.html#event:event:start">syngen.loop#start</a></li><li><a href="syngen.loop.html#event:event:stop">syngen.loop#stop</a></li><li><a href="syngen.state.html#event:event:export">syngen.state#export</a></li><li><a href="syngen.state.html#event:event:import">syngen.state#import</a></li><li><a href="syngen.state.html#event:event:reset">syngen.state#reset</a></li><li><a href="syngen.utility.machine.html#event:event:after">syngen.utility.machine#after</a></li><li><a href="syngen.utility.machine.html#event:event:after-%257Bevent%257D">syngen.utility.machine#after-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:after-%257Bstate%257D-%257Bevent%257D">syngen.utility.machine#after-{state}-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:before">syngen.utility.machine#before</a></li><li><a href="syngen.utility.machine.html#event:event:before-%257Bevent%257D">syngen.utility.machine#before-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:before-%257Bstate%257D-%257Bevent%257D">syngen.utility.machine#before-{state}-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:enter">syngen.utility.machine#enter</a></li><li><a href="syngen.utility.machine.html#event:event:enter-%257Bstate%257D">syngen.utility.machine#enter-{state}</a></li><li><a href="syngen.utility.machine.html#event:event:exit">syngen.utility.machine#exit</a></li><li><a href="syngen.utility.machine.html#event:event:exit-%257Bstate%257D">syngen.utility.machine#exit-{state}</a></li></ul><h3>Mixins</h3><ul><li><a href="syngen.utility.physical.html">syngen.utility.physical</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

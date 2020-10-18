@@ -5,14 +5,12 @@
   "license": "Unlicense",
   "main": "dist/syngen.js",
   "bugs": "https://github.com/nicross/syngen/issues",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nicross/syngen.git"
-  },
+  "repository": "git://github.com/nicross/syngen.git",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
   },
   "devDependencies": {
+    "del": "^6.0.0",
     "gulp": "^4.0.2",
     "gulp-concat": "^2.6.1",
     "gulp-header": "^2.0.9",
