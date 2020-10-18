@@ -11,10 +11,12 @@ Its event loop fires each frame to update props and core systems.
 Additional utilities provide tools for engineering custom systems that hook into its API to deliver rich experiences.
 
 ### Getting started
-Please clone this repository or install with your favorite package manager:
+Please download or clone this repository, or install with your favorite package manager:
 ```sh
-npm install syngen
+npm install @nicross/syngen
 ```
+
+From there you might `require('syngen')` or include `dist/syngen.min.js`.
 
 ### Example usage
 This library _must_ be used within a browser environment so it can access the `window` object.
