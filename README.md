@@ -13,7 +13,7 @@ Additional utilities provide tools for engineering custom systems that hook into
 ### Getting started
 Please download or clone this repository, or install with your favorite package manager:
 ```sh
-npm install @nicross/syngen
+npm install syngen
 ```
 
 From there you might `require('syngen')` or include `dist/syngen.min.js`.
