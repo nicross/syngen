@@ -133,9 +133,6 @@ syngen.utility.octree.prototype = {
    * If no result is found, then `undefined` is returned.
    * @instance
    * @param {Object} query
-   * @param {Number} query.depth
-   * @param {Number} query.height
-   * @param {Number} query.width
    * @param {Number} query.x
    * @param {Number} query.y
    * @param {Number} query.z
@@ -143,8 +140,8 @@ syngen.utility.octree.prototype = {
    * @returns {Object|undefined}
    */
   find: function (query = {}, radius = Infinity) {
-    if (!('depth' in query &amp;&amp; 'height' in query &amp;&amp; 'width' in query &amp;&amp; 'x' in query &amp;&amp; 'y' in query &amp;&amp; 'z' in query)) {
-      return this
+    if (!('x' in query &amp;&amp; 'y' in query &amp;&amp; 'z' in query)) {
+      return
     }
 
     if (
