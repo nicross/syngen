@@ -129,14 +129,14 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
          * @event syngen.audio.mixer.auxiliary.reverb#event:activate
          */
         pubsub.emit('activate')
-        input.connect(convolver)
+        input.connect(delay)
       } else {
         /**
          * Fired whenever the send is deactivated.
          * @event syngen.audio.mixer.auxiliary.reverb#event:deactivate
          */
         pubsub.emit('deactivate')
-        input.disconnect(convolver)
+        input.disconnect(delay)
       }
 
       return this
