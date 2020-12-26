@@ -52,6 +52,11 @@ Use at your own risk.</p>
 <p><strong>syngen</strong> provides a light wrapper around the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API">Web Audio API</a> for building synths and positioning them as props on a three-dimensional binaural soundstage.
 Its event loop fires each frame to update props and core systems.
 Additional utilities provide tools for engineering custom systems that hook into its API to deliver rich experiences.</p>
+<h3>Getting started</h3>
+<p>Please download or clone this repository, or install with your favorite package manager:</p>
+<pre class="prettyprint source lang-sh"><code>npm install syngen
+</code></pre>
+<p>From there you might <code>require('syngen')</code> or include <code>dist/syngen.min.js</code>.</p>
 <h3>Example usage</h3>
 <p>This library <em>must</em> be used within a browser environment so it can access the <code>window</code> object.
 It can be imported or required as a UMD module, or accessed from the <code>syngen</code> global.</p>
@@ -84,10 +89,14 @@ const instance = syngen.props.create(prototype)
 </ul>
 <h4>See also</h4>
 <ul>
+<li><a href="https://syngen.shiftbacktick.io">API Documentation</a></li>
 <li><a href="https://github.com/nicross/syngen-template">syngen-template</a> - Template for audio game development</li>
 </ul>
 <h2>Development</h2>
-<p>To get started, please  use <a href="https://nodejs.org">npm</a> to install the required dependencies:</p>
+<p>To get started, please clone this repository:</p>
+<pre class="prettyprint source lang-sh"><code>git clone https://github.com/nicross/syngen.git
+</code></pre>
+<p>Then use <a href="https://nodejs.org">npm</a> to install the required dependencies</p>
 <pre class="prettyprint source lang-sh"><code>npm install
 </code></pre>
 <h3>Common tasks</h3>
