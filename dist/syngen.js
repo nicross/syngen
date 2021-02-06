@@ -1,4 +1,4 @@
-/*! syngen v0.1.2 */
+/*! syngen v0.1.3 */
 (() => {
 'use strict'
 
@@ -8813,6 +8813,8 @@ syngen.input.keyboard = (() => {
     },
   }
 })()
+
+document.addEventListener('visibilitychange', () => syngen.input.keyboard.reset())
 
 /**
  * Exposes mouse movement, scrolling, and buttons pressed.
