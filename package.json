@@ -1,6 +1,6 @@
 {
   "name": "syngen",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A spatial sound and synthesis framework for audio game development and experience design.",
   "license": "Unlicense",
   "main": "dist/syngen.js",
