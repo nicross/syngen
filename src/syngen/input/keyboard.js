@@ -47,4 +47,8 @@ syngen.input.keyboard = (() => {
   }
 })()
 
-document.addEventListener('visibilitychange', () => syngen.input.keyboard.reset())
+window.addEventListener('blur', (e) => {
+  if (e.target === window) {
+    syngen.input.keyboard.reset()
+  }
+})
