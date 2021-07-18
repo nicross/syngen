@@ -3,7 +3,6 @@
 Future updates might include:
 
 ## v0.2.0
-- Mouse input fix (breaking change)
 - Simplex noise
 
 ## Wishlist

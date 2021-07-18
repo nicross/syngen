@@ -1,6 +1,7 @@
 # syngen changelog
 ## v0.2.0
 - Improved performance of Perlin noise generation
+- Improved accuracy of mouse input values between frames
 - Breaking changes
   - **Noise pruning.**
   Removed automatic memory management from Perlin noise utilities.

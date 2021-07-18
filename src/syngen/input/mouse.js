@@ -3,6 +3,14 @@
  * @namespace
  */
 syngen.input.mouse = (() => {
+  let memory = {
+    moveX: 0,
+    moveY: 0,
+    wheelX: 0,
+    wheelY: 0,
+    wheelZ: 0,
+  }
+
   let state = {
     button: {},
     moveX: 0,
@@ -95,6 +103,14 @@ syngen.input.mouse = (() => {
      * @memberof syngen.input.mouse
      */
     reset: function () {
+      memory = {
+        moveX: 0,
+        moveY: 0,
+        wheelX: 0,
+        wheelY: 0,
+        wheelZ: 0,
+      }
+
       state = {
         button: {},
         moveX: 0,
@@ -107,20 +123,24 @@ syngen.input.mouse = (() => {
       return this
     },
     /**
-     * Resets scrolling and movement at the next JavaScript event loop.
-     * This allows {@link syngen.loop#event:frame} listeners to query these values before they reset between frames.
+     * Decrements previous from current state values so they reflect only changes since last frame.
      * @listens syngen.loop#event:frame
      * @memberof syngen.input.mouse
      */
     update: function () {
-      setTimeout(() => {
-        state.moveX = 0
-        state.moveY = 0
+      state.moveX -= memory.moveX
+      state.moveY -= memory.moveY
+      state.wheelX -= memory.wheelX
+      state.wheelY -= memory.wheelY
+      state.wheelZ -= memory.wheelZ
 
-        state.wheelX = 0
-        state.wheelY = 0
-        state.wheelZ = 0
-      })
+      memory = {
+        moveX: state.moveX,
+        moveY: state.moveY,
+        wheelX: state.wheelX,
+        wheelY: state.wheelY,
+        wheelZ: state.wheelZ,
+      }
 
       return this
     },
