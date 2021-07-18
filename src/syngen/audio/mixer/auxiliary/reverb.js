@@ -155,7 +155,7 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
       convolver.connect(output)
 
       if (active) {
-        input.connect(convolver)
+        input.connect(delay)
       }
 
       return this
