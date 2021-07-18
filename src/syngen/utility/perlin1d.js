@@ -66,51 +66,11 @@ syngen.utility.perlin1d.prototype = {
     return this.gradient.has(x)
   },
   /**
-   * Frees memory when usage exceeds the prune threshold.
-   * @instance
-   * @private
-   * @see syngen.utility.perlin1d#pruneThreshold
-   */
-  prune: function () {
-    if (this.gradient.size >= this.pruneThreshold) {
-      this.gradient.clear()
-    }
-
-    return this
-  },
-  /**
-   * The maximum vertex count before they must be pruned.
-   * @instance
-   * @private
-   */
-  pruneThreshold: 10 ** 4,
-  /**
-   * Requests a pruning.
-   * @instance
-   * @private
-   */
-  requestPrune: function () {
-    if (this.pruneRequest) {
-      return this
-    }
-
-    this.pruneRequest = requestIdleCallback(() => {
-      this.prune()
-      delete this.pruneRequest
-    })
-
-    return this
-  },
-  /**
    * Clears all generated values.
    * This is especially useful to call when {@link syngen.seed} is set.
    * @instance
    */
   reset: function () {
-    if (this.pruneRequest) {
-      cancelIdleCallback(this.pruneRequest)
-    }
-
     this.gradient.clear()
 
     return this

@@ -75,7 +75,6 @@ syngen.utility.perlin2d.prototype = {
   getGradient: function (x, y, i) {
     if (!this.hasGradient(x, y)) {
       this.generateGradient(x, y)
-      this.requestPrune()
     }
 
     return this.gradient.get(x).get(y)[i]
@@ -98,65 +97,17 @@ syngen.utility.perlin2d.prototype = {
     return xMap.has(y)
   },
   /**
-   * Frees memory when usage exceeds the prune threshold.
-   * @instance
-   * @private
-   * @see syngen.utility.perlin2d#pruneThreshold
-   */
-  prune: function () {
-    this.gradient.forEach((xMap, x) => {
-      if (xMap.size >= this.pruneThreshold) {
-        return this.gradient.delete(x)
-      }
-
-      xMap.forEach((yMap, y) => {
-        if (yMap.size >= this.pruneThreshold) {
-          return xMap.delete(y)
-        }
-      })
-    })
-
-    return this
-  },
-  /**
-   * The maximum vertex count before they must be pruned.
-   * @instance
-   * @private
-   */
-  pruneThreshold: 10 ** 3,
-  /**
    * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.
    * @instance
    * @private
    */
   range: Math.sqrt(2/4),
   /**
-   * Requests a pruning.
-   * @instance
-   * @private
-   */
-  requestPrune: function () {
-    if (this.pruneRequest) {
-      return this
-    }
-
-    this.pruneRequest = requestIdleCallback(() => {
-      this.prune()
-      delete this.pruneRequest
-    })
-
-    return this
-  },
-  /**
    * Clears all generated values.
    * This is especially useful to call when {@link syngen.seed} is set.
    * @instance
    */
   reset: function () {
-    if (this.pruneRequest) {
-      cancelIdleCallback(this.pruneRequest)
-    }
-
     this.gradient.clear()
 
     return this

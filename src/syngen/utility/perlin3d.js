@@ -86,7 +86,6 @@ syngen.utility.perlin3d.prototype = {
   getGradient: function (x, y, z, i) {
     if (!this.hasGradient(x, y, z)) {
       this.generateGradient(x, y, z)
-      this.requestPrune(x, y, z)
     }
 
     return this.gradient.get(x).get(y).get(z)[i]
@@ -116,71 +115,17 @@ syngen.utility.perlin3d.prototype = {
     return yMap.has(z)
   },
   /**
-   * Frees memory when usage exceeds the prune threshold.
-   * @instance
-   * @private
-   * @see syngen.utility.perlin3d#pruneThreshold
-   */
-  prune: function () {
-    this.gradient.forEach((xMap, x) => {
-      if (xMap.size >= this.pruneThreshold) {
-        return this.gradient.delete(x)
-      }
-
-      xMap.forEach((yMap, y) => {
-        if (yMap.size >= this.pruneThreshold) {
-          return xMap.delete(y)
-        }
-
-        yMap.forEach((zMap, z) => {
-          if (zMap.size >= this.pruneThreshold) {
-            return yMap.delete(z)
-          }
-        })
-      })
-    })
-
-    return this
-  },
-  /**
-   * The maximum vertex count before they must be pruned.
-   * @instance
-   * @private
-   */
-  pruneThreshold: 10 ** 2,
-  /**
    * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.
    * @instance
    * @private
    */
   range: Math.sqrt(3/4),
   /**
-   * Requests a pruning.
-   * @instance
-   * @private
-   */
-  requestPrune: function () {
-    if (this.pruneRequest) {
-      return this
-    }
-
-    this.pruneRequest = requestIdleCallback(() => {
-      this.prune()
-      delete this.pruneRequest
-    })
-
-    return this
-  },
-  /**
    * Clears all generated values.
    * This is especially useful to call when {@link syngen.seed} is set.
    * @instance
    */
   reset: function () {
-    if (this.pruneRequest) {
-      cancelIdleCallback(this.pruneRequest)
-    }
-
     this.gradient.clear()
 
     return this

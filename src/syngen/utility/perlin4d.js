@@ -95,7 +95,6 @@ syngen.utility.perlin4d.prototype = {
   getGradient: function (x, y, z, t, i) {
     if (!this.hasGradient(x, y, z, t)) {
       this.generateGradient(x, y, z, t)
-      this.requestPrune(x, y, z, t)
     }
 
     return this.gradient.get(x).get(y).get(z).get(t)[i]
@@ -132,77 +131,17 @@ syngen.utility.perlin4d.prototype = {
     return zMap.has(t)
   },
   /**
-   * Frees memory when usage exceeds the prune threshold.
-   * @instance
-   * @private
-   * @see syngen.utility.perlin4d#pruneThreshold
-   */
-  prune: function () {
-    this.gradient.forEach((xMap, x) => {
-      if (xMap.size >= this.pruneThreshold) {
-        return this.gradient.delete(x)
-      }
-
-      xMap.forEach((yMap, y) => {
-        if (yMap.size >= this.pruneThreshold) {
-          return xMap.delete(y)
-        }
-
-        yMap.forEach((zMap, z) => {
-          if (zMap.size >= this.pruneThreshold) {
-            return yMap.delete(z)
-          }
-
-          zMap.forEach((tMap, t) => {
-            if (tMap.size >= this.pruneThreshold) {
-              return zMap.delete(t)
-            }
-          })
-        })
-      })
-    })
-
-    return this
-  },
-  /**
-   * The maximum vertex count before they must be pruned.
-   * @instance
-   * @private
-   */
-  pruneThreshold: 10 ** 2,
-  /**
    * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.
    * @instance
    * @private
    */
   range: Math.sqrt(4/4),
   /**
-   * Requests a pruning.
-   * @instance
-   * @private
-   */
-  requestPrune: function () {
-    if (this.pruneRequest) {
-      return this
-    }
-
-    this.pruneRequest = requestIdleCallback(() => {
-      this.prune()
-      delete this.pruneRequest
-    })
-
-    return this
-  },
-  /**
    * Clears all generated values.
    * This is especially useful to call when {@link syngen.seed} is set.
    * @instance
    */
   reset: function () {
-    if (this.pruneRequest) {
-      cancelIdleCallback(this.pruneRequest)
-    }
-
     this.gradient.clear()
 
     return this
