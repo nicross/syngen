@@ -38,16 +38,10 @@ syngen.utility.perlin2d.prototype = {
   generateGradient: function (x, y) {
     const srand = syngen.utility.srand('perlin', ...this.seed, x, y)
 
-    if (!this.gradient.has(x)) {
-      this.gradient.set(x, new Map())
-    }
-
-    this.gradient.get(x).set(y, [
+    return [
       srand(-1, 1),
       srand(-1, 1),
-    ])
-
-    return this
+    ]
   },
   /**
    * Calculates the dot product between `(dx, dy)` and the value at `(xi, yi)`.
@@ -74,28 +68,21 @@ syngen.utility.perlin2d.prototype = {
    * @returns {Number}
    */
   getGradient: function (x, y) {
-    if (!this.hasGradient(x, y)) {
-      this.generateGradient(x, y)
-    }
-
-    return this.gradient.get(x).get(y)
-  },
-  /**
-   * Returns whether a gradient exists for `(x, y)`.
-   * @instance
-   * @param {Number} x
-   * @param {Number} y
-   * @private
-   * @returns {Boolean}
-   */
-  hasGradient: function (x, y) {
-    const xMap = this.gradient.get(x)
+    let xMap = this.gradient.get(x)
 
     if (!xMap) {
-      return false
+      xMap = new Map()
+      this.gradient.set(x, xMap)
     }
 
-    return xMap.has(y)
+    let gradient = xMap.get(y)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x, y)
+      xMap.set(y, gradient)
+    }
+
+    return gradient
   },
   /**
    * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.

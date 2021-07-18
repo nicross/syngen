@@ -40,30 +40,12 @@ syngen.utility.perlin4d.prototype = {
   generateGradient: function (x, y, z, t) {
     const srand = syngen.utility.srand('perlin', ...this.seed, x, y, z, t)
 
-    if (!this.gradient.has(x)) {
-      this.gradient.set(x, new Map())
-    }
-
-    const xMap = this.gradient.get(x)
-
-    if (!xMap.has(y)) {
-      xMap.set(y, new Map())
-    }
-
-    const yMap = xMap.get(y)
-
-    if (!yMap.has(z)) {
-      yMap.set(z, new Map())
-    }
-
-    yMap.get(z).set(t, [
+    return [
       srand(-1, 1),
       srand(-1, 1),
       srand(-1, 1),
       srand(-1, 1),
-    ])
-
-    return this
+    ]
   },
   /**
    * Calculates the dot product between `(dx, dy, dz, dt)` and the value at `(xi, yi, zi, ti)`.
@@ -96,42 +78,35 @@ syngen.utility.perlin4d.prototype = {
    * @returns {Number}
    */
   getGradient: function (x, y, z, t) {
-    if (!this.hasGradient(x, y, z, t)) {
-      this.generateGradient(x, y, z, t)
-    }
-
-    return this.gradient.get(x).get(y).get(z).get(t)
-  },
-  /**
-   * Returns whether a value exists for `(x, y, z, t)`.
-   * @instance
-   * @param {Number} x
-   * @param {Number} y
-   * @param {Number} z
-   * @param {Number} t
-   * @private
-   * @returns {Boolean}
-   */
-  hasGradient: function (x, y, z, t) {
-    const xMap = this.gradient.get(x)
+    let xMap = this.gradient.get(x)
 
     if (!xMap) {
-      return false
+      xMap = new Map()
+      this.gradient.set(x, xMap)
     }
 
-    const yMap = xMap.get(y)
+    let yMap = xMap.get(y)
 
     if (!yMap) {
-      return false
+      yMap = new Map()
+      xMap.set(y, yMap)
     }
 
-    const zMap = yMap.get(z)
+    let zMap = yMap.get(z)
 
     if (!zMap) {
-      return false
+      zMap = new Map()
+      yMap.set(z, zMap)
     }
 
-    return zMap.has(t)
+    let gradient = zMap.get(t)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x, y, z, t)
+      zMap.set(t, gradient)
+    }
+
+    return gradient
   },
   /**
    * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.

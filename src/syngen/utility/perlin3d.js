@@ -39,23 +39,11 @@ syngen.utility.perlin3d.prototype = {
   generateGradient: function (x, y, z) {
     const srand = syngen.utility.srand('perlin', ...this.seed, x, y, z)
 
-    if (!this.gradient.has(x)) {
-      this.gradient.set(x, new Map())
-    }
-
-    const xMap = this.gradient.get(x)
-
-    if (!xMap.has(y)) {
-      xMap.set(y, new Map())
-    }
-
-    xMap.get(y).set(z, [
+    return [
       srand(-1, 1),
       srand(-1, 1),
       srand(-1, 1),
-    ])
-
-    return this
+    ]
   },
   /**
    * Calculates the dot product between `(dx, dy, dz)` and the value at `(xi, yi, zi)`.
@@ -86,35 +74,28 @@ syngen.utility.perlin3d.prototype = {
    * @returns {Number}
    */
   getGradient: function (x, y, z) {
-    if (!this.hasGradient(x, y, z)) {
-      this.generateGradient(x, y, z)
-    }
-
-    return this.gradient.get(x).get(y).get(z)
-  },
-  /**
-   * Returns whether a gradient exists for `(x, y, z)`.
-   * @instance
-   * @param {Number} x
-   * @param {Number} y
-   * @param {Number} z
-   * @private
-   * @returns {Boolean}
-   */
-  hasGradient: function (x, y, z) {
-    const xMap = this.gradient.get(x)
+    let xMap = this.gradient.get(x)
 
     if (!xMap) {
-      return false
+      xMap = new Map()
+      this.gradient.set(x, xMap)
     }
 
-    const yMap = xMap.get(y)
+    let yMap = xMap.get(y)
 
     if (!yMap) {
-      return false
+      yMap = new Map()
+      xMap.set(y, yMap)
     }
 
-    return yMap.has(z)
+    let gradient = yMap.get(z)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x, y, z)
+      yMap.set(z, gradient)
+    }
+
+    return gradient
   },
   /**
    * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.

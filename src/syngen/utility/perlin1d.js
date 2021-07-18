@@ -37,8 +37,8 @@ syngen.utility.perlin1d.prototype = {
    */
   generateGradient: function (x) {
     const srand = syngen.utility.srand('perlin', ...this.seed, x)
-    this.gradient.set(x, srand(0, 1))
-    return this
+
+    return srand(0, 1)
   },
   /**
    * Retrieves the value at `x`.
@@ -48,21 +48,14 @@ syngen.utility.perlin1d.prototype = {
    * @returns {Number}
    */
   getGradient: function (x) {
-    if (!this.hasGradient(x)) {
-      this.generateGradient(x)
+    let gradient = this.gradient.get(x)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x)
+      this.gradient.set(x, gradient)
     }
 
-    return this.gradient.get(x)
-  },
-  /**
-   * Returns whether a value exists for `x`.
-   * @instance
-   * @param {Number} x
-   * @private
-   * @returns {Boolean}
-   */
-  hasGradient: function (x) {
-    return this.gradient.has(x)
+    return gradient
   },
   /**
    * Clears all generated values.
