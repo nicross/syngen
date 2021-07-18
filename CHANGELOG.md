@@ -1,13 +1,25 @@
 # syngen changelog
 ## v0.2.0
 - Improved performance of Perlin noise generation
-- Breaking changes
-  - **Mouse input.**
-  Improved accuracy of mouse input by memoizing values between frames.
-  Implementations might have previously used a hack to derive the correct values.
-  - **Noise pruning.**
-  Removed automatic memory management from Perlin noise utilities.
-  Implementations should call `reset()` manually when memory becomes an issue.
-  - **Reverb routing.**
-  Fixed a routing issue where changing reverb impulses bypassed pre-delay.
-  Implementations may need to increase reverb levels by 3 decibels to achieve the same loudness.
+- **[BREAKING]**
+Improved accuracy of mouse input by memoizing values between frames.
+Implementations can remove any hacks used to derive the correct values.
+- **[BREAKING]**
+Removed automatic memory management from Perlin noise utilities.
+Implementations should call `reset()` manually whenever memory becomes an issue.
+- **[BREAKING]**
+Fixed a routing issue where changing reverb impulses bypassed pre-delay.
+Implementations may increase the reverb gain by 3 decibels to achieve the same loudness.
+
+## v0.1.4
+- Fixed keypresses not clearing within `syngen.input.keyboard` when the window loses focus
+
+## v0.1.3
+This release was skipped due to a publishing error.
+
+## v0.1.2
+- Removed `height` and `width` as required parameters from `syngen.utility.quadtree.prototype.find()`
+- Removed `depth`, `height`, and `width` as required parameters from `syngen.utility.octree.prototype.find()`
+
+## v0.1.1
+- Fixed an exception thrown when calling `syngen.audio.mixer.auxiliary.reverb.setActive()`
