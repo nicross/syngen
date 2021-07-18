@@ -29,7 +29,7 @@ syngen.utility.perlin4d.prototype = {
     return this
   },
   /**
-   * Generates the value at `(x, y, z, t)`.
+   * Generates the gradient at `(x, y, z, t)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
@@ -80,24 +80,27 @@ syngen.utility.perlin4d.prototype = {
     const dt = t - ti,
       dx = x - xi,
       dy = y - yi,
-      dz = z - zi
+      dz = z - zi,
+      gradient = this.getGradient(xi, yi, zi, ti)
 
-    return (dt * this.getGradient(xi, yi, zi, ti, 3)) + (dx * this.getGradient(xi, yi, zi, ti, 0)) + (dy * this.getGradient(xi, yi, zi, ti, 1)) + (dz * this.getGradient(xi, yi, zi, ti, 2))
+    return (dx * gradient[0]) + (dy * gradient[1]) + (dz * gradient[2]) + (dt * gradient[3])
   },
   /**
-   * Retrieves the value at `(x, y, z, t)` and index `i`.
+   * Retrieves the gradient at `(x, y, z, t)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
+   * @param {Number} z
+   * @param {Number} t
    * @private
    * @returns {Number}
    */
-  getGradient: function (x, y, z, t, i) {
+  getGradient: function (x, y, z, t) {
     if (!this.hasGradient(x, y, z, t)) {
       this.generateGradient(x, y, z, t)
     }
 
-    return this.gradient.get(x).get(y).get(z).get(t)[i]
+    return this.gradient.get(x).get(y).get(z).get(t)
   },
   /**
    * Returns whether a value exists for `(x, y, z, t)`.

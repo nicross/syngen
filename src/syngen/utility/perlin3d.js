@@ -29,7 +29,7 @@ syngen.utility.perlin3d.prototype = {
     return this
   },
   /**
-   * Generates the value at `(x, y, z)`.
+   * Generates the gradient at `(x, y, z)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
@@ -71,27 +71,29 @@ syngen.utility.perlin3d.prototype = {
   getDotProduct: function (xi, yi, zi, x, y, z) {
     const dx = x - xi,
       dy = y - yi,
-      dz = z - zi
+      dz = z - zi,
+      gradient = this.getGradient(xi, yi, zi)
 
-    return (dx * this.getGradient(xi, yi, zi, 0)) + (dy * this.getGradient(xi, yi, zi, 1)) + (dz * this.getGradient(xi, yi, zi, 2))
+    return (dx * gradient[0]) + (dy * gradient[1]) + (dz * gradient[2])
   },
   /**
-   * Retrieves the value at `(x, y, z)` and index `i`.
+   * Retrieves the gradient at `(x, y, z)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
+   * @param {Number} z
    * @private
    * @returns {Number}
    */
-  getGradient: function (x, y, z, i) {
+  getGradient: function (x, y, z) {
     if (!this.hasGradient(x, y, z)) {
       this.generateGradient(x, y, z)
     }
 
-    return this.gradient.get(x).get(y).get(z)[i]
+    return this.gradient.get(x).get(y).get(z)
   },
   /**
-   * Returns whether a value exists for `(x, y, z)`.
+   * Returns whether a gradient exists for `(x, y, z)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
