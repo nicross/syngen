@@ -50,7 +50,6 @@ syngen.utility.perlin1d.prototype = {
   getGradient: function (x) {
     if (!this.hasGradient(x)) {
       this.generateGradient(x)
-      this.requestPrune()
     }
 
     return this.gradient.get(x)
