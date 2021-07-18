@@ -45,8 +45,10 @@ Please browse the `example` directory or the projects below for more elaborate r
 ### Example projects
 - [Audo](https://github.com/nicross/audo) – Endless audio racing game
 - [Auraboros](https://github.com/nicross/auraboros) – Endless audio bullet hell
+- [E.X.O.](https://github.com/nicross/exo) – Exoskeletal exoplanet explorer
 - [Kaleidophone](https://github.com/nicross/kaleidophone) – Relaxing generative audio toy
-- [S.E.A.](https://github.com/nicross/sea) – Relaxing audio watercraft simulator
+- [S.E.A.](https://github.com/nicross/sea) – Chill watercraft simulator
+- [Wurmus](https://github.com/nicross/wurmus) – Endless snake-like game of tag
 
 #### Commercial projects
 - [soundStrider](https://soundstrider.shiftbacktick.io) – Psychedelic audio exploration game
