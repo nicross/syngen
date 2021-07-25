@@ -1,5 +1,6 @@
 # syngen changelog
 ## v0.2.0
+- Added utilities for generating seeded OpenSimplex noise in 2D, 3D, and 4D
 - Improved performance of Perlin noise generation
 - **[BREAKING]**
 Improved accuracy of mouse input by memoizing values between frames.
