@@ -92,6 +92,10 @@ syngen.utility.perlin1d.prototype = {
       v0 = this.getGradient(x0),
       v1 = this.getGradient(x1)
 
-    return syngen.utility.lerp(v0, v1, dx)
+    return syngen.utility.clamp(
+      syngen.utility.lerp(v0, v1, dx),
+      0,
+      1
+    )
   },
 }

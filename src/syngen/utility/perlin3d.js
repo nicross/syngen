@@ -98,7 +98,7 @@ syngen.utility.perlin3d.prototype = {
     return gradient
   },
   /**
-   * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.
+   * Range (plus and minus) to scale the output such that it's normalized to `[0, 1]`.
    * @instance
    * @private
    */
@@ -174,6 +174,10 @@ syngen.utility.perlin3d.prototype = {
       dz
     )
 
-    return syngen.utility.scale(value, -this.range, this.range, 0, 1)
+    return syngen.utility.clamp(
+      syngen.utility.scale(value, -this.range, this.range, 0, 1),
+      0,
+      1
+    )
   },
 }
