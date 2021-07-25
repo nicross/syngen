@@ -10,11 +10,13 @@
     <p>FPS: <span id="fps">0</span></p>
 
     <script>
-      const seed = 'test',
-        type = 'simplex4d'
+      const noise = syngen.utility.createNoiseWithOctaves({
+        octaves: 1,
+        seed: 'test',
+        type: syngen.utility.simplex4d,
+      })
 
-      const noise = syngen.utility[type].create(seed),
-        size = 4,
+      const size = 4,
         scale = 100,
         step = 1/60
 
