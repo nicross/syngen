@@ -29,7 +29,7 @@ syngen.utility.perlin4d.prototype = {
     return this
   },
   /**
-   * Generates the gradient at `(x, y, z, t)`.
+   * Generates the gradient at `(x, y, z, w)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
@@ -37,8 +37,8 @@ syngen.utility.perlin4d.prototype = {
    * @param {Number} t
    * @private
    */
-  generateGradient: function (x, y, z, t) {
-    const srand = syngen.utility.srand('perlin', ...this.seed, x, y, z, t)
+  generateGradient: function (x, y, z, w) {
+    const srand = syngen.utility.srand('perlin', ...this.seed, x, y, z, w)
 
     return [
       srand(-1, 1),
@@ -48,7 +48,7 @@ syngen.utility.perlin4d.prototype = {
     ]
   },
   /**
-   * Calculates the dot product between `(dx, dy, dz, dt)` and the value at `(xi, yi, zi, ti)`.
+   * Calculates the dot product between `(dx, dy, dz, dw)` and the value at `(xi, yi, zi, wi)`.
    * @instance
    * @param {Number} xi
    * @param {Number} yi
@@ -58,17 +58,17 @@ syngen.utility.perlin4d.prototype = {
    * @param {Number} z
    * @private
    */
-  getDotProduct: function (xi, yi, zi, ti, x, y, z, t) {
-    const dt = t - ti,
+  getDotProduct: function (xi, yi, zi, wi, x, y, z, w) {
+    const dw = w - wi,
       dx = x - xi,
       dy = y - yi,
       dz = z - zi,
-      gradient = this.getGradient(xi, yi, zi, ti)
+      gradient = this.getGradient(xi, yi, zi, wi)
 
-    return (dx * gradient[0]) + (dy * gradient[1]) + (dz * gradient[2]) + (dt * gradient[3])
+    return (dx * gradient[0]) + (dy * gradient[1]) + (dz * gradient[2]) + (dw * gradient[3])
   },
   /**
-   * Retrieves the gradient at `(x, y, z, t)`.
+   * Retrieves the gradient at `(x, y, z, w)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
@@ -77,7 +77,7 @@ syngen.utility.perlin4d.prototype = {
    * @private
    * @returns {Number}
    */
-  getGradient: function (x, y, z, t) {
+  getGradient: function (x, y, z, w) {
     let xMap = this.gradient.get(x)
 
     if (!xMap) {
@@ -99,11 +99,11 @@ syngen.utility.perlin4d.prototype = {
       yMap.set(z, zMap)
     }
 
-    let gradient = zMap.get(t)
+    let gradient = zMap.get(w)
 
     if (!gradient) {
-      gradient = this.generateGradient(x, y, z, t)
-      zMap.set(t, gradient)
+      gradient = this.generateGradient(x, y, z, w)
+      zMap.set(w, gradient)
     }
 
     return gradient
@@ -136,7 +136,7 @@ syngen.utility.perlin4d.prototype = {
     return (value ** 3) * (value * ((value * 6) - 15) + 10)
   },
   /**
-   * Calculates the value at `(x, y, z, t)`.
+   * Calculates the value at `(x, y, z, w)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
@@ -144,9 +144,9 @@ syngen.utility.perlin4d.prototype = {
    * @param {Number} t
    * @returns {Number}
    */
-  value: function (x, y, z, t) {
-    const t0 = Math.floor(t),
-      t1 = t0 + 1,
+  value: function (x, y, z, w) {
+    const w0 = Math.floor(w),
+      w1 = w0 + 1,
       x0 = Math.floor(x),
       x1 = x0 + 1,
       y0 = Math.floor(y),
@@ -154,7 +154,7 @@ syngen.utility.perlin4d.prototype = {
       z0 = Math.floor(z),
       z1 = z0 + 1
 
-    const dt = this.smooth(t - t0),
+    const dw = this.smooth(w - w0),
       dx = this.smooth(x - x0),
       dy = this.smooth(y - y0),
       dz = this.smooth(z - z0)
@@ -163,26 +163,26 @@ syngen.utility.perlin4d.prototype = {
       syngen.utility.lerp(
         syngen.utility.lerp(
           syngen.utility.lerp(
-            this.getDotProduct(x0, y0, z0, t0, x, y, z, t),
-            this.getDotProduct(x1, y0, z0, t0, x, y, z, t),
+            this.getDotProduct(x0, y0, z0, w0, x, y, z, w),
+            this.getDotProduct(x1, y0, z0, w0, x, y, z, w),
             dx
           ),
           syngen.utility.lerp(
-            this.getDotProduct(x0, y1, z0, t0, x, y, z, t),
-            this.getDotProduct(x1, y1, z0, t0, x, y, z, t),
+            this.getDotProduct(x0, y1, z0, w0, x, y, z, w),
+            this.getDotProduct(x1, y1, z0, w0, x, y, z, w),
             dx
           ),
           dy
         ),
         syngen.utility.lerp(
           syngen.utility.lerp(
-            this.getDotProduct(x0, y0, z1, t0, x, y, z, t),
-            this.getDotProduct(x1, y0, z1, t0, x, y, z, t),
+            this.getDotProduct(x0, y0, z1, w0, x, y, z, w),
+            this.getDotProduct(x1, y0, z1, w0, x, y, z, w),
             dx
           ),
           syngen.utility.lerp(
-            this.getDotProduct(x0, y1, z1, t0, x, y, z, t),
-            this.getDotProduct(x1, y1, z1, t0, x, y, z, t),
+            this.getDotProduct(x0, y1, z1, w0, x, y, z, w),
+            this.getDotProduct(x1, y1, z1, w0, x, y, z, w),
             dx
           ),
           dy
@@ -192,33 +192,33 @@ syngen.utility.perlin4d.prototype = {
       syngen.utility.lerp(
         syngen.utility.lerp(
           syngen.utility.lerp(
-            this.getDotProduct(x0, y0, z0, t1, x, y, z, t),
-            this.getDotProduct(x1, y0, z0, t1, x, y, z, t),
+            this.getDotProduct(x0, y0, z0, w1, x, y, z, w),
+            this.getDotProduct(x1, y0, z0, w1, x, y, z, w),
             dx
           ),
           syngen.utility.lerp(
-            this.getDotProduct(x0, y1, z0, t1, x, y, z, t),
-            this.getDotProduct(x1, y1, z0, t1, x, y, z, t),
+            this.getDotProduct(x0, y1, z0, w1, x, y, z, w),
+            this.getDotProduct(x1, y1, z0, w1, x, y, z, w),
             dx
           ),
           dy
         ),
         syngen.utility.lerp(
           syngen.utility.lerp(
-            this.getDotProduct(x0, y0, z1, t1, x, y, z, t),
-            this.getDotProduct(x1, y0, z1, t1, x, y, z, t),
+            this.getDotProduct(x0, y0, z1, w1, x, y, z, w),
+            this.getDotProduct(x1, y0, z1, w1, x, y, z, w),
             dx
           ),
           syngen.utility.lerp(
-            this.getDotProduct(x0, y1, z1, t1, x, y, z, t),
-            this.getDotProduct(x1, y1, z1, t1, x, y, z, t),
+            this.getDotProduct(x0, y1, z1, w1, x, y, z, w),
+            this.getDotProduct(x1, y1, z1, w1, x, y, z, w),
             dx
           ),
           dy
         ),
         dz
       ),
-      dt
+      dw
     )
 
     return syngen.utility.clamp(
