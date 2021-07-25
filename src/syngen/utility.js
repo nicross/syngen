@@ -201,7 +201,7 @@ syngen.utility.createNoiseWithOctaves = ({
   return {
     layer: layers,
     reset: function () {
-      for (let layer of this.layers) {
+      for (let layer of this.layer) {
         layer.reset()
       }
       return this
@@ -235,9 +235,15 @@ syngen.utility.createNoiseWithOctaves = ({
  * @returns {Object}
  * @static
  */
-syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
-  const generator = syngen.utility.createNoiseWithOctaves(...args)
+syngen.utility.createPerlinWithOctaves = (type, seed, octaves) => {
+  const generator = syngen.utility.createNoiseWithOctaves({
+    octaves,
+    seed,
+    type,
+  })
+
   generator.perlins = generator.layers
+
   return generator
 }
 
