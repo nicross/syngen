@@ -110,7 +110,7 @@ syngen.utility.simplex4d.prototype = {
   range: 1/108,
   /**
    * Clears all generated values.
-   * This is especially useful to call when {@link syngen.seed} is set.
+   * Implementations are encouraged to call this whenever {@link syngen.seed} is set, {@link syngen.state} is reset, or memory becomes an issue.
    * @instance
    */
   reset: function () {

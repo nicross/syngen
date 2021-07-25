@@ -116,7 +116,7 @@ syngen.utility.perlin4d.prototype = {
   range: Math.sqrt(4/4),
   /**
    * Clears all generated values.
-   * This is especially useful to call when {@link syngen.seed} is set.
+   * Implementations are encouraged to call this whenever {@link syngen.seed} is set, {@link syngen.state} is reset, or memory becomes an issue.
    * @instance
    */
   reset: function () {
