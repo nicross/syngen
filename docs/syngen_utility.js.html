@@ -188,34 +188,49 @@ syngen.utility.closest = function (x, values = []) {
 }
 
 /**
- * Instantiates `octaves` Perlin noise generators of `type` with `seed` and returns a wrapper object that calculates their combined values.
- * @param {syngen.utility.perlin1d|syngen.utility.perlin2d|syngen.utility.perlin3d|syngen.utility.perlin4d} type
- *   Must be a Perlin noise utility, and not a factory method or an instance.
- * @param {*} seed
- * @param {Number} [octaves=2]
+ * Instantiates `octaves` noise generators of `type` with `seed` and returns a wrapper object that calculates their combined values.
+ * @param {Object} options
+ * @param {Number} [options.octaves=2]
+ * @param {*} options.seed
+ * @param {syngen.utility.perlin1d|syngen.utility.perlin2d|syngen.utility.perlin3d|syngen.utility.perlin4d|syngen.utility.simplex2d|syngen.utility.simplex3d|syngen.utility.simplex4d} options.type
+ *   Must be reference to a noise utility, and not a factory method or an instance.
  * @returns {Object}
  * @static
- * @todo Port into individual perlin utilities for clarity
+ * @todo Port into individual noise utilities for clarity and simplicity
  */
-syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
+syngen.utility.createNoiseWithOctaves = ({
+  seed,
+  octaves = 0,
+  type,
+} = {}) => {
+  if (!type || !type.create || !type.prototype || !type.prototype.reset || !type.prototype.value) {
+    throw new Error('Incorrect type. Please pass a noise utility by reference, e.g. syngen.utility.simplex4d.')
+  }
+
+  octaves = Math.round(octaves)
+
+  if (octaves &lt; 2) {
+    return type.create(seed)
+  }
+
   const compensation = 1 / (1 - (2 ** -octaves)),
-    perlins = []
+    layers = []
 
   if (!Array.isArray(seed)) {
     seed = [seed]
   }
 
   for (let i = 0; i &lt; octaves; i += 1) {
-    perlins.push(
+    layers.push(
       type.create(...seed, 'octave', i)
     )
   }
 
   return {
-    perlin: perlins,
+    layer: layers,
     reset: function () {
-      for (let perlin of this.perlin) {
-        perlin.reset()
+      for (let layer of this.layer) {
+        layer.reset()
       }
       return this
     },
@@ -224,8 +239,9 @@ syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
         frequency = 1,
         sum = 0
 
-      for (let perlin of this.perlin) {
-        sum += perlin.value(...args.map((value) => value * frequency)) * amplitude
+      for (let layer of this.layer) {
+        // XXX: Assumes up to four arguments (4D noise) for optimal performance
+        sum += layer.value(args[0] * frequency, args[1] * frequency, args[2] * frequency, args[3] * frequency) * amplitude
         amplitude /= 2
         frequency *= 2
       }
@@ -235,6 +251,28 @@ syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
       return sum
     },
   }
+}
+
+/**
+ * Instantiates `octaves` noise generators of `type` with `seed` and returns a wrapper object that calculates their combined values.
+ * @deprecated Replaced with {@link syngen.utility.createNoiseWithOctaves}.
+ * @param {syngen.utility.perlin1d|syngen.utility.perlin2d|syngen.utility.perlin3d|syngen.utility.perlin4d|syngen.utility.simplex2d|syngen.utility.simplex3d|syngen.utility.simplex4d} type
+ *   Must be reference to a noise utility, and not a factory method or an instance.
+ * @param {*} seed
+ * @param {Number} [octaves=2]
+ * @returns {Object}
+ * @static
+ */
+syngen.utility.createPerlinWithOctaves = (type, seed, octaves) => {
+  const generator = syngen.utility.createNoiseWithOctaves({
+    octaves,
+    seed,
+    type,
+  })
+
+  generator.perlins = generator.layers
+
+  return generator
 }
 
 /**
@@ -845,7 +883,7 @@ syngen.utility.wrapAlternate = (value, min = 0, max = 1) => {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="syngen.html">syngen</a></li><li><a href="syngen.audio.html">syngen.audio</a></li><li><a href="syngen.audio.buffer.html">syngen.audio.buffer</a></li><li><a href="syngen.audio.buffer.impulse.html">syngen.audio.buffer.impulse</a></li><li><a href="syngen.audio.buffer.noise.html">syngen.audio.buffer.noise</a></li><li><a href="syngen.audio.circuit.html">syngen.audio.circuit</a></li><li><a href="syngen.audio.effect.html">syngen.audio.effect</a></li><li><a href="syngen.audio.formant.html">syngen.audio.formant</a></li><li><a href="syngen.audio.mixer.html">syngen.audio.mixer</a></li><li><a href="syngen.audio.mixer.auxiliary.html">syngen.audio.mixer.auxiliary</a></li><li><a href="syngen.audio.mixer.auxiliary.reverb.html">syngen.audio.mixer.auxiliary.reverb</a></li><li><a href="syngen.audio.mixer.send.html">syngen.audio.mixer.send</a></li><li><a href="syngen.audio.ramp.html">syngen.audio.ramp</a></li><li><a href="syngen.audio.shape.html">syngen.audio.shape</a></li><li><a href="syngen.audio.synth.html">syngen.audio.synth</a></li><li><a href="syngen.const.html">syngen.const</a></li><li><a href="syngen.input.html">syngen.input</a></li><li><a href="syngen.input.gamepad.html">syngen.input.gamepad</a></li><li><a href="syngen.input.keyboard.html">syngen.input.keyboard</a></li><li><a href="syngen.input.mouse.html">syngen.input.mouse</a></li><li><a href="syngen.loop.html">syngen.loop</a></li><li><a href="syngen.performance.html">syngen.performance</a></li><li><a href="syngen.position.html">syngen.position</a></li><li><a href="syngen.prop.html">syngen.prop</a></li><li><a href="syngen.props.html">syngen.props</a></li><li><a href="syngen.seed.html">syngen.seed</a></li><li><a href="syngen.state.html">syngen.state</a></li><li><a href="syngen.streamer.html">syngen.streamer</a></li><li><a href="syngen.utility.html">syngen.utility</a></li><li><a href="syngen.utility.random.html">syngen.utility.random</a></li><li><a href="syngen.utility.timing.html">syngen.utility.timing</a></li></ul><h3>Interfaces</h3><ul><li><a href="syngen.audio.binaural.html">syngen.audio.binaural</a></li><li><a href="syngen.audio.binaural.monaural.html">syngen.audio.binaural.monaural</a></li><li><a href="syngen.audio.mixer.send.reverb.html">syngen.audio.mixer.send.reverb</a></li><li><a href="syngen.prop.base.html">syngen.prop.base</a></li><li><a href="syngen.prop.null.html">syngen.prop.null</a></li><li><a href="syngen.utility.bitree.html">syngen.utility.bitree</a></li><li><a href="syngen.utility.euler.html">syngen.utility.euler</a></li><li><a href="syngen.utility.machine.html">syngen.utility.machine</a></li><li><a href="syngen.utility.octree.html">syngen.utility.octree</a></li><li><a href="syngen.utility.perlin1d.html">syngen.utility.perlin1d</a></li><li><a href="syngen.utility.perlin2d.html">syngen.utility.perlin2d</a></li><li><a href="syngen.utility.perlin3d.html">syngen.utility.perlin3d</a></li><li><a href="syngen.utility.perlin4d.html">syngen.utility.perlin4d</a></li><li><a href="syngen.utility.pubsub.html">syngen.utility.pubsub</a></li><li><a href="syngen.utility.quadtree.html">syngen.utility.quadtree</a></li><li><a href="syngen.utility.quaternion.html">syngen.utility.quaternion</a></li><li><a href="syngen.utility.vector2d.html">syngen.utility.vector2d</a></li><li><a href="syngen.utility.vector3d.html">syngen.utility.vector3d</a></li></ul><h3>Events</h3><ul><li><a href="syngen.audio.mixer.auxiliary.reverb.html#event:event:activate">syngen.audio.mixer.auxiliary.reverb#activate</a></li><li><a href="syngen.audio.mixer.auxiliary.reverb.html#event:event:deactivate">syngen.audio.mixer.auxiliary.reverb#deactivate</a></li><li><a href="syngen.loop.html#event:event:frame">syngen.loop#frame</a></li><li><a href="syngen.loop.html#event:event:pause">syngen.loop#pause</a></li><li><a href="syngen.loop.html#event:event:resume">syngen.loop#resume</a></li><li><a href="syngen.loop.html#event:event:start">syngen.loop#start</a></li><li><a href="syngen.loop.html#event:event:stop">syngen.loop#stop</a></li><li><a href="syngen.state.html#event:event:export">syngen.state#export</a></li><li><a href="syngen.state.html#event:event:import">syngen.state#import</a></li><li><a href="syngen.state.html#event:event:reset">syngen.state#reset</a></li><li><a href="syngen.utility.machine.html#event:event:after">syngen.utility.machine#after</a></li><li><a href="syngen.utility.machine.html#event:event:after-%257Bevent%257D">syngen.utility.machine#after-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:after-%257Bstate%257D-%257Bevent%257D">syngen.utility.machine#after-{state}-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:before">syngen.utility.machine#before</a></li><li><a href="syngen.utility.machine.html#event:event:before-%257Bevent%257D">syngen.utility.machine#before-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:before-%257Bstate%257D-%257Bevent%257D">syngen.utility.machine#before-{state}-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:enter">syngen.utility.machine#enter</a></li><li><a href="syngen.utility.machine.html#event:event:enter-%257Bstate%257D">syngen.utility.machine#enter-{state}</a></li><li><a href="syngen.utility.machine.html#event:event:exit">syngen.utility.machine#exit</a></li><li><a href="syngen.utility.machine.html#event:event:exit-%257Bstate%257D">syngen.utility.machine#exit-{state}</a></li></ul><h3>Mixins</h3><ul><li><a href="syngen.utility.physical.html">syngen.utility.physical</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="syngen.html">syngen</a></li><li><a href="syngen.audio.html">syngen.audio</a></li><li><a href="syngen.audio.buffer.html">syngen.audio.buffer</a></li><li><a href="syngen.audio.buffer.impulse.html">syngen.audio.buffer.impulse</a></li><li><a href="syngen.audio.buffer.noise.html">syngen.audio.buffer.noise</a></li><li><a href="syngen.audio.circuit.html">syngen.audio.circuit</a></li><li><a href="syngen.audio.effect.html">syngen.audio.effect</a></li><li><a href="syngen.audio.formant.html">syngen.audio.formant</a></li><li><a href="syngen.audio.mixer.html">syngen.audio.mixer</a></li><li><a href="syngen.audio.mixer.auxiliary.html">syngen.audio.mixer.auxiliary</a></li><li><a href="syngen.audio.mixer.auxiliary.reverb.html">syngen.audio.mixer.auxiliary.reverb</a></li><li><a href="syngen.audio.mixer.send.html">syngen.audio.mixer.send</a></li><li><a href="syngen.audio.ramp.html">syngen.audio.ramp</a></li><li><a href="syngen.audio.shape.html">syngen.audio.shape</a></li><li><a href="syngen.audio.synth.html">syngen.audio.synth</a></li><li><a href="syngen.const.html">syngen.const</a></li><li><a href="syngen.input.html">syngen.input</a></li><li><a href="syngen.input.gamepad.html">syngen.input.gamepad</a></li><li><a href="syngen.input.keyboard.html">syngen.input.keyboard</a></li><li><a href="syngen.input.mouse.html">syngen.input.mouse</a></li><li><a href="syngen.loop.html">syngen.loop</a></li><li><a href="syngen.performance.html">syngen.performance</a></li><li><a href="syngen.position.html">syngen.position</a></li><li><a href="syngen.prop.html">syngen.prop</a></li><li><a href="syngen.props.html">syngen.props</a></li><li><a href="syngen.seed.html">syngen.seed</a></li><li><a href="syngen.state.html">syngen.state</a></li><li><a href="syngen.streamer.html">syngen.streamer</a></li><li><a href="syngen.utility.html">syngen.utility</a></li><li><a href="syngen.utility.random.html">syngen.utility.random</a></li><li><a href="syngen.utility.timing.html">syngen.utility.timing</a></li></ul><h3>Interfaces</h3><ul><li><a href="syngen.audio.binaural.html">syngen.audio.binaural</a></li><li><a href="syngen.audio.binaural.monaural.html">syngen.audio.binaural.monaural</a></li><li><a href="syngen.audio.mixer.send.reverb.html">syngen.audio.mixer.send.reverb</a></li><li><a href="syngen.prop.base.html">syngen.prop.base</a></li><li><a href="syngen.prop.null.html">syngen.prop.null</a></li><li><a href="syngen.utility.bitree.html">syngen.utility.bitree</a></li><li><a href="syngen.utility.euler.html">syngen.utility.euler</a></li><li><a href="syngen.utility.machine.html">syngen.utility.machine</a></li><li><a href="syngen.utility.octree.html">syngen.utility.octree</a></li><li><a href="syngen.utility.perlin1d.html">syngen.utility.perlin1d</a></li><li><a href="syngen.utility.perlin2d.html">syngen.utility.perlin2d</a></li><li><a href="syngen.utility.perlin3d.html">syngen.utility.perlin3d</a></li><li><a href="syngen.utility.perlin4d.html">syngen.utility.perlin4d</a></li><li><a href="syngen.utility.pubsub.html">syngen.utility.pubsub</a></li><li><a href="syngen.utility.quadtree.html">syngen.utility.quadtree</a></li><li><a href="syngen.utility.quaternion.html">syngen.utility.quaternion</a></li><li><a href="syngen.utility.simplex2d.html">syngen.utility.simplex2d</a></li><li><a href="syngen.utility.simplex3d.html">syngen.utility.simplex3d</a></li><li><a href="syngen.utility.simplex4d.html">syngen.utility.simplex4d</a></li><li><a href="syngen.utility.vector2d.html">syngen.utility.vector2d</a></li><li><a href="syngen.utility.vector3d.html">syngen.utility.vector3d</a></li></ul><h3>Events</h3><ul><li><a href="syngen.audio.mixer.auxiliary.reverb.html#event:event:activate">syngen.audio.mixer.auxiliary.reverb#activate</a></li><li><a href="syngen.audio.mixer.auxiliary.reverb.html#event:event:deactivate">syngen.audio.mixer.auxiliary.reverb#deactivate</a></li><li><a href="syngen.loop.html#event:event:frame">syngen.loop#frame</a></li><li><a href="syngen.loop.html#event:event:pause">syngen.loop#pause</a></li><li><a href="syngen.loop.html#event:event:resume">syngen.loop#resume</a></li><li><a href="syngen.loop.html#event:event:start">syngen.loop#start</a></li><li><a href="syngen.loop.html#event:event:stop">syngen.loop#stop</a></li><li><a href="syngen.state.html#event:event:export">syngen.state#export</a></li><li><a href="syngen.state.html#event:event:import">syngen.state#import</a></li><li><a href="syngen.state.html#event:event:reset">syngen.state#reset</a></li><li><a href="syngen.utility.machine.html#event:event:after">syngen.utility.machine#after</a></li><li><a href="syngen.utility.machine.html#event:event:after-%257Bevent%257D">syngen.utility.machine#after-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:after-%257Bstate%257D-%257Bevent%257D">syngen.utility.machine#after-{state}-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:before">syngen.utility.machine#before</a></li><li><a href="syngen.utility.machine.html#event:event:before-%257Bevent%257D">syngen.utility.machine#before-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:before-%257Bstate%257D-%257Bevent%257D">syngen.utility.machine#before-{state}-{event}</a></li><li><a href="syngen.utility.machine.html#event:event:enter">syngen.utility.machine#enter</a></li><li><a href="syngen.utility.machine.html#event:event:enter-%257Bstate%257D">syngen.utility.machine#enter-{state}</a></li><li><a href="syngen.utility.machine.html#event:event:exit">syngen.utility.machine#exit</a></li><li><a href="syngen.utility.machine.html#event:event:exit-%257Bstate%257D">syngen.utility.machine#exit-{state}</a></li></ul><h3>Mixins</h3><ul><li><a href="syngen.utility.physical.html">syngen.utility.physical</a></li></ul>
 </nav>
 
 <br class="clear">

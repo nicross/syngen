@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Namespace: noise</title>
+    <title>JSDoc: Source: syngen/utility/simplex2d.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,422 +17,200 @@
 
 <div id="main">
 
-    <h1 class="page-title">Namespace: noise</h1>
-
-    
-
-
-
-
-<section>
-
-<header>
-    
-        <h2>
-            <span class="ancestors"><a href="syngen.html">syngen</a><a href="syngen.audio.html">.audio</a><a href="syngen.audio.buffer.html">.buffer</a>.</span>noise</h2>
-        
-    
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-            <div class="description"><p>Programmatically generated noise intended for use with <a href="https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode">AudioBufferSourceNodes</a>.</p></div>
-        
-
-        
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_audio.js.html">syngen/audio.js</a>, <a href="syngen_audio.js.html#line19">line 19</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-        
-    
-    </div>
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id=".brown"><span class="type-signature">(static) </span>brown<span class="signature">()</span><span class="type-signature"> &rarr; {AudioBuffer}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Returns Brownian noise with intensity inversely proportional to the frequency squared.</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_audio_buffer_noise_brown.js.html">syngen/audio/buffer/noise/brown.js</a>, <a href="syngen_audio_buffer_noise_brown.js.html#line6">line 6</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">AudioBuffer</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id=".pink"><span class="type-signature">(static) </span>pink<span class="signature">()</span><span class="type-signature"> &rarr; {AudioBuffer}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Returns pink noise with intensity inversely proportional to the frequency.</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_audio_buffer_noise_pink.js.html">syngen/audio/buffer/noise/pink.js</a>, <a href="syngen_audio_buffer_noise_pink.js.html#line6">line 6</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">AudioBuffer</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id=".white"><span class="type-signature">(static) </span>white<span class="signature">()</span><span class="type-signature"> &rarr; {AudioBuffer}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Returns brown noise with equal intensity at all frequencies.</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_audio_buffer_noise_white.js.html">syngen/audio/buffer/noise/white.js</a>, <a href="syngen_audio_buffer_noise_white.js.html#line6">line 6</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">AudioBuffer</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-    
-
-    
-
-    
-</article>
-
-</section>
+    <h1 class="page-title">Source: syngen/utility/simplex2d.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Provides an interface for generating seeded two-dimensional OpenSimplex noise.
+ * @interface
+ * @see syngen.utility.simplex2d.create
+ * @todo Document private members
+ */
+syngen.utility.simplex2d = {}
+
+/**
+ * Instantiates a two-dimensional OpenSimplex noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.simplex2d}
+ * @static
+ */
+syngen.utility.simplex2d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
+}
+
+syngen.utility.simplex2d.prototype = {
+  /**
+   * Initializes the instance with `...seeds`.
+   * @instance
+   * @param {...String} [...seeds]
+   * @private
+   */
+  construct: function (...seeds) {
+    this.gradient = new Map()
+    this.seed = seeds
+    return this
+  },
+  /**
+   * Generates the gradient at `(x, y)` in simplex space.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   */
+  generateGradient: function (xin, yin) {
+    const srand = syngen.utility.srand('simplex', ...this.seed, xin, yin)
+
+    let x = srand(-1, 1),
+      y = srand(-1, 1)
+
+    const distance = Math.sqrt((x * x) + (y * y))
+
+    if (distance > 1) {
+      x /= distance
+      y /= distance
+    }
+
+    return [
+      x,
+      y,
+    ]
+  },
+  /**
+   * Retrieves the gradient at `(x, y)` in simplex space.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   * @returns {Number}
+   */
+  getGradient: function (x, y) {
+    let xMap = this.gradient.get(x)
+
+    if (!xMap) {
+      xMap = new Map()
+      this.gradient.set(x, xMap)
+    }
+
+    let gradient = xMap.get(y)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x, y)
+      xMap.set(y, gradient)
+    }
+
+    return gradient
+  },
+  /**
+   * Range (plus and minus) to scale the output such that it's normalized to `[0, 1]`.
+   * This magic number was derived from a brute-force method.
+   * @instance
+   * @private
+   */
+  range: 1/99,
+  /**
+   * Clears all generated values.
+   * Implementations are encouraged to call this whenever {@link syngen.seed} is set, {@link syngen.state} is reset, or memory becomes an issue.
+   * @instance
+   */
+  reset: function () {
+    this.gradient.clear()
+
+    return this
+  },
+  /**
+   * Factor to skew input space into simplex space in two dimensions.
+   * @instance
+   * @private
+   */
+  skewFactor: (Math.sqrt(3) - 1) / 2,
+  /**
+   * Factor to skew simplex space into input space in two dimensions.
+   * @instance
+   * @private
+   */
+  unskewFactor: (3 - Math.sqrt(3)) / 6,
+  /**
+   * Calculates the value at `(x, y)`.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @returns {Number}
+   */
+  value: function (xin, yin) {
+    const F2 = this.skewFactor,
+      G2 = this.unskewFactor
+
+    // Skew input space
+    const s = (xin + yin) * F2,
+      i = Math.floor(xin + s),
+      j = Math.floor(yin + s),
+      t = (i + j) * G2
+
+    // Unskew back to input space
+    const X0 = i - t,
+      Y0 = j - t
+
+    // Deltas within input space
+    const x0 = xin - X0,
+      y0 = yin - Y0
+
+    // Offsets for corner 1 within skewed space
+    const i1 = x0 > y0 ? 1 : 0,
+      j1 = x0 > y0 ? 0 : 1
+
+    // Offsets for corner 1 within input space
+    const x1 = x0 - i1 + G2,
+      y1 = y0 - j1 + G2
+
+    // Offsets for corner 2 within skewed space
+    const x2 = x0 - 1 + (2 * G2),
+      y2 = y0 - 1 + (2 * G2)
+
+    // Calculate contribution from corner 0
+    const t0 = 0.5 - (x0 * x0) - (y0 * y0)
+    let n0 = 0
+
+    if (t0 >= 0) {
+      const g0 = this.getGradient(i, j)
+      // n = (t ** 4) * (g(i,j) dot (x,y))
+      n0 = (t0 * t0 * t0 * t0) * ((g0[0] * x0) + (g0[1] * y0))
+    }
+
+    // Calculate contribution from corner 1
+    const t1 = 0.5 - x1 * x1 - y1 * y1
+    let n1 = 0
+
+    if (t1 >= 0) {
+      const g1 = this.getGradient(i + i1, j + j1)
+      n1 = (t1 * t1 * t1 * t1) * ((g1[0] * x1) + (g1[1] * y1))
+    }
+
+    // Calculate contribution from corner 2
+    const t2 = 0.5 - x2 * x2 - y2 * y2
+    let n2 = 0
+
+    if (t2 >= 0) {
+      const g2 = this.getGradient(i + 1, j + 1)
+      n2 = (t2 * t2 * t2 * t2) * ((g2[0] * x2) + (g2[1] * y2))
+    }
+
+    // Sum and scale contributions
+    return syngen.utility.clamp(
+      syngen.utility.scale(n0 + n1 + n2, -this.range, this.range, 0, 1),
+      0,
+      1
+    )
+  },
+}
+</code></pre>
+        </article>
+    </section>
 
 
 

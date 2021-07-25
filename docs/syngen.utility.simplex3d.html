@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Namespace: noise</title>
+    <title>JSDoc: Interface: simplex3d</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Namespace: noise</h1>
+    <h1 class="page-title">Interface: simplex3d</h1>
 
     
 
@@ -29,7 +29,7 @@
 <header>
     
         <h2>
-            <span class="ancestors"><a href="syngen.html">syngen</a><a href="syngen.audio.html">.audio</a><a href="syngen.audio.buffer.html">.buffer</a>.</span>noise</h2>
+            <span class="ancestors"><a href="syngen.html">syngen</a><a href="syngen.utility.html">.utility</a>.</span>simplex3d</h2>
         
     
 </header>
@@ -38,7 +38,7 @@
     <div class="container-overview">
     
         
-            <div class="description"><p>Programmatically generated noise intended for use with <a href="https://developer.mozilla.org/en-US/docs/Web/API/AudioBufferSourceNode">AudioBufferSourceNodes</a>.</p></div>
+            <div class="description"><p>Provides an interface for generating seeded three-dimensional OpenSimplex noise.</p></div>
         
 
         
@@ -73,14 +73,28 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_audio.js.html">syngen/audio.js</a>, <a href="syngen_audio.js.html#line19">line 19</a>
+        <a href="syngen_utility_simplex3d.js.html">syngen/utility/simplex3d.js</a>, <a href="syngen_utility_simplex3d.js.html#line7">line 7</a>
     </li></ul></dd>
     
 
     
 
     
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="syngen.utility.simplex3d.html#.create">syngen.utility.simplex3d.create</a></li>
+        </ul>
+    </dd>
+    
 
+    
+    <dt class="tag-todo">To Do:</dt>
+    <dd class="tag-todo">
+        <ul>
+            <li>Document private members</li>
+        </ul>
+    </dd>
     
 </dl>
 
@@ -112,7 +126,7 @@
     
 
     
-    <h4 class="name" id=".brown"><span class="type-signature">(static) </span>brown<span class="signature">()</span><span class="type-signature"> &rarr; {AudioBuffer}</span></h4>
+    <h4 class="name" id=".create"><span class="type-signature">(static) </span>create<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="syngen.utility.simplex3d.html">syngen.utility.simplex3d</a>}</span></h4>
     
 
     
@@ -120,7 +134,7 @@
 
 
 <div class="description">
-    <p>Returns Brownian noise with intensity inversely proportional to the frequency squared.</p>
+    <p>Instantiates a three-dimensional OpenSimplex noise generator.</p>
 </div>
 
 
@@ -129,6 +143,69 @@
 
 
 
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>...seeds</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                    &lt;repeatable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -164,7 +241,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_audio_buffer_noise_brown.js.html">syngen/audio/buffer/noise/brown.js</a>, <a href="syngen_audio_buffer_noise_brown.js.html#line6">line 6</a>
+        <a href="syngen_utility_simplex3d.js.html">syngen/utility/simplex3d.js</a>, <a href="syngen_utility_simplex3d.js.html#line15">line 15</a>
     </li></ul></dd>
     
 
@@ -200,7 +277,7 @@
     </dt>
     <dd>
         
-<span class="param-type">AudioBuffer</span>
+<span class="param-type"><a href="syngen.utility.simplex3d.html">syngen.utility.simplex3d</a></span>
 
 
     </dd>
@@ -218,7 +295,7 @@
     
 
     
-    <h4 class="name" id=".pink"><span class="type-signature">(static) </span>pink<span class="signature">()</span><span class="type-signature"> &rarr; {AudioBuffer}</span></h4>
+    <h4 class="name" id="reset"><span class="type-signature"></span>reset<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
     
@@ -226,7 +303,8 @@
 
 
 <div class="description">
-    <p>Returns pink noise with intensity inversely proportional to the frequency.</p>
+    <p>Clears all generated values.
+Implementations are encouraged to call this whenever <a href="syngen.seed.html"><code>syngen.seed</code></a> is set, <a href="syngen.state.html"><code>syngen.state</code></a> is reset, or memory becomes an issue.</p>
 </div>
 
 
@@ -270,7 +348,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_audio_buffer_noise_pink.js.html">syngen/audio/buffer/noise/pink.js</a>, <a href="syngen_audio_buffer_noise_pink.js.html#line6">line 6</a>
+        <a href="syngen_utility_simplex3d.js.html">syngen/utility/simplex3d.js</a>, <a href="syngen_utility_simplex3d.js.html#line105">line 105</a>
     </li></ul></dd>
     
 
@@ -295,24 +373,6 @@
 
 
 
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">AudioBuffer</span>
-
-
-    </dd>
-</dl>
-
-    
 
 
 
@@ -324,7 +384,7 @@
     
 
     
-    <h4 class="name" id=".white"><span class="type-signature">(static) </span>white<span class="signature">()</span><span class="type-signature"> &rarr; {AudioBuffer}</span></h4>
+    <h4 class="name" id="value"><span class="type-signature"></span>value<span class="signature">(x, y, z)</span><span class="type-signature"> &rarr; {Number}</span></h4>
     
 
     
@@ -332,7 +392,7 @@
 
 
 <div class="description">
-    <p>Returns brown noise with equal intensity at all frequencies.</p>
+    <p>Calculates the value at <code>(x, y, z)</code>.</p>
 </div>
 
 
@@ -341,6 +401,101 @@
 
 
 
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>x</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>y</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>z</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -376,7 +531,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_audio_buffer_noise_white.js.html">syngen/audio/buffer/noise/white.js</a>, <a href="syngen_audio_buffer_noise_white.js.html#line6">line 6</a>
+        <a href="syngen_utility_simplex3d.js.html">syngen/utility/simplex3d.js</a>, <a href="syngen_utility_simplex3d.js.html#line130">line 130</a>
     </li></ul></dd>
     
 
@@ -412,7 +567,7 @@
     </dt>
     <dd>
         
-<span class="param-type">AudioBuffer</span>
+<span class="param-type">Number</span>
 
 
     </dd>

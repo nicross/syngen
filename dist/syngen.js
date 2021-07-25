@@ -1,4 +1,4 @@
-/*! syngen v0.1.4 */
+/*! syngen v0.2.0 */
 (() => {
 'use strict'
 
@@ -200,34 +200,49 @@ syngen.utility.closest = function (x, values = []) {
 }
 
 /**
- * Instantiates `octaves` Perlin noise generators of `type` with `seed` and returns a wrapper object that calculates their combined values.
- * @param {syngen.utility.perlin1d|syngen.utility.perlin2d|syngen.utility.perlin3d|syngen.utility.perlin4d} type
- *   Must be a Perlin noise utility, and not a factory method or an instance.
- * @param {*} seed
- * @param {Number} [octaves=2]
+ * Instantiates `octaves` noise generators of `type` with `seed` and returns a wrapper object that calculates their combined values.
+ * @param {Object} options
+ * @param {Number} [options.octaves=2]
+ * @param {*} options.seed
+ * @param {syngen.utility.perlin1d|syngen.utility.perlin2d|syngen.utility.perlin3d|syngen.utility.perlin4d|syngen.utility.simplex2d|syngen.utility.simplex3d|syngen.utility.simplex4d} options.type
+ *   Must be reference to a noise utility, and not a factory method or an instance.
  * @returns {Object}
  * @static
- * @todo Port into individual perlin utilities for clarity
+ * @todo Port into individual noise utilities for clarity and simplicity
  */
-syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
+syngen.utility.createNoiseWithOctaves = ({
+  seed,
+  octaves = 0,
+  type,
+} = {}) => {
+  if (!type || !type.create || !type.prototype || !type.prototype.reset || !type.prototype.value) {
+    throw new Error('Incorrect type. Please pass a noise utility by reference, e.g. syngen.utility.simplex4d.')
+  }
+
+  octaves = Math.round(octaves)
+
+  if (octaves < 2) {
+    return type.create(seed)
+  }
+
   const compensation = 1 / (1 - (2 ** -octaves)),
-    perlins = []
+    layers = []
 
   if (!Array.isArray(seed)) {
     seed = [seed]
   }
 
   for (let i = 0; i < octaves; i += 1) {
-    perlins.push(
+    layers.push(
       type.create(...seed, 'octave', i)
     )
   }
 
   return {
-    perlin: perlins,
+    layer: layers,
     reset: function () {
-      for (let perlin of this.perlin) {
-        perlin.reset()
+      for (let layer of this.layer) {
+        layer.reset()
       }
       return this
     },
@@ -236,8 +251,9 @@ syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
         frequency = 1,
         sum = 0
 
-      for (let perlin of this.perlin) {
-        sum += perlin.value(...args.map((value) => value * frequency)) * amplitude
+      for (let layer of this.layer) {
+        // XXX: Assumes up to four arguments (4D noise) for optimal performance
+        sum += layer.value(args[0] * frequency, args[1] * frequency, args[2] * frequency, args[3] * frequency) * amplitude
         amplitude /= 2
         frequency *= 2
       }
@@ -247,6 +263,28 @@ syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
       return sum
     },
   }
+}
+
+/**
+ * Instantiates `octaves` noise generators of `type` with `seed` and returns a wrapper object that calculates their combined values.
+ * @deprecated Replaced with {@link syngen.utility.createNoiseWithOctaves}.
+ * @param {syngen.utility.perlin1d|syngen.utility.perlin2d|syngen.utility.perlin3d|syngen.utility.perlin4d|syngen.utility.simplex2d|syngen.utility.simplex3d|syngen.utility.simplex4d} type
+ *   Must be reference to a noise utility, and not a factory method or an instance.
+ * @param {*} seed
+ * @param {Number} [octaves=2]
+ * @returns {Object}
+ * @static
+ */
+syngen.utility.createPerlinWithOctaves = (type, seed, octaves) => {
+  const generator = syngen.utility.createNoiseWithOctaves({
+    octaves,
+    seed,
+    type,
+  })
+
+  generator.perlins = generator.layers
+
+  return generator
 }
 
 /**
@@ -2126,8 +2164,8 @@ syngen.utility.perlin1d.prototype = {
    */
   generateGradient: function (x) {
     const srand = syngen.utility.srand('perlin', ...this.seed, x)
-    this.gradient.set(x, srand(0, 1))
-    return this
+
+    return srand(0, 1)
   },
   /**
    * Retrieves the value at `x`.
@@ -2137,69 +2175,21 @@ syngen.utility.perlin1d.prototype = {
    * @returns {Number}
    */
   getGradient: function (x) {
-    if (!this.hasGradient(x)) {
-      this.generateGradient(x)
-      this.requestPrune()
+    let gradient = this.gradient.get(x)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x)
+      this.gradient.set(x, gradient)
     }
 
-    return this.gradient.get(x)
-  },
-  /**
-   * Returns whether a value exists for `x`.
-   * @instance
-   * @param {Number} x
-   * @private
-   * @returns {Boolean}
-   */
-  hasGradient: function (x) {
-    return this.gradient.has(x)
-  },
-  /**
-   * Frees memory when usage exceeds the prune threshold.
-   * @instance
-   * @private
-   * @see syngen.utility.perlin1d#pruneThreshold
-   */
-  prune: function () {
-    if (this.gradient.size >= this.pruneThreshold) {
-      this.gradient.clear()
-    }
-
-    return this
-  },
-  /**
-   * The maximum vertex count before they must be pruned.
-   * @instance
-   * @private
-   */
-  pruneThreshold: 10 ** 4,
-  /**
-   * Requests a pruning.
-   * @instance
-   * @private
-   */
-  requestPrune: function () {
-    if (this.pruneRequest) {
-      return this
-    }
-
-    this.pruneRequest = requestIdleCallback(() => {
-      this.prune()
-      delete this.pruneRequest
-    })
-
-    return this
+    return gradient
   },
   /**
    * Clears all generated values.
-   * This is especially useful to call when {@link syngen.seed} is set.
+   * Implementations are encouraged to call this whenever {@link syngen.seed} is set, {@link syngen.state} is reset, or memory becomes an issue.
    * @instance
    */
   reset: function () {
-    if (this.pruneRequest) {
-      cancelIdleCallback(this.pruneRequest)
-    }
-
     this.gradient.clear()
 
     return this
@@ -2229,7 +2219,11 @@ syngen.utility.perlin1d.prototype = {
       v0 = this.getGradient(x0),
       v1 = this.getGradient(x1)
 
-    return syngen.utility.lerp(v0, v1, dx)
+    return syngen.utility.clamp(
+      syngen.utility.lerp(v0, v1, dx),
+      0,
+      1
+    )
   },
 }
 
@@ -2264,7 +2258,7 @@ syngen.utility.perlin2d.prototype = {
     return this
   },
   /**
-   * Generates the value at `(x, y)`.
+   * Generates the gradient at `(x, y)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
@@ -2273,16 +2267,10 @@ syngen.utility.perlin2d.prototype = {
   generateGradient: function (x, y) {
     const srand = syngen.utility.srand('perlin', ...this.seed, x, y)
 
-    if (!this.gradient.has(x)) {
-      this.gradient.set(x, new Map())
-    }
-
-    this.gradient.get(x).set(y, [
+    return [
       srand(-1, 1),
       srand(-1, 1),
-    ])
-
-    return this
+    ]
   },
   /**
    * Calculates the dot product between `(dx, dy)` and the value at `(xi, yi)`.
@@ -2295,103 +2283,48 @@ syngen.utility.perlin2d.prototype = {
    */
   getDotProduct: function (xi, yi, x, y) {
     const dx = x - xi,
-      dy = y - yi
+      dy = y - yi,
+      gradient = this.getGradient(xi, yi)
 
-    return (dx * this.getGradient(xi, yi, 0)) + (dy * this.getGradient(xi, yi, 1))
+    return (dx * gradient[0]) + (dy * gradient[1])
   },
   /**
-   * Retrieves the value at `(x, y)` and index `i`.
+   * Retrieves the gradient at `(x, y)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
    * @private
    * @returns {Number}
    */
-  getGradient: function (x, y, i) {
-    if (!this.hasGradient(x, y)) {
-      this.generateGradient(x, y)
-      this.requestPrune()
-    }
-
-    return this.gradient.get(x).get(y)[i]
-  },
-  /**
-   * Returns whether a value exists for `(x, y)`.
-   * @instance
-   * @param {Number} x
-   * @param {Number} y
-   * @private
-   * @returns {Boolean}
-   */
-  hasGradient: function (x, y) {
-    const xMap = this.gradient.get(x)
+  getGradient: function (x, y) {
+    let xMap = this.gradient.get(x)
 
     if (!xMap) {
-      return false
+      xMap = new Map()
+      this.gradient.set(x, xMap)
     }
 
-    return xMap.has(y)
+    let gradient = xMap.get(y)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x, y)
+      xMap.set(y, gradient)
+    }
+
+    return gradient
   },
   /**
-   * Frees memory when usage exceeds the prune threshold.
-   * @instance
-   * @private
-   * @see syngen.utility.perlin2d#pruneThreshold
-   */
-  prune: function () {
-    this.gradient.forEach((xMap, x) => {
-      if (xMap.size >= this.pruneThreshold) {
-        return this.gradient.delete(x)
-      }
-
-      xMap.forEach((yMap, y) => {
-        if (yMap.size >= this.pruneThreshold) {
-          return xMap.delete(y)
-        }
-      })
-    })
-
-    return this
-  },
-  /**
-   * The maximum vertex count before they must be pruned.
-   * @instance
-   * @private
-   */
-  pruneThreshold: 10 ** 3,
-  /**
-   * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.
+   * Range (plus and minus) to scale the output such that it's normalized to `[0, 1]`.
    * @instance
    * @private
    */
   range: Math.sqrt(2/4),
   /**
-   * Requests a pruning.
-   * @instance
-   * @private
-   */
-  requestPrune: function () {
-    if (this.pruneRequest) {
-      return this
-    }
-
-    this.pruneRequest = requestIdleCallback(() => {
-      this.prune()
-      delete this.pruneRequest
-    })
-
-    return this
-  },
-  /**
    * Clears all generated values.
-   * This is especially useful to call when {@link syngen.seed} is set.
+   * Implementations are encouraged to call this whenever {@link syngen.seed} is set, {@link syngen.state} is reset, or memory becomes an issue.
    * @instance
    */
   reset: function () {
-    if (this.pruneRequest) {
-      cancelIdleCallback(this.pruneRequest)
-    }
-
     this.gradient.clear()
 
     return this
@@ -2437,7 +2370,11 @@ syngen.utility.perlin2d.prototype = {
       dy
     )
 
-    return syngen.utility.scale(value, -this.range, this.range, 0, 1)
+    return syngen.utility.clamp(
+      syngen.utility.scale(value, -this.range, this.range, 0, 1),
+      0,
+      1
+    )
   },
 }
 
@@ -2472,7 +2409,7 @@ syngen.utility.perlin3d.prototype = {
     return this
   },
   /**
-   * Generates the value at `(x, y, z)`.
+   * Generates the gradient at `(x, y, z)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
@@ -2482,23 +2419,11 @@ syngen.utility.perlin3d.prototype = {
   generateGradient: function (x, y, z) {
     const srand = syngen.utility.srand('perlin', ...this.seed, x, y, z)
 
-    if (!this.gradient.has(x)) {
-      this.gradient.set(x, new Map())
-    }
-
-    const xMap = this.gradient.get(x)
-
-    if (!xMap.has(y)) {
-      xMap.set(y, new Map())
-    }
-
-    xMap.get(y).set(z, [
+    return [
       srand(-1, 1),
       srand(-1, 1),
       srand(-1, 1),
-    ])
-
-    return this
+    ]
   },
   /**
    * Calculates the dot product between `(dx, dy, dz)` and the value at `(xi, yi, zi)`.
@@ -2514,116 +2439,56 @@ syngen.utility.perlin3d.prototype = {
   getDotProduct: function (xi, yi, zi, x, y, z) {
     const dx = x - xi,
       dy = y - yi,
-      dz = z - zi
+      dz = z - zi,
+      gradient = this.getGradient(xi, yi, zi)
 
-    return (dx * this.getGradient(xi, yi, zi, 0)) + (dy * this.getGradient(xi, yi, zi, 1)) + (dz * this.getGradient(xi, yi, zi, 2))
+    return (dx * gradient[0]) + (dy * gradient[1]) + (dz * gradient[2])
   },
   /**
-   * Retrieves the value at `(x, y, z)` and index `i`.
-   * @instance
-   * @param {Number} x
-   * @param {Number} y
-   * @private
-   * @returns {Number}
-   */
-  getGradient: function (x, y, z, i) {
-    if (!this.hasGradient(x, y, z)) {
-      this.generateGradient(x, y, z)
-      this.requestPrune(x, y, z)
-    }
-
-    return this.gradient.get(x).get(y).get(z)[i]
-  },
-  /**
-   * Returns whether a value exists for `(x, y, z)`.
+   * Retrieves the gradient at `(x, y, z)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
    * @param {Number} z
    * @private
-   * @returns {Boolean}
+   * @returns {Number}
    */
-  hasGradient: function (x, y, z) {
-    const xMap = this.gradient.get(x)
+  getGradient: function (x, y, z) {
+    let xMap = this.gradient.get(x)
 
     if (!xMap) {
-      return false
+      xMap = new Map()
+      this.gradient.set(x, xMap)
     }
 
-    const yMap = xMap.get(y)
+    let yMap = xMap.get(y)
 
     if (!yMap) {
-      return false
+      yMap = new Map()
+      xMap.set(y, yMap)
     }
 
-    return yMap.has(z)
+    let gradient = yMap.get(z)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x, y, z)
+      yMap.set(z, gradient)
+    }
+
+    return gradient
   },
   /**
-   * Frees memory when usage exceeds the prune threshold.
-   * @instance
-   * @private
-   * @see syngen.utility.perlin3d#pruneThreshold
-   */
-  prune: function () {
-    this.gradient.forEach((xMap, x) => {
-      if (xMap.size >= this.pruneThreshold) {
-        return this.gradient.delete(x)
-      }
-
-      xMap.forEach((yMap, y) => {
-        if (yMap.size >= this.pruneThreshold) {
-          return xMap.delete(y)
-        }
-
-        yMap.forEach((zMap, z) => {
-          if (zMap.size >= this.pruneThreshold) {
-            return yMap.delete(z)
-          }
-        })
-      })
-    })
-
-    return this
-  },
-  /**
-   * The maximum vertex count before they must be pruned.
-   * @instance
-   * @private
-   */
-  pruneThreshold: 10 ** 2,
-  /**
-   * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.
+   * Range (plus and minus) to scale the output such that it's normalized to `[0, 1]`.
    * @instance
    * @private
    */
   range: Math.sqrt(3/4),
   /**
-   * Requests a pruning.
-   * @instance
-   * @private
-   */
-  requestPrune: function () {
-    if (this.pruneRequest) {
-      return this
-    }
-
-    this.pruneRequest = requestIdleCallback(() => {
-      this.prune()
-      delete this.pruneRequest
-    })
-
-    return this
-  },
-  /**
    * Clears all generated values.
-   * This is especially useful to call when {@link syngen.seed} is set.
+   * Implementations are encouraged to call this whenever {@link syngen.seed} is set, {@link syngen.state} is reset, or memory becomes an issue.
    * @instance
    */
   reset: function () {
-    if (this.pruneRequest) {
-      cancelIdleCallback(this.pruneRequest)
-    }
-
     this.gradient.clear()
 
     return this
@@ -2689,7 +2554,11 @@ syngen.utility.perlin3d.prototype = {
       dz
     )
 
-    return syngen.utility.scale(value, -this.range, this.range, 0, 1)
+    return syngen.utility.clamp(
+      syngen.utility.scale(value, -this.range, this.range, 0, 1),
+      0,
+      1
+    )
   },
 }
 
@@ -2724,7 +2593,7 @@ syngen.utility.perlin4d.prototype = {
     return this
   },
   /**
-   * Generates the value at `(x, y, z, t)`.
+   * Generates the gradient at `(x, y, z, w)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
@@ -2732,36 +2601,18 @@ syngen.utility.perlin4d.prototype = {
    * @param {Number} t
    * @private
    */
-  generateGradient: function (x, y, z, t) {
-    const srand = syngen.utility.srand('perlin', ...this.seed, x, y, z, t)
+  generateGradient: function (x, y, z, w) {
+    const srand = syngen.utility.srand('perlin', ...this.seed, x, y, z, w)
 
-    if (!this.gradient.has(x)) {
-      this.gradient.set(x, new Map())
-    }
-
-    const xMap = this.gradient.get(x)
-
-    if (!xMap.has(y)) {
-      xMap.set(y, new Map())
-    }
-
-    const yMap = xMap.get(y)
-
-    if (!yMap.has(z)) {
-      yMap.set(z, new Map())
-    }
-
-    yMap.get(z).set(t, [
+    return [
       srand(-1, 1),
       srand(-1, 1),
       srand(-1, 1),
       srand(-1, 1),
-    ])
-
-    return this
+    ]
   },
   /**
-   * Calculates the dot product between `(dx, dy, dz, dt)` and the value at `(xi, yi, zi, ti)`.
+   * Calculates the dot product between `(dx, dy, dz, dw)` and the value at `(xi, yi, zi, wi)`.
    * @instance
    * @param {Number} xi
    * @param {Number} yi
@@ -2771,133 +2622,68 @@ syngen.utility.perlin4d.prototype = {
    * @param {Number} z
    * @private
    */
-  getDotProduct: function (xi, yi, zi, ti, x, y, z, t) {
-    const dt = t - ti,
+  getDotProduct: function (xi, yi, zi, wi, x, y, z, w) {
+    const dw = w - wi,
       dx = x - xi,
       dy = y - yi,
-      dz = z - zi
+      dz = z - zi,
+      gradient = this.getGradient(xi, yi, zi, wi)
 
-    return (dt * this.getGradient(xi, yi, zi, ti, 3)) + (dx * this.getGradient(xi, yi, zi, ti, 0)) + (dy * this.getGradient(xi, yi, zi, ti, 1)) + (dz * this.getGradient(xi, yi, zi, ti, 2))
+    return (dx * gradient[0]) + (dy * gradient[1]) + (dz * gradient[2]) + (dw * gradient[3])
   },
   /**
-   * Retrieves the value at `(x, y, z, t)` and index `i`.
-   * @instance
-   * @param {Number} x
-   * @param {Number} y
-   * @private
-   * @returns {Number}
-   */
-  getGradient: function (x, y, z, t, i) {
-    if (!this.hasGradient(x, y, z, t)) {
-      this.generateGradient(x, y, z, t)
-      this.requestPrune(x, y, z, t)
-    }
-
-    return this.gradient.get(x).get(y).get(z).get(t)[i]
-  },
-  /**
-   * Returns whether a value exists for `(x, y, z, t)`.
+   * Retrieves the gradient at `(x, y, z, w)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
    * @param {Number} z
    * @param {Number} t
    * @private
-   * @returns {Boolean}
+   * @returns {Number}
    */
-  hasGradient: function (x, y, z, t) {
-    const xMap = this.gradient.get(x)
+  getGradient: function (x, y, z, w) {
+    let xMap = this.gradient.get(x)
 
     if (!xMap) {
-      return false
+      xMap = new Map()
+      this.gradient.set(x, xMap)
     }
 
-    const yMap = xMap.get(y)
+    let yMap = xMap.get(y)
 
     if (!yMap) {
-      return false
+      yMap = new Map()
+      xMap.set(y, yMap)
     }
 
-    const zMap = yMap.get(z)
+    let zMap = yMap.get(z)
 
     if (!zMap) {
-      return false
+      zMap = new Map()
+      yMap.set(z, zMap)
     }
 
-    return zMap.has(t)
+    let gradient = zMap.get(w)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x, y, z, w)
+      zMap.set(w, gradient)
+    }
+
+    return gradient
   },
   /**
-   * Frees memory when usage exceeds the prune threshold.
-   * @instance
-   * @private
-   * @see syngen.utility.perlin4d#pruneThreshold
-   */
-  prune: function () {
-    this.gradient.forEach((xMap, x) => {
-      if (xMap.size >= this.pruneThreshold) {
-        return this.gradient.delete(x)
-      }
-
-      xMap.forEach((yMap, y) => {
-        if (yMap.size >= this.pruneThreshold) {
-          return xMap.delete(y)
-        }
-
-        yMap.forEach((zMap, z) => {
-          if (zMap.size >= this.pruneThreshold) {
-            return yMap.delete(z)
-          }
-
-          zMap.forEach((tMap, t) => {
-            if (tMap.size >= this.pruneThreshold) {
-              return zMap.delete(t)
-            }
-          })
-        })
-      })
-    })
-
-    return this
-  },
-  /**
-   * The maximum vertex count before they must be pruned.
-   * @instance
-   * @private
-   */
-  pruneThreshold: 10 ** 2,
-  /**
-   * Range (plus and minus) to scale the output such that it's normalized to `[-1, 1]`.
+   * Range (plus and minus) to scale the output such that it's normalized to `[0, 1]`.
    * @instance
    * @private
    */
   range: Math.sqrt(4/4),
   /**
-   * Requests a pruning.
-   * @instance
-   * @private
-   */
-  requestPrune: function () {
-    if (this.pruneRequest) {
-      return this
-    }
-
-    this.pruneRequest = requestIdleCallback(() => {
-      this.prune()
-      delete this.pruneRequest
-    })
-
-    return this
-  },
-  /**
    * Clears all generated values.
-   * This is especially useful to call when {@link syngen.seed} is set.
+   * Implementations are encouraged to call this whenever {@link syngen.seed} is set, {@link syngen.state} is reset, or memory becomes an issue.
    * @instance
    */
   reset: function () {
-    if (this.pruneRequest) {
-      cancelIdleCallback(this.pruneRequest)
-    }
-
     this.gradient.clear()
 
     return this
@@ -2914,7 +2700,7 @@ syngen.utility.perlin4d.prototype = {
     return (value ** 3) * (value * ((value * 6) - 15) + 10)
   },
   /**
-   * Calculates the value at `(x, y, z, t)`.
+   * Calculates the value at `(x, y, z, w)`.
    * @instance
    * @param {Number} x
    * @param {Number} y
@@ -2922,9 +2708,9 @@ syngen.utility.perlin4d.prototype = {
    * @param {Number} t
    * @returns {Number}
    */
-  value: function (x, y, z, t) {
-    const t0 = Math.floor(t),
-      t1 = t0 + 1,
+  value: function (x, y, z, w) {
+    const w0 = Math.floor(w),
+      w1 = w0 + 1,
       x0 = Math.floor(x),
       x1 = x0 + 1,
       y0 = Math.floor(y),
@@ -2932,7 +2718,7 @@ syngen.utility.perlin4d.prototype = {
       z0 = Math.floor(z),
       z1 = z0 + 1
 
-    const dt = this.smooth(t - t0),
+    const dw = this.smooth(w - w0),
       dx = this.smooth(x - x0),
       dy = this.smooth(y - y0),
       dz = this.smooth(z - z0)
@@ -2941,26 +2727,26 @@ syngen.utility.perlin4d.prototype = {
       syngen.utility.lerp(
         syngen.utility.lerp(
           syngen.utility.lerp(
-            this.getDotProduct(x0, y0, z0, t0, x, y, z, t),
-            this.getDotProduct(x1, y0, z0, t0, x, y, z, t),
+            this.getDotProduct(x0, y0, z0, w0, x, y, z, w),
+            this.getDotProduct(x1, y0, z0, w0, x, y, z, w),
             dx
           ),
           syngen.utility.lerp(
-            this.getDotProduct(x0, y1, z0, t0, x, y, z, t),
-            this.getDotProduct(x1, y1, z0, t0, x, y, z, t),
+            this.getDotProduct(x0, y1, z0, w0, x, y, z, w),
+            this.getDotProduct(x1, y1, z0, w0, x, y, z, w),
             dx
           ),
           dy
         ),
         syngen.utility.lerp(
           syngen.utility.lerp(
-            this.getDotProduct(x0, y0, z1, t0, x, y, z, t),
-            this.getDotProduct(x1, y0, z1, t0, x, y, z, t),
+            this.getDotProduct(x0, y0, z1, w0, x, y, z, w),
+            this.getDotProduct(x1, y0, z1, w0, x, y, z, w),
             dx
           ),
           syngen.utility.lerp(
-            this.getDotProduct(x0, y1, z1, t0, x, y, z, t),
-            this.getDotProduct(x1, y1, z1, t0, x, y, z, t),
+            this.getDotProduct(x0, y1, z1, w0, x, y, z, w),
+            this.getDotProduct(x1, y1, z1, w0, x, y, z, w),
             dx
           ),
           dy
@@ -2970,36 +2756,40 @@ syngen.utility.perlin4d.prototype = {
       syngen.utility.lerp(
         syngen.utility.lerp(
           syngen.utility.lerp(
-            this.getDotProduct(x0, y0, z0, t1, x, y, z, t),
-            this.getDotProduct(x1, y0, z0, t1, x, y, z, t),
+            this.getDotProduct(x0, y0, z0, w1, x, y, z, w),
+            this.getDotProduct(x1, y0, z0, w1, x, y, z, w),
             dx
           ),
           syngen.utility.lerp(
-            this.getDotProduct(x0, y1, z0, t1, x, y, z, t),
-            this.getDotProduct(x1, y1, z0, t1, x, y, z, t),
+            this.getDotProduct(x0, y1, z0, w1, x, y, z, w),
+            this.getDotProduct(x1, y1, z0, w1, x, y, z, w),
             dx
           ),
           dy
         ),
         syngen.utility.lerp(
           syngen.utility.lerp(
-            this.getDotProduct(x0, y0, z1, t1, x, y, z, t),
-            this.getDotProduct(x1, y0, z1, t1, x, y, z, t),
+            this.getDotProduct(x0, y0, z1, w1, x, y, z, w),
+            this.getDotProduct(x1, y0, z1, w1, x, y, z, w),
             dx
           ),
           syngen.utility.lerp(
-            this.getDotProduct(x0, y1, z1, t1, x, y, z, t),
-            this.getDotProduct(x1, y1, z1, t1, x, y, z, t),
+            this.getDotProduct(x0, y1, z1, w1, x, y, z, w),
+            this.getDotProduct(x1, y1, z1, w1, x, y, z, w),
             dx
           ),
           dy
         ),
         dz
       ),
-      dt
+      dw
     )
 
-    return syngen.utility.scale(value, -this.range, this.range, 0, 1)
+    return syngen.utility.clamp(
+      syngen.utility.scale(value, -this.range, this.range, 0, 1),
+      0,
+      1
+    )
   },
 }
 
@@ -4083,6 +3873,758 @@ syngen.utility.random.value = function (bag) {
   }
 
   return bag[key]
+}
+
+/**
+ * Provides an interface for generating seeded two-dimensional OpenSimplex noise.
+ * @interface
+ * @see syngen.utility.simplex2d.create
+ * @todo Document private members
+ */
+syngen.utility.simplex2d = {}
+
+/**
+ * Instantiates a two-dimensional OpenSimplex noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.simplex2d}
+ * @static
+ */
+syngen.utility.simplex2d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
+}
+
+syngen.utility.simplex2d.prototype = {
+  /**
+   * Initializes the instance with `...seeds`.
+   * @instance
+   * @param {...String} [...seeds]
+   * @private
+   */
+  construct: function (...seeds) {
+    this.gradient = new Map()
+    this.seed = seeds
+    return this
+  },
+  /**
+   * Generates the gradient at `(x, y)` in simplex space.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   */
+  generateGradient: function (xin, yin) {
+    const srand = syngen.utility.srand('simplex', ...this.seed, xin, yin)
+
+    let x = srand(-1, 1),
+      y = srand(-1, 1)
+
+    const distance = Math.sqrt((x * x) + (y * y))
+
+    if (distance > 1) {
+      x /= distance
+      y /= distance
+    }
+
+    return [
+      x,
+      y,
+    ]
+  },
+  /**
+   * Retrieves the gradient at `(x, y)` in simplex space.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   * @returns {Number}
+   */
+  getGradient: function (x, y) {
+    let xMap = this.gradient.get(x)
+
+    if (!xMap) {
+      xMap = new Map()
+      this.gradient.set(x, xMap)
+    }
+
+    let gradient = xMap.get(y)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x, y)
+      xMap.set(y, gradient)
+    }
+
+    return gradient
+  },
+  /**
+   * Range (plus and minus) to scale the output such that it's normalized to `[0, 1]`.
+   * This magic number was derived from a brute-force method.
+   * @instance
+   * @private
+   */
+  range: 1/99,
+  /**
+   * Clears all generated values.
+   * Implementations are encouraged to call this whenever {@link syngen.seed} is set, {@link syngen.state} is reset, or memory becomes an issue.
+   * @instance
+   */
+  reset: function () {
+    this.gradient.clear()
+
+    return this
+  },
+  /**
+   * Factor to skew input space into simplex space in two dimensions.
+   * @instance
+   * @private
+   */
+  skewFactor: (Math.sqrt(3) - 1) / 2,
+  /**
+   * Factor to skew simplex space into input space in two dimensions.
+   * @instance
+   * @private
+   */
+  unskewFactor: (3 - Math.sqrt(3)) / 6,
+  /**
+   * Calculates the value at `(x, y)`.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @returns {Number}
+   */
+  value: function (xin, yin) {
+    const F2 = this.skewFactor,
+      G2 = this.unskewFactor
+
+    // Skew input space
+    const s = (xin + yin) * F2,
+      i = Math.floor(xin + s),
+      j = Math.floor(yin + s),
+      t = (i + j) * G2
+
+    // Unskew back to input space
+    const X0 = i - t,
+      Y0 = j - t
+
+    // Deltas within input space
+    const x0 = xin - X0,
+      y0 = yin - Y0
+
+    // Offsets for corner 1 within skewed space
+    const i1 = x0 > y0 ? 1 : 0,
+      j1 = x0 > y0 ? 0 : 1
+
+    // Offsets for corner 1 within input space
+    const x1 = x0 - i1 + G2,
+      y1 = y0 - j1 + G2
+
+    // Offsets for corner 2 within skewed space
+    const x2 = x0 - 1 + (2 * G2),
+      y2 = y0 - 1 + (2 * G2)
+
+    // Calculate contribution from corner 0
+    const t0 = 0.5 - (x0 * x0) - (y0 * y0)
+    let n0 = 0
+
+    if (t0 >= 0) {
+      const g0 = this.getGradient(i, j)
+      // n = (t ** 4) * (g(i,j) dot (x,y))
+      n0 = (t0 * t0 * t0 * t0) * ((g0[0] * x0) + (g0[1] * y0))
+    }
+
+    // Calculate contribution from corner 1
+    const t1 = 0.5 - x1 * x1 - y1 * y1
+    let n1 = 0
+
+    if (t1 >= 0) {
+      const g1 = this.getGradient(i + i1, j + j1)
+      n1 = (t1 * t1 * t1 * t1) * ((g1[0] * x1) + (g1[1] * y1))
+    }
+
+    // Calculate contribution from corner 2
+    const t2 = 0.5 - x2 * x2 - y2 * y2
+    let n2 = 0
+
+    if (t2 >= 0) {
+      const g2 = this.getGradient(i + 1, j + 1)
+      n2 = (t2 * t2 * t2 * t2) * ((g2[0] * x2) + (g2[1] * y2))
+    }
+
+    // Sum and scale contributions
+    return syngen.utility.clamp(
+      syngen.utility.scale(n0 + n1 + n2, -this.range, this.range, 0, 1),
+      0,
+      1
+    )
+  },
+}
+
+/**
+ * Provides an interface for generating seeded three-dimensional OpenSimplex noise.
+ * @interface
+ * @see syngen.utility.simplex3d.create
+ * @todo Document private members
+ */
+syngen.utility.simplex3d = {}
+
+/**
+ * Instantiates a three-dimensional OpenSimplex noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.simplex3d}
+ * @static
+ */
+syngen.utility.simplex3d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
+}
+
+syngen.utility.simplex3d.prototype = {
+  /**
+   * Initializes the instance with `...seeds`.
+   * @instance
+   * @param {...String} [...seeds]
+   * @private
+   */
+  construct: function (...seeds) {
+    this.gradient = new Map()
+    this.seed = seeds
+    return this
+  },
+  /**
+   * Generates the gradient at `(x, y, z)` in simplex space.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @private
+   */
+  generateGradient: function (xin, yin, zin) {
+    const srand = syngen.utility.srand('simplex', ...this.seed, xin, yin, zin)
+
+    let x = srand(-1, 1),
+      y = srand(-1, 1),
+      z = srand(-1, 1)
+
+    const distance = Math.sqrt((x * x) + (y * y) + (z * z))
+
+    if (distance > 1) {
+      x /= distance
+      y /= distance
+      z /= distance
+    }
+
+    return [
+      x,
+      y,
+      z,
+    ]
+  },
+  /**
+   * Retrieves the gradient at `(x, y, z)` in simplex space.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @private
+   * @returns {Number}
+   */
+  getGradient: function (x, y, z) {
+    let xMap = this.gradient.get(x)
+
+    if (!xMap) {
+      xMap = new Map()
+      this.gradient.set(x, xMap)
+    }
+
+    let yMap = xMap.get(y)
+
+    if (!yMap) {
+      yMap = new Map()
+      xMap.set(y, yMap)
+    }
+
+    let gradient = yMap.get(z)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x, y, z)
+      yMap.set(z, gradient)
+    }
+
+    return gradient
+  },
+  /**
+   * Range (plus and minus) to scale the output such that it's normalized to `[0, 1]`.
+   * This magic number was derived from a brute-force method.
+   * @instance
+   * @private
+   */
+  range: 1/107,
+  /**
+   * Clears all generated values.
+   * Implementations are encouraged to call this whenever {@link syngen.seed} is set, {@link syngen.state} is reset, or memory becomes an issue.
+   * @instance
+   */
+  reset: function () {
+    this.gradient.clear()
+
+    return this
+  },
+  /**
+   * Factor to skew input space into simplex space in three dimensions.
+   * @instance
+   * @private
+   */
+  skewFactor: 1/3,
+  /**
+   * Factor to skew simplex space into input space in three dimensions.
+   * @instance
+   * @private
+   */
+  unskewFactor: 1/6,
+  /**
+   * Calculates the value at `(x, y, z)`.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @returns {Number}
+   */
+  value: function (xin, yin, zin) {
+    const F3 = this.skewFactor,
+      G3 = this.unskewFactor
+
+    // Skew input space
+    const s = (xin + yin + zin) * F3,
+      i = Math.floor(xin + s),
+      j = Math.floor(yin + s),
+      k = Math.floor(zin + s),
+      t = (i + j + k) * G3
+
+    // Unskew back to input space
+    const X0 = i - t,
+      Y0 = j - t,
+      Z0 = k - t
+
+    // Deltas within input space
+    const x0 = xin - X0,
+      y0 = yin - Y0,
+      z0 = zin - Z0
+
+    // Offsets for corner 1 within skewed space
+    let i1, j1, k1
+
+    // Offsets for corner 2 within skewed space
+    let i2, j2, k2
+
+    if (x0 >= y0) {
+      if (y0 >= z0) {
+        i1 = 1
+        j1 = 0
+        k1 = 0
+        i2 = 1
+        j2 = 1
+        k2 = 0
+      } else if (x0 >= z0) {
+        i1 = 1
+        j1 = 0
+        k1 = 0
+        i2 = 1
+        j2 = 0
+        k2 = 1
+      } else {
+        i1 = 0
+        j1 = 0
+        k1 = 1
+        i2 = 1
+        j2 = 0
+        k2 = 1
+      }
+    } else {
+      if (y0 < z0) {
+        i1 = 0
+        j1 = 0
+        k1 = 1
+        i2 = 0
+        j2 = 1
+        k2 = 1
+      } else if (x0 < z0) {
+        i1 = 0
+        j1 = 1
+        k1 = 0
+        i2 = 0
+        j2 = 1
+        k2 = 1
+      } else {
+        i1 = 0
+        j1 = 1
+        k1 = 0
+        i2 = 1
+        j2 = 1
+        k2 = 0
+      }
+    }
+
+    // Offsets for corner 1 within input space
+    const x1 = x0 - i1 + G3,
+      y1 = y0 - j1 + G3,
+      z1 = z0 - k1 + G3
+
+    // Offsets for corner 2 within input space
+    const x2 = x0 - i2 + (2 * G3),
+      y2 = y0 - j2 + (2 * G3),
+      z2 = z0 - k2 + (2 * G3)
+
+    // Offsets for corner 3 within input space
+    const x3 = x0 - 1 + (3 * G3),
+      y3 = y0 - 1 + (3 * G3),
+      z3 = z0 - 1 + (3 * G3)
+
+    // Calculate contribution from corner 0
+    const t0 = 0.5 - (x0 * x0) - (y0 * y0) - (z0 * z0)
+    let n0 = 0
+
+    if (t0 >= 0) {
+      const g0 = this.getGradient(i, j, k)
+      // n = (t ** 4) * (g(i,j,k) dot (x,y,z))
+      n0 = (t0 * t0 * t0 * t0) * ((g0[0] * x0) + (g0[1] * y0) + (g0[2] * z0))
+    }
+
+    // Calculate contribution from corner 1
+    const t1 = 0.5 - (x1 * x1) - (y1 * y1) - (z1 * z1)
+    let n1 = 0
+
+    if (t1 >= 0) {
+      const g1 = this.getGradient(i + i1, j + j1, k + k1)
+      n1 = (t1 * t1 * t1 * t1) * ((g1[0] * x1) + (g1[1] * y1) + (g1[2] * z1))
+    }
+
+    // Calculate contribution from corner 2
+    const t2 = 0.5 - (x2 * x2) - (y2 * y2) - (z2 * z2)
+    let n2 = 0
+
+    if (t2 >= 0) {
+      const g2 = this.getGradient(i + i2, j + j2, k + k2)
+      n2 = (t2 * t2 * t2 * t2) * ((g2[0] * x2) + (g2[1] * y2) + (g2[2] * z2))
+    }
+
+    // Calculate contribution from corner 3
+    const t3 = 0.5 - (x3 * x3) - (y3 * y3) - (z3 * z3)
+    let n3 = 0
+
+    if (t3 >= 0) {
+      const g3 = this.getGradient(i + 1, j + 1, k + 1)
+      n3 = (t3 * t3 * t3 * t3) * ((g3[0] * x3) + (g3[1] * y3) + (g3[2] * z3))
+    }
+
+    // Sum and scale contributions
+    return syngen.utility.clamp(
+      syngen.utility.scale(n0 + n1 + n2 + n3, -this.range, this.range, 0, 1),
+      0,
+      1
+    )
+  },
+}
+
+/**
+ * Provides an interface for generating seeded four-dimensional OpenSimplex noise.
+ * @interface
+ * @see syngen.utility.simplex4d.create
+ * @todo Document private members
+ */
+syngen.utility.simplex4d = {}
+
+/**
+ * Instantiates a four-dimensional OpenSimplex noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.simplex4d}
+ * @static
+ */
+syngen.utility.simplex4d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
+}
+
+syngen.utility.simplex4d.prototype = {
+  /**
+   * Initializes the instance with `...seeds`.
+   * @instance
+   * @param {...String} [...seeds]
+   * @private
+   */
+  construct: function (...seeds) {
+    this.gradient = new Map()
+    this.seed = seeds
+    return this
+  },
+  /**
+   * Generates the gradient at `(x, y, z, w)` in simplex space.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @private
+   */
+  generateGradient: function (xin, yin, zin, win) {
+    const srand = syngen.utility.srand('simplex', ...this.seed, xin, yin, zin, win)
+
+    let x = srand(-1, 1),
+      y = srand(-1, 1),
+      z = srand(-1, 1),
+      w = srand(-1, 1)
+
+    const distance = Math.sqrt((x * x) + (y * y) + (z * z) + (w * w))
+
+    if (distance > 1) {
+      x /= distance
+      y /= distance
+      z /= distance
+      w /= distance
+    }
+
+    return [
+      x,
+      y,
+      z,
+      w,
+    ]
+  },
+  /**
+   * Retrieves the gradient at `(x, y, z, w)` in simplex space.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} w
+   * @private
+   * @returns {Number}
+   */
+  getGradient: function (x, y, z, w) {
+    let xMap = this.gradient.get(x)
+
+    if (!xMap) {
+      xMap = new Map()
+      this.gradient.set(x, xMap)
+    }
+
+    let yMap = xMap.get(y)
+
+    if (!yMap) {
+      yMap = new Map()
+      xMap.set(y, yMap)
+    }
+
+    let zMap = yMap.get(z)
+
+    if (!zMap) {
+      zMap = new Map()
+      yMap.set(z, zMap)
+    }
+
+    let gradient = zMap.get(w)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x, y, z, w)
+      zMap.set(w, gradient)
+    }
+
+    return gradient
+  },
+  /**
+   * Range (plus and minus) to scale the output such that it's normalized to `[0, 1]`.
+   * This magic number was derived from a brute-force method.
+   * @instance
+   * @private
+   */
+  range: 1/108,
+  /**
+   * Clears all generated values.
+   * Implementations are encouraged to call this whenever {@link syngen.seed} is set, {@link syngen.state} is reset, or memory becomes an issue.
+   * @instance
+   */
+  reset: function () {
+    this.gradient.clear()
+
+    return this
+  },
+  /**
+   * Factor to skew input space into simplex space in four dimensions.
+   * @instance
+   * @private
+   */
+  skewFactor: (Math.sqrt(5) - 1) / 4,
+  /**
+   * Factor to skew simplex space into input space in four dimensions.
+   * @instance
+   * @private
+   */
+  unskewFactor: (5 - Math.sqrt(5)) / 20,
+  /**
+   * Calculates the value at `(x, y, z, w)`.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} w
+   * @returns {Number}
+   */
+  value: function (xin, yin, zin, win) {
+    const F4 = this.skewFactor,
+      G4 = this.unskewFactor
+
+    // Skew input space
+    const s = (xin + yin + zin + win) * F4,
+      i = Math.floor(xin + s),
+      j = Math.floor(yin + s),
+      k = Math.floor(zin + s),
+      l = Math.floor(win + s),
+      t = (i + j + k + l) * G4
+
+    // Unskew back to input space
+    const X0 = i - t,
+      Y0 = j - t,
+      Z0 = k - t,
+      W0 = l - t
+
+    // Deltas within input space
+    const x0 = xin - X0,
+      y0 = yin - Y0,
+      z0 = zin - Z0,
+      w0 = win - W0
+
+    // Rank coordinates
+    let rankx = 0,
+      ranky = 0,
+      rankz = 0,
+      rankw = 0
+
+    if (x0 > y0) {
+      rankx++
+    } else {
+      ranky++
+    }
+
+    if (x0 > z0) {
+      rankx++
+    } else {
+      rankz++
+    }
+
+    if (x0 > w0) {
+      rankx++
+    } else {
+      rankw++
+    }
+
+    if (y0 > z0) {
+      ranky++
+    } else {
+      rankz++
+    }
+
+    if (y0 > w0) {
+      ranky++
+    } else {
+      rankw++
+    }
+
+    if (z0 > w0) {
+      rankz++
+    } else {
+      rankw++
+    }
+
+    // Offsets for corner 1 within skewed space
+    const i1 = rankx >= 3 ? 1 : 0,
+      j1 = ranky >= 3 ? 1 : 0,
+      k1 = rankz >= 3 ? 1 : 0,
+      l1 = rankw >= 3 ? 1 : 0
+
+    // Offsets for corner 2 within skewed space
+    const i2 = rankx >= 2 ? 1 : 0,
+      j2 = ranky >= 2 ? 1 : 0,
+      k2 = rankz >= 2 ? 1 : 0,
+      l2 = rankw >= 2 ? 1 : 0
+
+    // Offsets for corner 3 within skewed space
+    const i3 = rankx >= 1 ? 1 : 0,
+      j3 = ranky >= 1 ? 1 : 0,
+      k3 = rankz >= 1 ? 1 : 0,
+      l3 = rankw >= 1 ? 1 : 0
+
+    // Offsets for corner 1 within input space
+    const x1 = x0 - i1 + G4,
+      y1 = y0 - j1 + G4,
+      z1 = z0 - k1 + G4,
+      w1 = w0 - l1 + G4
+
+    // Offsets for corner 2 within input space
+    const x2 = x0 - i2 + (2 * G4),
+      y2 = y0 - j2 + (2 * G4),
+      z2 = z0 - k2 + (2 * G4),
+      w2 = w0 - l2 + (2 * G4)
+
+    // Offsets for corner 3 within input space
+    const x3 = x0 - i3 + (3 * G4),
+      y3 = y0 - j3 + (3 * G4),
+      z3 = z0 - k3 + (3 * G4),
+      w3 = w0 - l3 + (3 * G4)
+
+    // Offsets for corner 4 within input space
+    const x4 = x0 - 1 + (4 * G4),
+      y4 = y0 - 1 + (4 * G4),
+      z4 = z0 - 1 + (4 * G4),
+      w4 = w0 - 1 + (4 * G4)
+
+    // Calculate contribution from corner 0
+    const t0 = 0.5 - (x0 * x0) - (y0 * y0) - (z0 * z0) - (w0 * w0)
+    let n0 = 0
+
+    if (t0 >= 0) {
+      const g0 = this.getGradient(i, j, k, l)
+      // n = (t ** 4) * (g(i,j,k,l) dot (x,y,z,w))
+      n0 = (t0 * t0 * t0 * t0) * ((g0[0] * x0) + (g0[1] * y0) + (g0[2] * z0) + (g0[3] * w0))
+    }
+
+    // Calculate contribution from corner 1
+    const t1 = 0.5 - (x1 * x1) - (y1 * y1) - (z1 * z1) - (w1 * w1)
+    let n1 = 0
+
+    if (t1 >= 0) {
+      const g1 = this.getGradient(i + i1, j + j1, k + k1, l + l1)
+      n1 = (t1 * t1 * t1 * t1) * ((g1[0] * x1) + (g1[1] * y1) + (g1[2] * z1) + (g1[3] * w1))
+    }
+
+    // Calculate contribution from corner 2
+    const t2 = 0.5 - (x2 * x2) - (y2 * y2) - (z2 * z2) - (w2 * w2)
+    let n2 = 0
+
+    if (t2 >= 0) {
+      const g2 = this.getGradient(i + i2, j + j2, k + k2, l + l2)
+      n2 = (t2 * t2 * t2 * t2) * ((g2[0] * x2) + (g2[1] * y2) + (g2[2] * z2) + (g2[3] * w2))
+    }
+
+    // Calculate contribution from corner 3
+    const t3 = 0.5 - (x3 * x3) - (y3 * y3) - (z3 * z3) - (w3 * w3)
+    let n3 = 0
+
+    if (t3 >= 0) {
+      const g3 = this.getGradient(i + i3, j + j3, k + k3, l + l3)
+      n3 = (t3 * t3 * t3 * t3) * ((g3[0] * x3) + (g3[1] * y3) + (g3[2] * z3) + (g3[3] * w3))
+    }
+
+    // Calculate contribution from corner 4
+    const t4 = 0.5 - (x4 * x4) - (y4 * y4) - (z4 * z4) - (w4 * w4)
+    let n4 = 0
+
+    if (t4 >= 0) {
+      const g4 = this.getGradient(i + 1, j + 1, k + 1, l + 1)
+      n4 = (t4 * t4 * t4 * t4) * ((g4[0] * x4) + (g4[1] * y4) + (g4[2] * z4) + (g4[3] * w4))
+    }
+
+    // Sum and scale contributions
+    return syngen.utility.clamp(
+      syngen.utility.scale(n0 + n1 + n2 + n3 + n4, -this.range, this.range, 0, 1),
+      0,
+      1
+    )
+  },
 }
 
 /**
@@ -8140,7 +8682,7 @@ syngen.audio.mixer.auxiliary.reverb = (() => {
       convolver.connect(output)
 
       if (active) {
-        input.connect(convolver)
+        input.connect(delay)
       }
 
       return this
@@ -8825,6 +9367,14 @@ window.addEventListener('blur', (e) => {
  * @namespace
  */
 syngen.input.mouse = (() => {
+  let memory = {
+    moveX: 0,
+    moveY: 0,
+    wheelX: 0,
+    wheelY: 0,
+    wheelZ: 0,
+  }
+
   let state = {
     button: {},
     moveX: 0,
@@ -8917,6 +9467,14 @@ syngen.input.mouse = (() => {
      * @memberof syngen.input.mouse
      */
     reset: function () {
+      memory = {
+        moveX: 0,
+        moveY: 0,
+        wheelX: 0,
+        wheelY: 0,
+        wheelZ: 0,
+      }
+
       state = {
         button: {},
         moveX: 0,
@@ -8929,20 +9487,24 @@ syngen.input.mouse = (() => {
       return this
     },
     /**
-     * Resets scrolling and movement at the next JavaScript event loop.
-     * This allows {@link syngen.loop#event:frame} listeners to query these values before they reset between frames.
+     * Decrements previous from current state values so they reflect only changes since last frame.
      * @listens syngen.loop#event:frame
      * @memberof syngen.input.mouse
      */
     update: function () {
-      setTimeout(() => {
-        state.moveX = 0
-        state.moveY = 0
+      state.moveX -= memory.moveX
+      state.moveY -= memory.moveY
+      state.wheelX -= memory.wheelX
+      state.wheelY -= memory.wheelY
+      state.wheelZ -= memory.wheelZ
 
-        state.wheelX = 0
-        state.wheelY = 0
-        state.wheelZ = 0
-      })
+      memory = {
+        moveX: state.moveX,
+        moveY: state.moveY,
+        wheelX: state.wheelX,
+        wheelY: state.wheelY,
+        wheelZ: state.wheelZ,
+      }
 
       return this
     },

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: syngen/utility/euler.js</title>
+    <title>JSDoc: Source: syngen/utility/simplex4d.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: syngen/utility/euler.js</h1>
+    <h1 class="page-title">Source: syngen/utility/simplex4d.js</h1>
 
     
 
@@ -27,218 +27,307 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/**
- * Provides an interface for Euler angles.
- * They express 3D orientations in space with pitch, roll, and yaw.
- * Although they're explicitly easier to use, implementations should prefer {@linkplain syngen.utility.quaternion|quaternions} to avoid gimbal lock.
+ * Provides an interface for generating seeded four-dimensional OpenSimplex noise.
  * @interface
- * @see syngen.utility.euler.create
+ * @see syngen.utility.simplex4d.create
+ * @todo Document private members
  */
-syngen.utility.euler = {}
+syngen.utility.simplex4d = {}
 
 /**
- * Instantiates a new Euler angle.
- * @param {syngen.utility.euler|Object} [options={}]
- * @param {Number} [options.pitch=0]
- * @param {Number} [options.roll=0]
- * @param {Number} [options.yaw=0]
- * @returns {syngen.utility.euler}
+ * Instantiates a four-dimensional OpenSimplex noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.utility.simplex4d}
  * @static
  */
-syngen.utility.euler.create = function (options = {}) {
-  return Object.create(this.prototype).construct(options)
+syngen.utility.simplex4d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
 }
 
-/**
- * Converts a quaternion to an Euler angle.
- * @param {syngen.utility.quaternion} quaternion
- * @param {String} [sequence={@link syngen.const.eulerToQuaternion}]
- * @returns {syngen.utility.euler}
- * @see syngen.const.eulerToQuaternion
- * @static
- */
-syngen.utility.euler.fromQuaternion = function ({
-  w = 0,
-  x = 0,
-  y = 0,
-  z = 0,
-} = {}, sequence = syngen.const.eulerToQuaternion) {
-  // SEE: http://bediyap.com/programming/convert-quaternion-to-euler-rotations/
-  const w2 = w ** 2,
-    wx = w * x,
-    wy = w * y,
-    wz = w * z,
-    x2 = x ** 2,
-    xy = x * y,
-    xz = x * z,
-    y2 = y ** 2,
-    yz = y * z,
-    z2 = z ** 2
-
-  switch (sequence) {
-    case 'XYZ':
-      return this.create({
-        pitch: Math.asin(2 * (xz + wy)),
-        roll: Math.atan2(-2 * (yz - wx), w2 - x2 - y2 + z2),
-        yaw: Math.atan2(-2 * (xy - wz), w2 + x2 - y2 - z2),
-      })
-    case 'XZY':
-      return this.create({
-        pitch: Math.atan2(2 * (xz + wy), w2 + x2 - y2 - z2),
-        roll: Math.atan2(2 * (yz + wx), w2 - x2 + y2 - z2),
-        yaw: Math.asin(-2 * (xy - wz)),
-      })
-    case 'YXZ':
-      return this.create({
-        pitch: Math.atan2(2 * (xz + wy), w2 - x2 - y2 + z2),
-        roll: Math.asin(-2 * (yz - wx)),
-        yaw: Math.atan2(2 * (xy + wz), w2 - x2 + y2 - z2),
-      })
-    case 'YZX':
-      return this.create({
-        pitch: Math.atan2(-2 * (xz - wy), w2 + x2 - y2 - z2),
-        roll: Math.atan2(-2 * (yz - wx), w2 - x2 + y2 - z2),
-        yaw: Math.asin(2 * (xy + wz)),
-      })
-    case 'ZXY':
-      return this.create({
-        pitch: Math.atan2(-2 * (xz - wy), w2 - x2 - y2 + z2),
-        roll: Math.asin(2 * (yz + wx)),
-        yaw: Math.atan2(-2 * (xy - wz), w2 - x2 + y2 - z2),
-      })
-    case 'ZYX':
-      return this.create({
-        pitch: Math.asin(-2 * (xz - wy)),
-        roll: Math.atan2(2 * (yz + wx), w2 - x2 - y2 + z2),
-        yaw: Math.atan2(2 * (xy + wz), w2 + x2 - y2 - z2),
-      })
-  }
-}
-
-syngen.utility.euler.prototype = {
+syngen.utility.simplex4d.prototype = {
   /**
-   * Returns a new instance with the same properties.
+   * Initializes the instance with `...seeds`.
    * @instance
-   * @returns {syngen.utility.euler}
-   */
-  clone: function () {
-    return syngen.utility.euler.create(this)
-  },
-  /**
-   * Initializes the instance with `options`.
-   * @instance
-   * @param {Object} [options={}]
+   * @param {...String} [...seeds]
    * @private
    */
-  construct: function ({
-    pitch = 0,
-    roll = 0,
-    yaw = 0,
-  } = {}) {
-    this.pitch = pitch
-    this.roll = roll
-    this.yaw = yaw
+  construct: function (...seeds) {
+    this.gradient = new Map()
+    this.seed = seeds
     return this
   },
   /**
-   * Returns whether this is equal to `euler`.
+   * Generates the gradient at `(x, y, z, w)` in simplex space.
    * @instance
-   * @param {syngen.utility.euler|Object} [euler]
-   * @returns {Boolean}
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @private
    */
-  equals: function ({
-    pitch = 0,
-    roll = 0,
-    yaw = 0,
-  } = {}) {
-    return (this.pitch == pitch) &amp;&amp; (this.roll == roll) &amp;&amp; (this.yaw == yaw)
+  generateGradient: function (xin, yin, zin, win) {
+    const srand = syngen.utility.srand('simplex', ...this.seed, xin, yin, zin, win)
+
+    let x = srand(-1, 1),
+      y = srand(-1, 1),
+      z = srand(-1, 1),
+      w = srand(-1, 1)
+
+    const distance = Math.sqrt((x * x) + (y * y) + (z * z) + (w * w))
+
+    if (distance > 1) {
+      x /= distance
+      y /= distance
+      z /= distance
+      w /= distance
+    }
+
+    return [
+      x,
+      y,
+      z,
+      w,
+    ]
   },
   /**
-   * Returns the unit vector that's ahead of the orientation.
-   * The vector can be inverted to receive a vector behind.
+   * Retrieves the gradient at `(x, y, z, w)` in simplex space.
    * @instance
-   * @returns {syngen.utility.vector3d}
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} w
+   * @private
+   * @returns {Number}
    */
-  forward: function () {
-    return syngen.utility.vector3d.unitX().rotateEuler(this)
+  getGradient: function (x, y, z, w) {
+    let xMap = this.gradient.get(x)
+
+    if (!xMap) {
+      xMap = new Map()
+      this.gradient.set(x, xMap)
+    }
+
+    let yMap = xMap.get(y)
+
+    if (!yMap) {
+      yMap = new Map()
+      xMap.set(y, yMap)
+    }
+
+    let zMap = yMap.get(z)
+
+    if (!zMap) {
+      zMap = new Map()
+      yMap.set(z, zMap)
+    }
+
+    let gradient = zMap.get(w)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x, y, z, w)
+      zMap.set(w, gradient)
+    }
+
+    return gradient
   },
   /**
-   * Returns whether all properties are zero.
+   * Range (plus and minus) to scale the output such that it's normalized to `[0, 1]`.
+   * This magic number was derived from a brute-force method.
    * @instance
-   * @returns {Boolean}
+   * @private
    */
-  isZero: function () {
-    return !this.pitch &amp;&amp; !this.roll &amp;&amp; !this.yaw
-  },
+  range: 1/108,
   /**
-   * Rotation along the y-axis.
-   * Normally within `[-π/2, π/2]`.
+   * Clears all generated values.
+   * Implementations are encouraged to call this whenever {@link syngen.seed} is set, {@link syngen.state} is reset, or memory becomes an issue.
    * @instance
-   * @type {Number}
    */
-  pitch: 0,
-  /**
-   * Returns the unit vector that's to the right of the orientation.
-   * The vector can be inverted to receive a vector to its left.
-   * @instance
-   * @returns {syngen.utility.vector3d}
-   */
-  right: function () {
-    return syngen.utility.vector3d.unitY().rotateEuler(this)
-  },
-  /**
-   * Rotation along the x-axis.
-   * Normally within `[-π, π]`.
-   * @instance
-   * @type {Number}
-   */
-  roll: 0,
-  /**
-   * Multiplies this by `scalar` and returns it as a new instance.
-   * @instance
-   * @param {Number} [scalar=0]
-   * @returns {syngen.utility.euler}
-   */
-  scale: function (scalar = 0) {
-    return syngen.utility.euler.create({
-      pitch: this.pitch * scalar,
-      roll: this.roll * scalar,
-      yaw: this.yaw * scalar,
-    })
-  },
-  /**
-   * Sets all properties to `options`.
-   * @instance
-   * @param {syngen.utility.euler|Object} [options]
-   * @param {Number} [options.pitch=0]
-   * @param {Number} [options.roll=0]
-   * @param {Number} [options.yaw=0]
-   */
-  set: function ({
-    pitch = 0,
-    roll = 0,
-    yaw = 0,
-  } = {}) {
-    this.pitch = pitch
-    this.roll = roll
-    this.yaw = yaw
+  reset: function () {
+    this.gradient.clear()
+
     return this
   },
   /**
-   * Returns the unit vector that's above of the orientation.
-   * The vector can be inverted to receive a vector below.
+   * Factor to skew input space into simplex space in four dimensions.
    * @instance
-   * @returns {syngen.utility.vector3d}
+   * @private
    */
-  up: function () {
-    return syngen.utility.vector3d.unitZ().rotateEuler(this)
-  },
+  skewFactor: (Math.sqrt(5) - 1) / 4,
   /**
-   * Rotation along the z-axis.
-   * Normally within `[-π, π]`.
+   * Factor to skew simplex space into input space in four dimensions.
    * @instance
-   * @type {Number}
+   * @private
    */
-  yaw: 0,
+  unskewFactor: (5 - Math.sqrt(5)) / 20,
+  /**
+   * Calculates the value at `(x, y, z, w)`.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} w
+   * @returns {Number}
+   */
+  value: function (xin, yin, zin, win) {
+    const F4 = this.skewFactor,
+      G4 = this.unskewFactor
+
+    // Skew input space
+    const s = (xin + yin + zin + win) * F4,
+      i = Math.floor(xin + s),
+      j = Math.floor(yin + s),
+      k = Math.floor(zin + s),
+      l = Math.floor(win + s),
+      t = (i + j + k + l) * G4
+
+    // Unskew back to input space
+    const X0 = i - t,
+      Y0 = j - t,
+      Z0 = k - t,
+      W0 = l - t
+
+    // Deltas within input space
+    const x0 = xin - X0,
+      y0 = yin - Y0,
+      z0 = zin - Z0,
+      w0 = win - W0
+
+    // Rank coordinates
+    let rankx = 0,
+      ranky = 0,
+      rankz = 0,
+      rankw = 0
+
+    if (x0 > y0) {
+      rankx++
+    } else {
+      ranky++
+    }
+
+    if (x0 > z0) {
+      rankx++
+    } else {
+      rankz++
+    }
+
+    if (x0 > w0) {
+      rankx++
+    } else {
+      rankw++
+    }
+
+    if (y0 > z0) {
+      ranky++
+    } else {
+      rankz++
+    }
+
+    if (y0 > w0) {
+      ranky++
+    } else {
+      rankw++
+    }
+
+    if (z0 > w0) {
+      rankz++
+    } else {
+      rankw++
+    }
+
+    // Offsets for corner 1 within skewed space
+    const i1 = rankx >= 3 ? 1 : 0,
+      j1 = ranky >= 3 ? 1 : 0,
+      k1 = rankz >= 3 ? 1 : 0,
+      l1 = rankw >= 3 ? 1 : 0
+
+    // Offsets for corner 2 within skewed space
+    const i2 = rankx >= 2 ? 1 : 0,
+      j2 = ranky >= 2 ? 1 : 0,
+      k2 = rankz >= 2 ? 1 : 0,
+      l2 = rankw >= 2 ? 1 : 0
+
+    // Offsets for corner 3 within skewed space
+    const i3 = rankx >= 1 ? 1 : 0,
+      j3 = ranky >= 1 ? 1 : 0,
+      k3 = rankz >= 1 ? 1 : 0,
+      l3 = rankw >= 1 ? 1 : 0
+
+    // Offsets for corner 1 within input space
+    const x1 = x0 - i1 + G4,
+      y1 = y0 - j1 + G4,
+      z1 = z0 - k1 + G4,
+      w1 = w0 - l1 + G4
+
+    // Offsets for corner 2 within input space
+    const x2 = x0 - i2 + (2 * G4),
+      y2 = y0 - j2 + (2 * G4),
+      z2 = z0 - k2 + (2 * G4),
+      w2 = w0 - l2 + (2 * G4)
+
+    // Offsets for corner 3 within input space
+    const x3 = x0 - i3 + (3 * G4),
+      y3 = y0 - j3 + (3 * G4),
+      z3 = z0 - k3 + (3 * G4),
+      w3 = w0 - l3 + (3 * G4)
+
+    // Offsets for corner 4 within input space
+    const x4 = x0 - 1 + (4 * G4),
+      y4 = y0 - 1 + (4 * G4),
+      z4 = z0 - 1 + (4 * G4),
+      w4 = w0 - 1 + (4 * G4)
+
+    // Calculate contribution from corner 0
+    const t0 = 0.5 - (x0 * x0) - (y0 * y0) - (z0 * z0) - (w0 * w0)
+    let n0 = 0
+
+    if (t0 >= 0) {
+      const g0 = this.getGradient(i, j, k, l)
+      // n = (t ** 4) * (g(i,j,k,l) dot (x,y,z,w))
+      n0 = (t0 * t0 * t0 * t0) * ((g0[0] * x0) + (g0[1] * y0) + (g0[2] * z0) + (g0[3] * w0))
+    }
+
+    // Calculate contribution from corner 1
+    const t1 = 0.5 - (x1 * x1) - (y1 * y1) - (z1 * z1) - (w1 * w1)
+    let n1 = 0
+
+    if (t1 >= 0) {
+      const g1 = this.getGradient(i + i1, j + j1, k + k1, l + l1)
+      n1 = (t1 * t1 * t1 * t1) * ((g1[0] * x1) + (g1[1] * y1) + (g1[2] * z1) + (g1[3] * w1))
+    }
+
+    // Calculate contribution from corner 2
+    const t2 = 0.5 - (x2 * x2) - (y2 * y2) - (z2 * z2) - (w2 * w2)
+    let n2 = 0
+
+    if (t2 >= 0) {
+      const g2 = this.getGradient(i + i2, j + j2, k + k2, l + l2)
+      n2 = (t2 * t2 * t2 * t2) * ((g2[0] * x2) + (g2[1] * y2) + (g2[2] * z2) + (g2[3] * w2))
+    }
+
+    // Calculate contribution from corner 3
+    const t3 = 0.5 - (x3 * x3) - (y3 * y3) - (z3 * z3) - (w3 * w3)
+    let n3 = 0
+
+    if (t3 >= 0) {
+      const g3 = this.getGradient(i + i3, j + j3, k + k3, l + l3)
+      n3 = (t3 * t3 * t3 * t3) * ((g3[0] * x3) + (g3[1] * y3) + (g3[2] * z3) + (g3[3] * w3))
+    }
+
+    // Calculate contribution from corner 4
+    const t4 = 0.5 - (x4 * x4) - (y4 * y4) - (z4 * z4) - (w4 * w4)
+    let n4 = 0
+
+    if (t4 >= 0) {
+      const g4 = this.getGradient(i + 1, j + 1, k + 1, l + 1)
+      n4 = (t4 * t4 * t4 * t4) * ((g4[0] * x4) + (g4[1] * y4) + (g4[2] * z4) + (g4[3] * w4))
+    }
+
+    // Sum and scale contributions
+    return syngen.utility.clamp(
+      syngen.utility.scale(n0 + n1 + n2 + n3 + n4, -this.range, this.range, 0, 1),
+      0,
+      1
+    )
+  },
 }
 </code></pre>
         </article>

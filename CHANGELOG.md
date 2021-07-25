@@ -1,6 +1,8 @@
 # syngen changelog
 ## v0.2.0
-- Added utilities for generating seeded OpenSimplex noise in 2D, 3D, and 4D
+- Added `syngen.utility.simplex2d` for generating OpenSimplex noise in two dimensions
+- Added `syngen.utility.simplex3d` for generating OpenSimplex noise in three dimensions
+- Added `syngen.utility.simplex4d` for generating OpenSimplex noise in four dimensions
 - Improved performance of noise generation with octaves
 - Improved performance of Perlin noise generation
 - **[BREAKING]**
@@ -13,8 +15,8 @@ Implementations should call `reset()` manually whenever memory becomes an issue.
 Fixed a routing issue where changing reverb impulses bypassed pre-delay.
 Implementations may increase the reverb gain by 3 decibels to achieve the same loudness.
 - **[BREAKING]**
-Marked `syngen.utility.createPerlinWithOctaves` as deprecated to be removed in a later release.
-Please see `syngen.utility.createNoiseWithOctaves` for a replacement.
+Marked `syngen.utility.createPerlinWithOctaves` as deprecated for removal in a later release.
+Implementations should use `syngen.utility.createNoiseWithOctaves` instead.
 
 ## v0.1.4
 - Fixed keypresses not clearing within `syngen.input.keyboard` when the window loses focus
