@@ -160,34 +160,49 @@ syngen.utility.closest = function (x, values = []) {
 }
 
 /**
- * Instantiates `octaves` Perlin noise generators of `type` with `seed` and returns a wrapper object that calculates their combined values.
- * @param {syngen.utility.perlin1d|syngen.utility.perlin2d|syngen.utility.perlin3d|syngen.utility.perlin4d} type
- *   Must be a Perlin noise utility, and not a factory method or an instance.
- * @param {*} seed
- * @param {Number} [octaves=2]
+ * Instantiates `octaves` noise generators of `type` with `seed` and returns a wrapper object that calculates their combined values.
+ * @param {Object} options
+ * @param {Number} [options.octaves=2]
+ * @param {*} options.seed
+ * @param {syngen.utility.perlin1d|syngen.utility.perlin2d|syngen.utility.perlin3d|syngen.utility.perlin4d|syngen.utility.simplex2d|syngen.utility.simplex3d|syngen.utility.simplex4d} options.type
+ *   Must be reference to a noise utility, and not a factory method or an instance.
  * @returns {Object}
  * @static
- * @todo Port into individual perlin utilities for clarity
+ * @todo Port into individual noise utilities for clarity and simplicity
  */
-syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
+syngen.utility.createNoiseWithOctaves = ({
+  seed,
+  octaves = 0,
+  type,
+} = {}) => {
+  if (!type || !type.create || !type.prototype || !type.prototype.reset || !type.prototype.value) {
+    throw new Error('Incorrect type. Please pass a noise utility by reference, e.g. syngen.utility.simplex4d.')
+  }
+
+  octaves = Math.round(octaves)
+
+  if (octaves < 2) {
+    return type.create(seed)
+  }
+
   const compensation = 1 / (1 - (2 ** -octaves)),
-    perlins = []
+    layers = []
 
   if (!Array.isArray(seed)) {
     seed = [seed]
   }
 
   for (let i = 0; i < octaves; i += 1) {
-    perlins.push(
+    layers.push(
       type.create(...seed, 'octave', i)
     )
   }
 
   return {
-    perlin: perlins,
+    layer: layers,
     reset: function () {
-      for (let perlin of this.perlin) {
-        perlin.reset()
+      for (let layer of this.layers) {
+        layer.reset()
       }
       return this
     },
@@ -196,8 +211,9 @@ syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
         frequency = 1,
         sum = 0
 
-      for (let perlin of this.perlin) {
-        sum += perlin.value(...args.map((value) => value * frequency)) * amplitude
+      for (let layer of this.layer) {
+        // XXX: Assumes up to four arguments (4D noise) for optimal performance
+        sum += layer.value(args[0] * frequency, args[1] * frequency, args[2] * frequency, args[3] * frequency) * amplitude
         amplitude /= 2
         frequency *= 2
       }
@@ -207,6 +223,22 @@ syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
       return sum
     },
   }
+}
+
+/**
+ * Instantiates `octaves` noise generators of `type` with `seed` and returns a wrapper object that calculates their combined values.
+ * @deprecated Replaced with {@link syngen.utility.createNoiseWithOctaves}.
+ * @param {syngen.utility.perlin1d|syngen.utility.perlin2d|syngen.utility.perlin3d|syngen.utility.perlin4d|syngen.utility.simplex2d|syngen.utility.simplex3d|syngen.utility.simplex4d} type
+ *   Must be reference to a noise utility, and not a factory method or an instance.
+ * @param {*} seed
+ * @param {Number} [octaves=2]
+ * @returns {Object}
+ * @static
+ */
+syngen.utility.createPerlinWithOctaves = (type, seed, octaves = 2) => {
+  const generator = syngen.utility.createNoiseWithOctaves(...args)
+  generator.perlins = generator.layers
+  return generator
 }
 
 /**
