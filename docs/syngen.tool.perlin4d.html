@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Interface: perlin4d</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Interface: perlin4d</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>
+            <span class="ancestors"><a href="syngen.html">syngen</a><a href="syngen.tool.html">.tool</a>.</span>perlin4d</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Provides an interface for generating seeded four-dimensional Perlin noise.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="syngen_tool_perlin4d.js.html">syngen/tool/perlin4d.js</a>, <a href="syngen_tool_perlin4d.js.html#line7">line 7</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="syngen.tool.perlin4d.html#.create">syngen.tool.perlin4d.create</a></li>
+        </ul>
+    </dd>
+    
+
+    
+    <dt class="tag-todo">To Do:</dt>
+    <dd class="tag-todo">
+        <ul>
+            <li>Document private members</li>
+        </ul>
+    </dd>
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".create"><span class="type-signature">(static) </span>create<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="syngen.tool.perlin4d.html">syngen.tool.perlin4d</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Instantiates a four-dimensional Perlin noise generator.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>...seeds</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                    &lt;repeatable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="syngen_tool_perlin4d.js.html">syngen/tool/perlin4d.js</a>, <a href="syngen_tool_perlin4d.js.html#line15">line 15</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="syngen.tool.perlin4d.html">syngen.tool.perlin4d</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="reset"><span class="type-signature"></span>reset<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Clears all generated values.
+Implementations are encouraged to call this whenever <a href="syngen.seed.html"><code>syngen.seed</code></a> is set, <a href="syngen.state.html"><code>syngen.state</code></a> is reset, or memory becomes an issue.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="syngen_tool_perlin4d.js.html">syngen/tool/perlin4d.js</a>, <a href="syngen_tool_perlin4d.js.html#line122">line 122</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="value"><span class="type-signature"></span>value<span class="signature">(x, y, z, t)</span><span class="type-signature"> &rarr; {Number}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Calculates the value at <code>(x, y, z, w)</code>.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>x</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>y</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>z</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>t</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="syngen_tool_perlin4d.js.html">syngen/tool/perlin4d.js</a>, <a href="syngen_tool_perlin4d.js.html#line147">line 147</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="syngen.html">syngen</a></li><li><a href="syngen.buffer.html">syngen.buffer</a></li><li><a href="syngen.circuit.html">syngen.circuit</a></li><li><a href="syngen.const.html">syngen.const</a></li><li><a href="syngen.ear.html">syngen.ear</a></li><li><a href="syngen.effect.html">syngen.effect</a></li><li><a href="syngen.fn.html">syngen.fn</a></li><li><a href="syngen.formant.html">syngen.formant</a></li><li><a href="syngen.input.html">syngen.input</a></li><li><a href="syngen.input.gamepad.html">syngen.input.gamepad</a></li><li><a href="syngen.input.keyboard.html">syngen.input.keyboard</a></li><li><a href="syngen.input.mouse.html">syngen.input.mouse</a></li><li><a href="syngen.loop.html">syngen.loop</a></li><li><a href="syngen.mixer.html">syngen.mixer</a></li><li><a href="syngen.mixer.reverb.html">syngen.mixer.reverb</a></li><li><a href="syngen.mixer.reverb.gainModel.html">syngen.mixer.reverb.gainModel</a></li><li><a href="syngen.performance.html">syngen.performance</a></li><li><a href="syngen.position.html">syngen.position</a></li><li><a href="syngen.seed.html">syngen.seed</a></li><li><a href="syngen.shape.html">syngen.shape</a></li><li><a href="syngen.state.html">syngen.state</a></li><li><a href="syngen.synth.html">syngen.synth</a></li><li><a href="syngen.tool.html">syngen.tool</a></li></ul><h3>Interfaces</h3><ul><li><a href="syngen.ear.binaural.html">syngen.ear.binaural</a></li><li><a href="syngen.ear.monaural.html">syngen.ear.monaural</a></li><li><a href="syngen.mixer.reverb.send.html">syngen.mixer.reverb.send</a></li><li><a href="syngen.tool.bitree.html">syngen.tool.bitree</a></li><li><a href="syngen.tool.euler.html">syngen.tool.euler</a></li><li><a href="syngen.tool.fsm.html">syngen.tool.fsm</a></li><li><a href="syngen.tool.noise.html">syngen.tool.noise</a></li><li><a href="syngen.tool.octree.html">syngen.tool.octree</a></li><li><a href="syngen.tool.perlin2d.html">syngen.tool.perlin2d</a></li><li><a href="syngen.tool.perlin3d.html">syngen.tool.perlin3d</a></li><li><a href="syngen.tool.perlin4d.html">syngen.tool.perlin4d</a></li><li><a href="syngen.tool.pubsub.html">syngen.tool.pubsub</a></li><li><a href="syngen.tool.quadtree.html">syngen.tool.quadtree</a></li><li><a href="syngen.tool.quaternion.html">syngen.tool.quaternion</a></li><li><a href="syngen.tool.simplex2d.html">syngen.tool.simplex2d</a></li><li><a href="syngen.tool.simplex3d.html">syngen.tool.simplex3d</a></li><li><a href="syngen.tool.simplex4d.html">syngen.tool.simplex4d</a></li><li><a href="syngen.tool.vector2d.html">syngen.tool.vector2d</a></li><li><a href="syngen.tool.vector3d.html">syngen.tool.vector3d</a></li></ul><h3>Events</h3><ul><li><a href="syngen.loop.html#event:event:frame">syngen.loop#frame</a></li><li><a href="syngen.loop.html#event:event:pause">syngen.loop#pause</a></li><li><a href="syngen.loop.html#event:event:resume">syngen.loop#resume</a></li><li><a href="syngen.loop.html#event:event:start">syngen.loop#start</a></li><li><a href="syngen.loop.html#event:event:stop">syngen.loop#stop</a></li><li><a href="syngen.mixer.reverb.html#event:event:activate">syngen.mixer.reverb#activate</a></li><li><a href="syngen.mixer.reverb.html#event:event:deactivate">syngen.mixer.reverb#deactivate</a></li><li><a href="syngen.state.html#event:event:export">syngen.state#export</a></li><li><a href="syngen.state.html#event:event:import">syngen.state#import</a></li><li><a href="syngen.state.html#event:event:reset">syngen.state#reset</a></li><li><a href="syngen.tool.fsm.html#event:event:after">syngen.tool.fsm#after</a></li><li><a href="syngen.tool.fsm.html#event:event:after-%257Bevent%257D">syngen.tool.fsm#after-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:after-%257Bstate%257D-%257Bevent%257D">syngen.tool.fsm#after-{state}-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:before">syngen.tool.fsm#before</a></li><li><a href="syngen.tool.fsm.html#event:event:before-%257Bevent%257D">syngen.tool.fsm#before-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:before-%257Bstate%257D-%257Bevent%257D">syngen.tool.fsm#before-{state}-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:enter">syngen.tool.fsm#enter</a></li><li><a href="syngen.tool.fsm.html#event:event:enter-%257Bstate%257D">syngen.tool.fsm#enter-{state}</a></li><li><a href="syngen.tool.fsm.html#event:event:exit">syngen.tool.fsm#exit</a></li><li><a href="syngen.tool.fsm.html#event:event:exit-%257Bstate%257D">syngen.tool.fsm#exit-{state}</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.11</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

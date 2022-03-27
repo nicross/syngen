@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: syngen/state.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: syngen/state.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Provides a helper for importing and exporting state.
+ * Systems can subscribe to its events to persist and load their inner states.
+ * @implements syngen.tool.pubsub
+ * @namespace
+ */
+syngen.state = syngen.tool.pubsub.decorate({
+  /**
+   * Exports the state.
+   * The inverse of {@link syngen.state.import}.
+   * @fires syngen.state#event:export
+   * @memberof syngen.state
+   * @returns {Object}
+   */
+  export: function () {
+    const state = {}
+
+    /**
+     * Fired when state is exported.
+     * Subscribers should add an entry to the passed object with their exported state.
+     * @event syngen.state#event:export
+     * @type {Object}
+     */
+    this.emit('export', state)
+
+    return state
+  },
+  /**
+   * Imports the state.
+   * The inverse of {@link syngen.state.export}.
+   * @fires syngen.state#event:import
+   * @memberof syngen.state
+   * @param {Object} [state]
+   */
+  import: function (state = {}) {
+    this.reset()
+
+    /**
+     * Fired when state is imported.
+     * Subscribers should consume the entry they added during export, if one exists.
+     * @event syngen.state#event:import
+     * @type {Object}
+     */
+    this.emit('import', state)
+
+    return this
+  },
+  /**
+   * Resets to a blank state.
+   * @fires syngen.state#event:import
+   * @memberof syngen.state
+   */
+  reset: function () {
+    /**
+     * Fired when state is reset.
+     * Subscribers should clear their internal state when fired.
+     * @event syngen.state#event:reset
+     */
+    this.emit('reset')
+
+    return this
+  }
+})
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="syngen.html">syngen</a></li><li><a href="syngen.buffer.html">syngen.buffer</a></li><li><a href="syngen.circuit.html">syngen.circuit</a></li><li><a href="syngen.const.html">syngen.const</a></li><li><a href="syngen.ear.html">syngen.ear</a></li><li><a href="syngen.effect.html">syngen.effect</a></li><li><a href="syngen.fn.html">syngen.fn</a></li><li><a href="syngen.formant.html">syngen.formant</a></li><li><a href="syngen.input.html">syngen.input</a></li><li><a href="syngen.input.gamepad.html">syngen.input.gamepad</a></li><li><a href="syngen.input.keyboard.html">syngen.input.keyboard</a></li><li><a href="syngen.input.mouse.html">syngen.input.mouse</a></li><li><a href="syngen.loop.html">syngen.loop</a></li><li><a href="syngen.mixer.html">syngen.mixer</a></li><li><a href="syngen.mixer.reverb.html">syngen.mixer.reverb</a></li><li><a href="syngen.mixer.reverb.gainModel.html">syngen.mixer.reverb.gainModel</a></li><li><a href="syngen.performance.html">syngen.performance</a></li><li><a href="syngen.position.html">syngen.position</a></li><li><a href="syngen.seed.html">syngen.seed</a></li><li><a href="syngen.shape.html">syngen.shape</a></li><li><a href="syngen.state.html">syngen.state</a></li><li><a href="syngen.synth.html">syngen.synth</a></li><li><a href="syngen.tool.html">syngen.tool</a></li></ul><h3>Interfaces</h3><ul><li><a href="syngen.ear.binaural.html">syngen.ear.binaural</a></li><li><a href="syngen.ear.monaural.html">syngen.ear.monaural</a></li><li><a href="syngen.mixer.reverb.send.html">syngen.mixer.reverb.send</a></li><li><a href="syngen.tool.bitree.html">syngen.tool.bitree</a></li><li><a href="syngen.tool.euler.html">syngen.tool.euler</a></li><li><a href="syngen.tool.fsm.html">syngen.tool.fsm</a></li><li><a href="syngen.tool.noise.html">syngen.tool.noise</a></li><li><a href="syngen.tool.octree.html">syngen.tool.octree</a></li><li><a href="syngen.tool.perlin2d.html">syngen.tool.perlin2d</a></li><li><a href="syngen.tool.perlin3d.html">syngen.tool.perlin3d</a></li><li><a href="syngen.tool.perlin4d.html">syngen.tool.perlin4d</a></li><li><a href="syngen.tool.pubsub.html">syngen.tool.pubsub</a></li><li><a href="syngen.tool.quadtree.html">syngen.tool.quadtree</a></li><li><a href="syngen.tool.quaternion.html">syngen.tool.quaternion</a></li><li><a href="syngen.tool.simplex2d.html">syngen.tool.simplex2d</a></li><li><a href="syngen.tool.simplex3d.html">syngen.tool.simplex3d</a></li><li><a href="syngen.tool.simplex4d.html">syngen.tool.simplex4d</a></li><li><a href="syngen.tool.vector2d.html">syngen.tool.vector2d</a></li><li><a href="syngen.tool.vector3d.html">syngen.tool.vector3d</a></li></ul><h3>Events</h3><ul><li><a href="syngen.loop.html#event:event:frame">syngen.loop#frame</a></li><li><a href="syngen.loop.html#event:event:pause">syngen.loop#pause</a></li><li><a href="syngen.loop.html#event:event:resume">syngen.loop#resume</a></li><li><a href="syngen.loop.html#event:event:start">syngen.loop#start</a></li><li><a href="syngen.loop.html#event:event:stop">syngen.loop#stop</a></li><li><a href="syngen.mixer.reverb.html#event:event:activate">syngen.mixer.reverb#activate</a></li><li><a href="syngen.mixer.reverb.html#event:event:deactivate">syngen.mixer.reverb#deactivate</a></li><li><a href="syngen.state.html#event:event:export">syngen.state#export</a></li><li><a href="syngen.state.html#event:event:import">syngen.state#import</a></li><li><a href="syngen.state.html#event:event:reset">syngen.state#reset</a></li><li><a href="syngen.tool.fsm.html#event:event:after">syngen.tool.fsm#after</a></li><li><a href="syngen.tool.fsm.html#event:event:after-%257Bevent%257D">syngen.tool.fsm#after-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:after-%257Bstate%257D-%257Bevent%257D">syngen.tool.fsm#after-{state}-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:before">syngen.tool.fsm#before</a></li><li><a href="syngen.tool.fsm.html#event:event:before-%257Bevent%257D">syngen.tool.fsm#before-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:before-%257Bstate%257D-%257Bevent%257D">syngen.tool.fsm#before-{state}-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:enter">syngen.tool.fsm#enter</a></li><li><a href="syngen.tool.fsm.html#event:event:enter-%257Bstate%257D">syngen.tool.fsm#enter-{state}</a></li><li><a href="syngen.tool.fsm.html#event:event:exit">syngen.tool.fsm#exit</a></li><li><a href="syngen.tool.fsm.html#event:event:exit-%257Bstate%257D">syngen.tool.fsm#exit-{state}</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.11</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>syngen example: noise visualizer</title>
+    <script src="../dist/syngen.js"></script>
+  </head>
+  <body>
+    <p>This example visualizes randomly generated noise.</p>
+    <canvas></canvas>
+    <p>FPS: <span id="fps">0</span></p>
+
+    <script>
+      const noise = syngen.fn.createNoise({
+        octaves: 1,
+        seed: 'test',
+        type: 'simplex2d',
+      })
+
+      const size = 4,
+        scale = 100,
+        step = 1/60
+
+      const canvas = document.querySelector('canvas'),
+        context = canvas.getContext('2d'),
+        fps = document.querySelector('#fps')
+
+      let time = 0
+
+      canvas.height = canvas.width = size * scale
+
+      function draw() {
+        const data = context.getImageData(0, 0, canvas.width, canvas.height)
+
+        for (let i = 0; i < data.data.length; i += 4) {
+          const x = (i / 4) % data.width,
+            y = Math.floor((i / 4) / data.width)
+
+          const noiseValue = noise.value((x / scale) + time, (y / scale) + time, time, 0),
+            value = Math.round(noiseValue * 255)
+
+          data.data[i] = value
+          data.data[i + 1] = value
+          data.data[i + 2] = value
+          data.data[i + 3] = 255
+        }
+
+        context.putImageData(data, 0, 0)
+        fps.innerHTML = syngen.performance.fps()
+
+        time += step
+      }
+
+      syngen.loop.on('frame', draw).start()
+    </script>
+  </body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>syngen example: cavern</title>
+    <script src="../dist/syngen.js"></script>
+  </head>
+  <body>
+    <p>This example generates a random cave ambience.</p>
+    <button type="button">Resume audio context</button>
+
+    <script>
+      // Resume the audio context after a user gesture
+      window.addEventListener('click', () => syngen.context().resume())
+
+      // Configure the reverb send
+      syngen.mixer.reverb.param.delay.value = 1/16
+      syngen.mixer.reverb.param.highpass.frequency.value = syngen.fn.fromMidi(36)
+
+      syngen.mixer.reverb.setImpulse(
+        syngen.buffer.impulse({
+          buffer: syngen.buffer.white({
+            channels: 2,
+            duration: 8,
+          }),
+          power: 2,
+        })
+      )
+
+      // Create some buses
+      const dripBus = syngen.mixer.createBus(),
+        droneBus = syngen.mixer.createBus()
+
+      // Create a low drone
+      syngen.synth.am({
+        carrierFrequency: syngen.fn.fromMidi(24),
+        carrierGain: 0.75,
+        gain: syngen.fn.fromDb(-9),
+        modDepth: 0.25,
+        modFrequency: 1/16,
+      }).shaped(
+        syngen.shape.noise()
+      ).filtered({
+        frequency: syngen.fn.fromMidi(36),
+      }).connect(droneBus)
+
+      // Invent a reusable sound
+      const drip = syngen.sound.extend({
+        destination: dripBus,
+        name: 'drip',
+        reverb: true,
+        relative: true,
+        onConstruct: function ({
+          detune = 0,
+          duration = syngen.const.zeroTime,
+          frequency = 440,
+        } = {}) {
+          this.synth = syngen.synth.simple({
+            detune,
+            frequency,
+          }).filtered({
+            frequency,
+          }).connect(this.output)
+
+          const now = syngen.time()
+
+          this.synth.param.detune.linearRampToValueAtTime(detune + 1200, now + duration)
+
+          this.synth.param.gain.exponentialRampToValueAtTime(1, now + 1/16)
+          this.synth.param.gain.exponentialRampToValueAtTime(syngen.const.zeroGain, now + duration)
+
+          this.synth.stop(now + duration)
+
+          syngen.fn.promise(duration * 1000).then(() => this.destroy())
+        },
+      })
+
+      // Define noise for drip chance
+      const noise = syngen.tool.noise.create('chance')
+
+      // Instantiate the prop on random frames
+      syngen.loop.on('frame', () => {
+        // Determine drip chance
+        const fps = syngen.performance.fps(),
+          time = syngen.time()
+
+        const chance = syngen.fn.lerp(1/fps, 1/fps*8, noise.value(time / 30))
+
+        // Roll the dice
+        if (Math.random() > chance) {
+          return
+        }
+
+        // Select some parameters
+        const angle = syngen.fn.randomFloat(0, Math.PI * 2),
+          detune = syngen.fn.randomFloat(-25, 25),
+          distance = syngen.fn.lerpExp(2, 20, Math.random(), 0.75),
+          duration = syngen.fn.randomFloat(1/4, 1)
+
+        const frequency = syngen.fn.fromMidi(
+          syngen.fn.choose([
+            60, 62, 63, 65, 67, 68, 70, 72,
+          ], Math.random())
+        )
+
+        // Instantiate the drip
+        drip.new({
+          duration,
+          frequency,
+          x: distance * Math.cos(angle),
+          y: distance * Math.sin(angle),
+        })
+      })
+
+      // Start the main loop
+      syngen.loop.start()
+    </script>
+  </body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: syngen/tool/perlin4d.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: syngen/tool/perlin4d.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Provides an interface for generating seeded four-dimensional Perlin noise.
+ * @interface
+ * @see syngen.tool.perlin4d.create
+ * @todo Document private members
+ */
+syngen.tool.perlin4d = {}
+
+/**
+ * Instantiates a four-dimensional Perlin noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.tool.perlin4d}
+ * @static
+ */
+syngen.tool.perlin4d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
+}
+
+syngen.tool.perlin4d.prototype = {
+  /**
+   * Initializes the instance with `...seeds`.
+   * @instance
+   * @param {...String} [...seeds]
+   * @private
+   */
+  construct: function (...seeds) {
+    this.gradient = new Map()
+    this.seed = seeds
+    return this
+  },
+  /**
+   * Generates the gradient at `(x, y, z, w)`.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} t
+   * @private
+   */
+  generateGradient: function (x, y, z, w) {
+    const srand = syngen.fn.srand('perlin', ...this.seed, x, y, z, w)
+
+    return [
+      srand(-1, 1),
+      srand(-1, 1),
+      srand(-1, 1),
+      srand(-1, 1),
+    ]
+  },
+  /**
+   * Calculates the dot product between `(dx, dy, dz, dw)` and the value at `(xi, yi, zi, wi)`.
+   * @instance
+   * @param {Number} xi
+   * @param {Number} yi
+   * @param {Number} zi
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @private
+   */
+  getDotProduct: function (xi, yi, zi, wi, x, y, z, w) {
+    const dw = w - wi,
+      dx = x - xi,
+      dy = y - yi,
+      dz = z - zi,
+      gradient = this.getGradient(xi, yi, zi, wi)
+
+    return (dx * gradient[0]) + (dy * gradient[1]) + (dz * gradient[2]) + (dw * gradient[3])
+  },
+  /**
+   * Retrieves the gradient at `(x, y, z, w)`.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} t
+   * @private
+   * @returns {Number}
+   */
+  getGradient: function (x, y, z, w) {
+    let xMap = this.gradient.get(x)
+
+    if (!xMap) {
+      xMap = new Map()
+      this.gradient.set(x, xMap)
+    }
+
+    let yMap = xMap.get(y)
+
+    if (!yMap) {
+      yMap = new Map()
+      xMap.set(y, yMap)
+    }
+
+    let zMap = yMap.get(z)
+
+    if (!zMap) {
+      zMap = new Map()
+      yMap.set(z, zMap)
+    }
+
+    let gradient = zMap.get(w)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x, y, z, w)
+      zMap.set(w, gradient)
+    }
+
+    return gradient
+  },
+  /**
+   * Range (plus and minus) to scale the output such that it's normalized to `[0, 1]`.
+   * @instance
+   * @private
+   */
+  range: Math.sqrt(4/4),
+  /**
+   * Clears all generated values.
+   * Implementations are encouraged to call this whenever {@link syngen.seed} is set, {@link syngen.state} is reset, or memory becomes an issue.
+   * @instance
+   */
+  reset: function () {
+    this.gradient.clear()
+
+    return this
+  },
+  /**
+   * Calculates a smooth delta value for interpolation.
+   * @instance
+   * @param {Number} value
+   * @private
+   * @returns {Number}
+   */
+  smooth: function (value) {
+    // 6x^5 - 15x^4 + 10x^3
+    return (value ** 3) * (value * ((value * 6) - 15) + 10)
+  },
+  /**
+   * Calculates the value at `(x, y, z, w)`.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} t
+   * @returns {Number}
+   */
+  value: function (x, y, z, w) {
+    const w0 = Math.floor(w),
+      w1 = w0 + 1,
+      x0 = Math.floor(x),
+      x1 = x0 + 1,
+      y0 = Math.floor(y),
+      y1 = y0 + 1,
+      z0 = Math.floor(z),
+      z1 = z0 + 1
+
+    const dw = this.smooth(w - w0),
+      dx = this.smooth(x - x0),
+      dy = this.smooth(y - y0),
+      dz = this.smooth(z - z0)
+
+    const value = syngen.fn.lerp(
+      syngen.fn.lerp(
+        syngen.fn.lerp(
+          syngen.fn.lerp(
+            this.getDotProduct(x0, y0, z0, w0, x, y, z, w),
+            this.getDotProduct(x1, y0, z0, w0, x, y, z, w),
+            dx
+          ),
+          syngen.fn.lerp(
+            this.getDotProduct(x0, y1, z0, w0, x, y, z, w),
+            this.getDotProduct(x1, y1, z0, w0, x, y, z, w),
+            dx
+          ),
+          dy
+        ),
+        syngen.fn.lerp(
+          syngen.fn.lerp(
+            this.getDotProduct(x0, y0, z1, w0, x, y, z, w),
+            this.getDotProduct(x1, y0, z1, w0, x, y, z, w),
+            dx
+          ),
+          syngen.fn.lerp(
+            this.getDotProduct(x0, y1, z1, w0, x, y, z, w),
+            this.getDotProduct(x1, y1, z1, w0, x, y, z, w),
+            dx
+          ),
+          dy
+        ),
+        dz
+      ),
+      syngen.fn.lerp(
+        syngen.fn.lerp(
+          syngen.fn.lerp(
+            this.getDotProduct(x0, y0, z0, w1, x, y, z, w),
+            this.getDotProduct(x1, y0, z0, w1, x, y, z, w),
+            dx
+          ),
+          syngen.fn.lerp(
+            this.getDotProduct(x0, y1, z0, w1, x, y, z, w),
+            this.getDotProduct(x1, y1, z0, w1, x, y, z, w),
+            dx
+          ),
+          dy
+        ),
+        syngen.fn.lerp(
+          syngen.fn.lerp(
+            this.getDotProduct(x0, y0, z1, w1, x, y, z, w),
+            this.getDotProduct(x1, y0, z1, w1, x, y, z, w),
+            dx
+          ),
+          syngen.fn.lerp(
+            this.getDotProduct(x0, y1, z1, w1, x, y, z, w),
+            this.getDotProduct(x1, y1, z1, w1, x, y, z, w),
+            dx
+          ),
+          dy
+        ),
+        dz
+      ),
+      dw
+    )
+
+    return syngen.fn.clamp(
+      syngen.fn.scale(value, -this.range, this.range, 0, 1),
+      0,
+      1
+    )
+  },
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="syngen.html">syngen</a></li><li><a href="syngen.buffer.html">syngen.buffer</a></li><li><a href="syngen.circuit.html">syngen.circuit</a></li><li><a href="syngen.const.html">syngen.const</a></li><li><a href="syngen.ear.html">syngen.ear</a></li><li><a href="syngen.effect.html">syngen.effect</a></li><li><a href="syngen.fn.html">syngen.fn</a></li><li><a href="syngen.formant.html">syngen.formant</a></li><li><a href="syngen.input.html">syngen.input</a></li><li><a href="syngen.input.gamepad.html">syngen.input.gamepad</a></li><li><a href="syngen.input.keyboard.html">syngen.input.keyboard</a></li><li><a href="syngen.input.mouse.html">syngen.input.mouse</a></li><li><a href="syngen.loop.html">syngen.loop</a></li><li><a href="syngen.mixer.html">syngen.mixer</a></li><li><a href="syngen.mixer.reverb.html">syngen.mixer.reverb</a></li><li><a href="syngen.mixer.reverb.gainModel.html">syngen.mixer.reverb.gainModel</a></li><li><a href="syngen.performance.html">syngen.performance</a></li><li><a href="syngen.position.html">syngen.position</a></li><li><a href="syngen.seed.html">syngen.seed</a></li><li><a href="syngen.shape.html">syngen.shape</a></li><li><a href="syngen.state.html">syngen.state</a></li><li><a href="syngen.synth.html">syngen.synth</a></li><li><a href="syngen.tool.html">syngen.tool</a></li></ul><h3>Interfaces</h3><ul><li><a href="syngen.ear.binaural.html">syngen.ear.binaural</a></li><li><a href="syngen.ear.monaural.html">syngen.ear.monaural</a></li><li><a href="syngen.mixer.reverb.send.html">syngen.mixer.reverb.send</a></li><li><a href="syngen.tool.bitree.html">syngen.tool.bitree</a></li><li><a href="syngen.tool.euler.html">syngen.tool.euler</a></li><li><a href="syngen.tool.fsm.html">syngen.tool.fsm</a></li><li><a href="syngen.tool.noise.html">syngen.tool.noise</a></li><li><a href="syngen.tool.octree.html">syngen.tool.octree</a></li><li><a href="syngen.tool.perlin2d.html">syngen.tool.perlin2d</a></li><li><a href="syngen.tool.perlin3d.html">syngen.tool.perlin3d</a></li><li><a href="syngen.tool.perlin4d.html">syngen.tool.perlin4d</a></li><li><a href="syngen.tool.pubsub.html">syngen.tool.pubsub</a></li><li><a href="syngen.tool.quadtree.html">syngen.tool.quadtree</a></li><li><a href="syngen.tool.quaternion.html">syngen.tool.quaternion</a></li><li><a href="syngen.tool.simplex2d.html">syngen.tool.simplex2d</a></li><li><a href="syngen.tool.simplex3d.html">syngen.tool.simplex3d</a></li><li><a href="syngen.tool.simplex4d.html">syngen.tool.simplex4d</a></li><li><a href="syngen.tool.vector2d.html">syngen.tool.vector2d</a></li><li><a href="syngen.tool.vector3d.html">syngen.tool.vector3d</a></li></ul><h3>Events</h3><ul><li><a href="syngen.loop.html#event:event:frame">syngen.loop#frame</a></li><li><a href="syngen.loop.html#event:event:pause">syngen.loop#pause</a></li><li><a href="syngen.loop.html#event:event:resume">syngen.loop#resume</a></li><li><a href="syngen.loop.html#event:event:start">syngen.loop#start</a></li><li><a href="syngen.loop.html#event:event:stop">syngen.loop#stop</a></li><li><a href="syngen.mixer.reverb.html#event:event:activate">syngen.mixer.reverb#activate</a></li><li><a href="syngen.mixer.reverb.html#event:event:deactivate">syngen.mixer.reverb#deactivate</a></li><li><a href="syngen.state.html#event:event:export">syngen.state#export</a></li><li><a href="syngen.state.html#event:event:import">syngen.state#import</a></li><li><a href="syngen.state.html#event:event:reset">syngen.state#reset</a></li><li><a href="syngen.tool.fsm.html#event:event:after">syngen.tool.fsm#after</a></li><li><a href="syngen.tool.fsm.html#event:event:after-%257Bevent%257D">syngen.tool.fsm#after-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:after-%257Bstate%257D-%257Bevent%257D">syngen.tool.fsm#after-{state}-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:before">syngen.tool.fsm#before</a></li><li><a href="syngen.tool.fsm.html#event:event:before-%257Bevent%257D">syngen.tool.fsm#before-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:before-%257Bstate%257D-%257Bevent%257D">syngen.tool.fsm#before-{state}-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:enter">syngen.tool.fsm#enter</a></li><li><a href="syngen.tool.fsm.html#event:event:enter-%257Bstate%257D">syngen.tool.fsm#enter-{state}</a></li><li><a href="syngen.tool.fsm.html#event:event:exit">syngen.tool.fsm#exit</a></li><li><a href="syngen.tool.fsm.html#event:event:exit-%257Bstate%257D">syngen.tool.fsm#exit-{state}</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.11</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

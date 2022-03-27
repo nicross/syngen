@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: syngen/tool/perlin2d.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: syngen/tool/perlin2d.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Provides an interface for generating seeded two-dimensional Perlin noise.
+ * @interface
+ * @see syngen.tool.perlin2d.create
+ * @todo Document private members
+ */
+syngen.tool.perlin2d = {}
+
+/**
+ * Instantiates a two-dimensional Perlin noise generator.
+ * @param {...String} [...seeds]
+ * @returns {syngen.tool.perlin2d}
+ * @static
+ */
+syngen.tool.perlin2d.create = function (...seeds) {
+  return Object.create(this.prototype).construct(...seeds)
+}
+
+syngen.tool.perlin2d.prototype = {
+  /**
+   * Initializes the instance with `...seeds`.
+   * @instance
+   * @param {...String} [...seeds]
+   * @private
+   */
+  construct: function (...seeds) {
+    this.gradient = new Map()
+    this.seed = seeds
+    return this
+  },
+  /**
+   * Generates the gradient at `(x, y)`.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   */
+  generateGradient: function (x, y) {
+    const srand = syngen.fn.srand('perlin', ...this.seed, x, y)
+
+    return [
+      srand(-1, 1),
+      srand(-1, 1),
+    ]
+  },
+  /**
+   * Calculates the dot product between `(dx, dy)` and the value at `(xi, yi)`.
+   * @instance
+   * @param {Number} xi
+   * @param {Number} yi
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   */
+  getDotProduct: function (xi, yi, x, y) {
+    const dx = x - xi,
+      dy = y - yi,
+      gradient = this.getGradient(xi, yi)
+
+    return (dx * gradient[0]) + (dy * gradient[1])
+  },
+  /**
+   * Retrieves the gradient at `(x, y)`.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @private
+   * @returns {Number}
+   */
+  getGradient: function (x, y) {
+    let xMap = this.gradient.get(x)
+
+    if (!xMap) {
+      xMap = new Map()
+      this.gradient.set(x, xMap)
+    }
+
+    let gradient = xMap.get(y)
+
+    if (!gradient) {
+      gradient = this.generateGradient(x, y)
+      xMap.set(y, gradient)
+    }
+
+    return gradient
+  },
+  /**
+   * Range (plus and minus) to scale the output such that it's normalized to `[0, 1]`.
+   * @instance
+   * @private
+   */
+  range: Math.sqrt(2/4),
+  /**
+   * Clears all generated values.
+   * Implementations are encouraged to call this whenever {@link syngen.seed} is set, {@link syngen.state} is reset, or memory becomes an issue.
+   * @instance
+   */
+  reset: function () {
+    this.gradient.clear()
+
+    return this
+  },
+  /**
+   * Calculates a smooth delta value for interpolation.
+   * @instance
+   * @param {Number} value
+   * @private
+   * @returns {Number}
+   */
+  smooth: function (value) {
+    // 6x^5 - 15x^4 + 10x^3
+    return (value ** 3) * (value * ((value * 6) - 15) + 10)
+  },
+  /**
+   * Calculates the value at `(x, y)`.
+   * @instance
+   * @param {Number} x
+   * @param {Number} y
+   * @returns {Number}
+   */
+  value: function (x, y) {
+    const x0 = Math.floor(x),
+      x1 = x0 + 1,
+      y0 = Math.floor(y),
+      y1 = y0 + 1
+
+    const dx = this.smooth(x - x0),
+      dy = this.smooth(y - y0)
+
+    const value = syngen.fn.lerp(
+      syngen.fn.lerp(
+        this.getDotProduct(x0, y0, x, y),
+        this.getDotProduct(x1, y0, x, y),
+        dx
+      ),
+      syngen.fn.lerp(
+        this.getDotProduct(x0, y1, x, y),
+        this.getDotProduct(x1, y1, x, y),
+        dx
+      ),
+      dy
+    )
+
+    return syngen.fn.clamp(
+      syngen.fn.scale(value, -this.range, this.range, 0, 1),
+      0,
+      1
+    )
+  },
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="syngen.html">syngen</a></li><li><a href="syngen.buffer.html">syngen.buffer</a></li><li><a href="syngen.circuit.html">syngen.circuit</a></li><li><a href="syngen.const.html">syngen.const</a></li><li><a href="syngen.ear.html">syngen.ear</a></li><li><a href="syngen.effect.html">syngen.effect</a></li><li><a href="syngen.fn.html">syngen.fn</a></li><li><a href="syngen.formant.html">syngen.formant</a></li><li><a href="syngen.input.html">syngen.input</a></li><li><a href="syngen.input.gamepad.html">syngen.input.gamepad</a></li><li><a href="syngen.input.keyboard.html">syngen.input.keyboard</a></li><li><a href="syngen.input.mouse.html">syngen.input.mouse</a></li><li><a href="syngen.loop.html">syngen.loop</a></li><li><a href="syngen.mixer.html">syngen.mixer</a></li><li><a href="syngen.mixer.reverb.html">syngen.mixer.reverb</a></li><li><a href="syngen.mixer.reverb.gainModel.html">syngen.mixer.reverb.gainModel</a></li><li><a href="syngen.performance.html">syngen.performance</a></li><li><a href="syngen.position.html">syngen.position</a></li><li><a href="syngen.seed.html">syngen.seed</a></li><li><a href="syngen.shape.html">syngen.shape</a></li><li><a href="syngen.state.html">syngen.state</a></li><li><a href="syngen.synth.html">syngen.synth</a></li><li><a href="syngen.tool.html">syngen.tool</a></li></ul><h3>Interfaces</h3><ul><li><a href="syngen.ear.binaural.html">syngen.ear.binaural</a></li><li><a href="syngen.ear.monaural.html">syngen.ear.monaural</a></li><li><a href="syngen.mixer.reverb.send.html">syngen.mixer.reverb.send</a></li><li><a href="syngen.tool.bitree.html">syngen.tool.bitree</a></li><li><a href="syngen.tool.euler.html">syngen.tool.euler</a></li><li><a href="syngen.tool.fsm.html">syngen.tool.fsm</a></li><li><a href="syngen.tool.noise.html">syngen.tool.noise</a></li><li><a href="syngen.tool.octree.html">syngen.tool.octree</a></li><li><a href="syngen.tool.perlin2d.html">syngen.tool.perlin2d</a></li><li><a href="syngen.tool.perlin3d.html">syngen.tool.perlin3d</a></li><li><a href="syngen.tool.perlin4d.html">syngen.tool.perlin4d</a></li><li><a href="syngen.tool.pubsub.html">syngen.tool.pubsub</a></li><li><a href="syngen.tool.quadtree.html">syngen.tool.quadtree</a></li><li><a href="syngen.tool.quaternion.html">syngen.tool.quaternion</a></li><li><a href="syngen.tool.simplex2d.html">syngen.tool.simplex2d</a></li><li><a href="syngen.tool.simplex3d.html">syngen.tool.simplex3d</a></li><li><a href="syngen.tool.simplex4d.html">syngen.tool.simplex4d</a></li><li><a href="syngen.tool.vector2d.html">syngen.tool.vector2d</a></li><li><a href="syngen.tool.vector3d.html">syngen.tool.vector3d</a></li></ul><h3>Events</h3><ul><li><a href="syngen.loop.html#event:event:frame">syngen.loop#frame</a></li><li><a href="syngen.loop.html#event:event:pause">syngen.loop#pause</a></li><li><a href="syngen.loop.html#event:event:resume">syngen.loop#resume</a></li><li><a href="syngen.loop.html#event:event:start">syngen.loop#start</a></li><li><a href="syngen.loop.html#event:event:stop">syngen.loop#stop</a></li><li><a href="syngen.mixer.reverb.html#event:event:activate">syngen.mixer.reverb#activate</a></li><li><a href="syngen.mixer.reverb.html#event:event:deactivate">syngen.mixer.reverb#deactivate</a></li><li><a href="syngen.state.html#event:event:export">syngen.state#export</a></li><li><a href="syngen.state.html#event:event:import">syngen.state#import</a></li><li><a href="syngen.state.html#event:event:reset">syngen.state#reset</a></li><li><a href="syngen.tool.fsm.html#event:event:after">syngen.tool.fsm#after</a></li><li><a href="syngen.tool.fsm.html#event:event:after-%257Bevent%257D">syngen.tool.fsm#after-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:after-%257Bstate%257D-%257Bevent%257D">syngen.tool.fsm#after-{state}-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:before">syngen.tool.fsm#before</a></li><li><a href="syngen.tool.fsm.html#event:event:before-%257Bevent%257D">syngen.tool.fsm#before-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:before-%257Bstate%257D-%257Bevent%257D">syngen.tool.fsm#before-{state}-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:enter">syngen.tool.fsm#enter</a></li><li><a href="syngen.tool.fsm.html#event:event:enter-%257Bstate%257D">syngen.tool.fsm#enter-{state}</a></li><li><a href="syngen.tool.fsm.html#event:event:exit">syngen.tool.fsm#exit</a></li><li><a href="syngen.tool.fsm.html#event:event:exit-%257Bstate%257D">syngen.tool.fsm#exit-{state}</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.11</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

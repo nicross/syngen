@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>syngen sandbox</title>
+    <script src="../dist/syngen.js"></script>
+  </head>
+  <body>
+    <p>This example provides a sandbox. Use the console to write your own code.</p>
+    <button type="button">Resume audio context</button>
+
+    <script>
+      window.addEventListener('click', () => syngen.context().resume())
+      syngen.loop.start()
+    </script>
+  </body>
+</html>

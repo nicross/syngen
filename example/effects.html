@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>syngen example: effects</title>
+    <script src="../dist/syngen.js"></script>
+  </head>
+  <body>
+    <p>This example demonstrates some of the stock effects plugins.</p>
+    <button type="button">Resume audio context</button>
+
+    <script>
+      // Resume the audio context after a user gesture
+      window.addEventListener('click', () => syngen.context().resume())
+
+      // Create a bus
+      const bus = syngen.mixer.createBus()
+      bus.gain.value = syngen.fn.fromDb(-3)
+
+      // Create buffer
+      const buffer = syngen.buffer.white({
+        duration: 5,
+      })
+
+      // Build an effects chain
+      const delay = syngen.effect.dubDelay({
+        delay: 1,
+        dry: 1,
+        feedback: 0.75,
+        filterFrequency: 10000,
+        filterQ: 0.1,
+        filterType: 'bandpass',
+        wet: 0.75,
+      })
+
+      const phaser = syngen.effect.phaser({
+        delay: 0.001,
+        dry: 0.5,
+        feedback: 0.5,
+        frequency: 1/8,
+        wet: 0.5,
+      })
+
+      delay.output.connect(phaser.input)
+      phaser.output.connect(bus)
+
+      // Play a sound
+      function trigger() {
+        // Define a synth with an effects chain
+        const synth = syngen.synth.buffer({
+          buffer,
+        }).shaped(
+          syngen.shape.distort()
+        ).chainAssign('talkbox', syngen.effect.talkbox({
+          formant0: syngen.formant.createU(),
+          formant1: syngen.formant.createI(),
+          mix: 0,
+        })).connect(delay.input)
+
+        // Ramp its parameters
+        const now = syngen.time()
+
+        synth.param.gain.exponentialRampToValueAtTime(1, now + 1/16)
+        synth.param.gain.linearRampToValueAtTime(syngen.const.zeroGain, now + 1)
+
+        synth.param.talkbox.mix.linearRampToValueAtTime(1, now + 1)
+
+        // Stop synth when complete
+        synth.stop(now + 1)
+      }
+
+      // Trigger the sound periodically
+      setInterval(trigger, 4000)
+      trigger()
+    </script>
+  </body>
+</html>

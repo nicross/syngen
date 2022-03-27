@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>syngen example: tones</title>
+    <script src="../dist/syngen.js"></script>
+  </head>
+  <body>
+    <p>This example defines a configurable prop, creates three unique instances of it, and spins the observer to pan them regularly.</p>
+    <button type="button">Resume audio context</button>
+
+    <script>
+      // Resume the audio context after a user gesture
+      window.addEventListener('click', () => syngen.context().resume())
+
+      // Invent the sound
+      const tone = syngen.sound.extend({
+        fadeInDuration: 2,
+        name: 'tone',
+        radius: 0,
+        relative: false,
+        onConstruct: function ({
+          color = 1,
+          frequency = 440,
+          gain = 1,
+          type = 'sine',
+        } = {}) {
+          this.synth = syngen.synth.simple({
+            frequency,
+            gain,
+            type,
+          }).filtered({
+            frequency: frequency * color,
+          }).connect(this.output)
+        },
+        onDestroy: function () {
+          this.synth.stop()
+        },
+      })
+
+      // Instantiate tones with options
+      tone.new({
+        color: 16,
+        frequency: syngen.fn.fromMidi(64),
+        gain: syngen.fn.fromDb(-5),
+        type: 'sawtooth',
+        x: 5 * Math.cos(0),
+        y: 5 * Math.sin(0),
+      })
+
+      tone.new({
+        color: 16,
+        frequency: syngen.fn.fromMidi(61),
+        gain: syngen.fn.fromDb(-5),
+        type: 'sawtooth',
+        x: 5 * Math.cos(Math.PI * 2/3),
+        y: 5 * Math.sin(Math.PI * 2/3),
+      })
+
+      tone.new({
+        color: 16,
+        frequency: syngen.fn.fromMidi(57),
+        gain: syngen.fn.fromDb(-5),
+        type: 'sawtooth',
+        x: 5 * Math.cos(Math.PI * 4/3),
+        y: 5 * Math.sin(Math.PI * 4/3),
+      })
+
+      // Apply angular velocity to the listener
+      syngen.loop.on('frame', ({delta}) => {
+        syngen.position.setQuaternion(
+          syngen.position.getQuaternion().multiply(
+            syngen.tool.quaternion.fromEuler({
+              yaw: delta * syngen.fn.deg2rad(90),
+            })
+          )
+        )
+      })
+
+      // Start the main loop
+      syngen.loop.start()
+    </script>
+  </body>
+</html>

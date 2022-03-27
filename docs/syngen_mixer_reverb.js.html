@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: syngen/mixer/reverb.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: syngen/mixer/reverb.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Provides a auxiliary send for global reverb processing.
+ * Because `ConvolverNode`s are quite intensive, implementations are encouraged to leverage this to provide a single global reverb.
+ * @augments syngen.tool.pubsub
+ * @namespace
+ * @see syngen.mixer.send.reverb
+ */
+syngen.mixer.reverb = (() => {
+  const context = syngen.context(),
+    delay = context.createDelay(),
+    input = context.createGain(),
+    output = syngen.mixer.createBus(),
+    pubsub = syngen.tool.pubsub.create()
+
+  let active = true,
+    convolver = context.createConvolver(),
+    highpass,
+    lowpass
+
+  convolver.buffer = syngen.buffer.impulse({
+    buffer: syngen.buffer.whiteNoise({
+      channels: 2,
+      duration: 1,
+    }),
+    power: 4,
+  })
+
+  delay.delayTime.value = 1/64
+
+  input.connect(delay)
+  createFilters()
+  convolver.connect(output)
+
+  function createFilters(highpassFrequency = syngen.const.minFrequency, lowpassFrequency = syngen.const.maxFrequency) {
+    highpass = context.createBiquadFilter()
+    highpass.type = 'highpass'
+    highpass.frequency.value = highpassFrequency
+
+    lowpass = context.createBiquadFilter()
+    lowpass.type = 'lowpass'
+    lowpass.frequency.value = lowpassFrequency
+
+    delay.connect(highpass)
+    highpass.connect(lowpass)
+    lowpass.connect(convolver)
+  }
+
+  function destroyFilters() {
+    delay.disconnect()
+    lowpass.disconnect()
+    lowpass = null
+    highpass.disconnect()
+    highpass = null
+  }
+
+  return pubsub.decorate({
+    /**
+     * Creates a `GainNode` that's connected to the reverb input.
+     * @memberof syngen.mixer.reverb
+     * @returns {GainNode}
+     */
+    createBus: () => {
+      const gain = context.createGain()
+      gain.connect(input)
+      return gain
+    },
+    /**
+     * Built-in gain models.
+     * @namespace syngen.mixer.reverb.gainModel
+     */
+    gainModel: {},
+    /**
+     * Returns whether the processing is active.
+     * @memberof syngen.mixer.reverb
+     * @returns {Boolean}
+     */
+    isActive: () => active,
+    /**
+     * Returns the output node for the send.
+     * @deprecated
+     * @memberof syngen.mixer.reverb
+     * @returns {GainNode}
+     */
+    output: () => output,
+    /**
+     * Exposes the parameters associated with reverb processing.
+     * @memberof syngen.mixer.reverb
+     * @property {AudioParam} delay
+     * @property {AudioParam} gain
+     * @property {Object} highpass
+     * @property {AudioParam} highpass.frequency
+     * @property {Object} lowpass
+     * @property {AudioParam} lowpass.frequency
+     * @property {AudioParam} preGain
+     */
+    param: {
+      delay: delay.delayTime,
+      gain: output.gain,
+      highpass: {
+        frequency: highpass.frequency,
+      },
+      lowpass: {
+        frequency: lowpass.frequency,
+      },
+      preGain: input.gain,
+    },
+    /**
+     * Occasionally the filters can enter an unstable or bad state.
+     * This provides a solution for replacing them with stable filters.
+     * @memberof syngen.mixer.reverb
+     * @see syngen.mixer.rebuildFilters
+     */
+    rebuildFilters: function () {
+      const highpassFrequency = highpass.frequency.value,
+        lowpassFrequency = lowpass.frequency.value
+
+      destroyFilters()
+      createFilters(highpassFrequency, lowpassFrequency)
+
+      this.param.highpass.frequency = highpass.frequency
+      this.param.lowpass.frequency = lowpass.frequency
+
+      return this
+    },
+    /**
+     * Sets the active state.
+     * Implementations can disable processing for a performance boost.
+     * @fires syngen.mixer.reverb#event:activate
+     * @fires syngen.mixer.reverb#event:deactivate
+     * @memberof syngen.mixer.reverb
+     * @param {Boolean} state
+     */
+    setActive: function (state) {
+      if (active == state) {
+        return this
+      }
+
+      active = Boolean(state)
+
+      if (active) {
+        /**
+         * Fired whenever the send is activated.
+         * @event syngen.mixer.reverb#event:activate
+         */
+        pubsub.emit('activate')
+        input.connect(delay)
+      } else {
+        /**
+         * Fired whenever the send is deactivated.
+         * @event syngen.mixer.reverb#event:deactivate
+         */
+        pubsub.emit('deactivate')
+        input.disconnect(delay)
+      }
+
+      return this
+    },
+    /**
+     * Sets the impulse buffer for the inner `ConvolverNode`.
+     * To prevent pops and clicks, the tail of the previous buffer persists until it fades out.
+     * @memberof syngen.mixer.reverb
+     * @param {BufferSource} buffer
+     */
+    setImpulse: function (buffer) {
+      input.disconnect()
+
+      convolver = context.createConvolver()
+      convolver.buffer = buffer
+      convolver.connect(output)
+
+      if (active) {
+        input.connect(delay)
+      }
+
+      return this
+    },
+  })
+})()
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="syngen.html">syngen</a></li><li><a href="syngen.buffer.html">syngen.buffer</a></li><li><a href="syngen.circuit.html">syngen.circuit</a></li><li><a href="syngen.const.html">syngen.const</a></li><li><a href="syngen.ear.html">syngen.ear</a></li><li><a href="syngen.effect.html">syngen.effect</a></li><li><a href="syngen.fn.html">syngen.fn</a></li><li><a href="syngen.formant.html">syngen.formant</a></li><li><a href="syngen.input.html">syngen.input</a></li><li><a href="syngen.input.gamepad.html">syngen.input.gamepad</a></li><li><a href="syngen.input.keyboard.html">syngen.input.keyboard</a></li><li><a href="syngen.input.mouse.html">syngen.input.mouse</a></li><li><a href="syngen.loop.html">syngen.loop</a></li><li><a href="syngen.mixer.html">syngen.mixer</a></li><li><a href="syngen.mixer.reverb.html">syngen.mixer.reverb</a></li><li><a href="syngen.mixer.reverb.gainModel.html">syngen.mixer.reverb.gainModel</a></li><li><a href="syngen.performance.html">syngen.performance</a></li><li><a href="syngen.position.html">syngen.position</a></li><li><a href="syngen.seed.html">syngen.seed</a></li><li><a href="syngen.shape.html">syngen.shape</a></li><li><a href="syngen.state.html">syngen.state</a></li><li><a href="syngen.synth.html">syngen.synth</a></li><li><a href="syngen.tool.html">syngen.tool</a></li></ul><h3>Interfaces</h3><ul><li><a href="syngen.ear.binaural.html">syngen.ear.binaural</a></li><li><a href="syngen.ear.monaural.html">syngen.ear.monaural</a></li><li><a href="syngen.mixer.reverb.send.html">syngen.mixer.reverb.send</a></li><li><a href="syngen.tool.bitree.html">syngen.tool.bitree</a></li><li><a href="syngen.tool.euler.html">syngen.tool.euler</a></li><li><a href="syngen.tool.fsm.html">syngen.tool.fsm</a></li><li><a href="syngen.tool.noise.html">syngen.tool.noise</a></li><li><a href="syngen.tool.octree.html">syngen.tool.octree</a></li><li><a href="syngen.tool.perlin2d.html">syngen.tool.perlin2d</a></li><li><a href="syngen.tool.perlin3d.html">syngen.tool.perlin3d</a></li><li><a href="syngen.tool.perlin4d.html">syngen.tool.perlin4d</a></li><li><a href="syngen.tool.pubsub.html">syngen.tool.pubsub</a></li><li><a href="syngen.tool.quadtree.html">syngen.tool.quadtree</a></li><li><a href="syngen.tool.quaternion.html">syngen.tool.quaternion</a></li><li><a href="syngen.tool.simplex2d.html">syngen.tool.simplex2d</a></li><li><a href="syngen.tool.simplex3d.html">syngen.tool.simplex3d</a></li><li><a href="syngen.tool.simplex4d.html">syngen.tool.simplex4d</a></li><li><a href="syngen.tool.vector2d.html">syngen.tool.vector2d</a></li><li><a href="syngen.tool.vector3d.html">syngen.tool.vector3d</a></li></ul><h3>Events</h3><ul><li><a href="syngen.loop.html#event:event:frame">syngen.loop#frame</a></li><li><a href="syngen.loop.html#event:event:pause">syngen.loop#pause</a></li><li><a href="syngen.loop.html#event:event:resume">syngen.loop#resume</a></li><li><a href="syngen.loop.html#event:event:start">syngen.loop#start</a></li><li><a href="syngen.loop.html#event:event:stop">syngen.loop#stop</a></li><li><a href="syngen.mixer.reverb.html#event:event:activate">syngen.mixer.reverb#activate</a></li><li><a href="syngen.mixer.reverb.html#event:event:deactivate">syngen.mixer.reverb#deactivate</a></li><li><a href="syngen.state.html#event:event:export">syngen.state#export</a></li><li><a href="syngen.state.html#event:event:import">syngen.state#import</a></li><li><a href="syngen.state.html#event:event:reset">syngen.state#reset</a></li><li><a href="syngen.tool.fsm.html#event:event:after">syngen.tool.fsm#after</a></li><li><a href="syngen.tool.fsm.html#event:event:after-%257Bevent%257D">syngen.tool.fsm#after-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:after-%257Bstate%257D-%257Bevent%257D">syngen.tool.fsm#after-{state}-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:before">syngen.tool.fsm#before</a></li><li><a href="syngen.tool.fsm.html#event:event:before-%257Bevent%257D">syngen.tool.fsm#before-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:before-%257Bstate%257D-%257Bevent%257D">syngen.tool.fsm#before-{state}-{event}</a></li><li><a href="syngen.tool.fsm.html#event:event:enter">syngen.tool.fsm#enter</a></li><li><a href="syngen.tool.fsm.html#event:event:enter-%257Bstate%257D">syngen.tool.fsm#enter-{state}</a></li><li><a href="syngen.tool.fsm.html#event:event:exit">syngen.tool.fsm#exit</a></li><li><a href="syngen.tool.fsm.html#event:event:exit-%257Bstate%257D">syngen.tool.fsm#exit-{state}</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.11</a>
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
