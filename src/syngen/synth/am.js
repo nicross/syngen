@@ -37,6 +37,8 @@ syngen.synth.am = ({
     modOscillator = context.createOscillator(),
     output = context.createGain()
 
+  modWhen = modWhen || when
+
   carrierGain.connect(output)
 
   carrierOscillator.connect(carrierGain)
@@ -46,16 +48,16 @@ syngen.synth.am = ({
   modDepth.connect(carrierGain.gain)
   modOscillator.connect(modDepth)
   modOscillator.type = modType
-  modOscillator.start(modWhen || when)
+  modOscillator.start(modWhen)
 
   syngen.synth.fn.setAudioParams(
-    [carrierGain.gain, carrierGainAmount],
-    [carrierOscillator.detune, carrierDetune],
-    [carrierOscillator.frequency, carrierFrequency],
-    [modDepth.gain, modDepthAmount],
-    [modOscillator.detune, modDetune],
-    [modOscillator.frequency, modFrequency],
-    [output.gain, gain],
+    [carrierGain.gain, carrierGainAmount, when],
+    [carrierOscillator.detune, carrierDetune, when],
+    [carrierOscillator.frequency, carrierFrequency, when],
+    [modDepth.gain, modDepthAmount, modWhen],
+    [modOscillator.detune, modDetune, modWhen],
+    [modOscillator.frequency, modFrequency, modWhen],
+    [output.gain, gain, when],
   )
 
   return syngen.synth.fn.decorate({

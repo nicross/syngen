@@ -27,9 +27,9 @@ syngen.synth.lfo = ({
   oscillator.start(when)
 
   syngen.synth.fn.setAudioParams(
-    [depth.gain, depthAmount],
-    [oscillator.detune, detune],
-    [oscillator.frequency, frequency],
+    [depth.gain, depthAmount, when],
+    [oscillator.detune, detune, when],
+    [oscillator.frequency, frequency, when],
   )
 
   return syngen.synth.fn.decorate({

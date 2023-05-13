@@ -40,10 +40,10 @@ syngen.synth.pwm = ({
   oscillator.start(when)
 
   syngen.synth.fn.setAudioParams(
-    [oscillator.detune, detune],
-    [oscillator.frequency, frequency],
-    [output.gain, gain],
-    [width.gain, widthAmount],
+    [oscillator.detune, detune, when],
+    [oscillator.frequency, frequency, when],
+    [output.gain, gain, when],
+    [width.gain, widthAmount, when],
   )
 
   return syngen.synth.fn.decorate({

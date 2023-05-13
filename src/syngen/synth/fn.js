@@ -147,16 +147,17 @@ syngen.synth.fn.filtered = function (synth, {
   frequency,
   Q,
   type = 'lowpass',
+  when = syngen.time(),
 } = {}) {
   const filter = syngen.context().createBiquadFilter()
 
   filter.type = type
 
   syngen.synth.fn.setAudioParams(
-    [filter.detune, detune],
-    [filter.gain, gain],
-    [filter.frequency, frequency],
-    [filter.Q, Q],
+    [filter.detune, detune, when],
+    [filter.gain, gain, when],
+    [filter.frequency, frequency, when],
+    [filter.Q, Q, when],
   )
 
   return this.chainAssign(synth, 'filter', filter)
@@ -164,15 +165,16 @@ syngen.synth.fn.filtered = function (synth, {
 
 /**
  * Helper that sets `AudioParam`s to values.
- * Expects multiple arguments in the format `[AudioParam, value]`.
+ * Expects multiple arguments in the format `[AudioParam, value, when]`.
  * @private
  * @static
  */
 syngen.synth.fn.setAudioParams = function (...params) {
-  for (const [param, value] of params) {
+  for (const [param, value, when = syngen.time()] of params) {
     if (param instanceof AudioParam) {
       if (value !== undefined) {
         param.value = value
+        param.setValueAtTime(value, when)
       }
     }
   }

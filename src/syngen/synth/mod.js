@@ -49,6 +49,9 @@ syngen.synth.mod = ({
     fmodOscillator = context.createOscillator(),
     output = context.createGain()
 
+  amodWhen = amodWhen || when
+  fmodWhen = fmodWhen || when
+
   carrierGain.connect(output)
 
   carrierOscillator.connect(carrierGain)
@@ -66,16 +69,16 @@ syngen.synth.mod = ({
   fmodOscillator.start(fmodWhen || when)
 
   syngen.synth.fn.setAudioParams(
-    [amodDepth.gain, amodDepthAmount],
-    [amodOscillator.detune, amodDetune],
-    [amodOscillator.frequency, amodFrequency],
-    [carrierGain.gain, carrierGainAmount],
-    [carrierOscillator.detune, carrierDetune],
-    [carrierOscillator.frequency, carrierFrequency],
-    [fmodDepth.gain, fmodDepthAmount],
-    [fmodOscillator.detune, fmodDetune],
-    [fmodOscillator.frequency, fmodFrequency],
-    [output.gain, gain],
+    [amodDepth.gain, amodDepthAmount, amodWhen],
+    [amodOscillator.detune, amodDetune, amodWhen],
+    [amodOscillator.frequency, amodFrequency, amodWhen],
+    [carrierGain.gain, carrierGainAmount, when],
+    [carrierOscillator.detune, carrierDetune, when],
+    [carrierOscillator.frequency, carrierFrequency, when],
+    [fmodDepth.gain, fmodDepthAmount, fmodWhen],
+    [fmodOscillator.detune, fmodDetune, fmodWhen],
+    [fmodOscillator.frequency, fmodFrequency, fmodWhen],
+    [output.gain, gain, when],
   )
 
   return syngen.synth.fn.decorate({

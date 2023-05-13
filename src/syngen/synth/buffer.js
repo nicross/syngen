@@ -41,9 +41,9 @@ syngen.synth.buffer = ({
   }
 
   syngen.synth.fn.setAudioParams(
-    [source.detune, detune],
-    [source.playbackRate, playbackRate],
-    [output.gain, gain],
+    [source.detune, detune, when],
+    [source.playbackRate, playbackRate, when],
+    [output.gain, gain, when],
   )
 
   return syngen.synth.fn.decorate({

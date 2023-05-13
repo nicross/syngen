@@ -71,6 +71,8 @@ syngen.synth.amBuffer = ({
     output = context.createGain(),
     source = context.createBufferSource()
 
+  modWhen = modWhen || when
+
   carrierGain.connect(output)
 
   source.buffer = buffer
@@ -92,13 +94,13 @@ syngen.synth.amBuffer = ({
   modOscillator.start(modWhen || when)
 
   syngen.synth.fn.setAudioParams(
-    [carrierGain.gain, carrierGainAmount],
-    [source.detune, detune],
-    [source.playbackRate, playbackRate],
-    [modDepth.gain, modDepthAmount],
-    [modOscillator.detune, modDetune],
-    [modOscillator.frequency, modFrequency],
-    [output.gain, gain],
+    [carrierGain.gain, carrierGainAmount, when],
+    [source.detune, detune, when],
+    [source.playbackRate, playbackRate, when],
+    [modDepth.gain, modDepthAmount, modWhen],
+    [modOscillator.detune, modDetune, modWhen],
+    [modOscillator.frequency, modFrequency, modWhen],
+    [output.gain, gain, when],
   )
 
   return syngen.synth.fn.decorate({

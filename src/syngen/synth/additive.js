@@ -72,9 +72,9 @@ syngen.synth.additive = ({
   sum.connect(output)
 
   syngen.synth.fn.setAudioParams(
-    [detuneConstant.offset, detune],
-    [frequencyConstant.offset, frequency],
-    [output.gain, gain],
+    [detuneConstant.offset, detune, when],
+    [frequencyConstant.offset, frequency, when],
+    [output.gain, gain, when],
   )
 
   return syngen.synth.fn.decorate({

@@ -45,7 +45,7 @@ const instance = sound.instantiate()
 Please browse the `example` directory or the projects below for more elaborate real-world examples.
 
 ### Example projects
-No example projects for this release branch.
+- [Fishyphus](https://github.com/nicross/fishyphus) - Sisyphean fishing horror roguelite
 
 #### Commercial projects
 - [Periphery Synthetic EP](https://periphery-synthetic-ep.shiftbacktick.io) – Extrasolar musical explorer
