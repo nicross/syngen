@@ -51,7 +51,7 @@ syngen.tool.streamer2d.prototype = {
       width: this.radius * 2,
       x: position.x - this.radius,
       y: position.y - this.radius,
-    })
+    }).filter((item) => position.distance(item) <= this.radius)
 
     // Load and unload objects
     const loadedSet = new Set(this.loaded),
