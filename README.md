@@ -45,7 +45,9 @@ const instance = sound.instantiate()
 Please browse the `example` directory or the projects below for more elaborate real-world examples.
 
 ### Example projects
-- [Fishyphus](https://github.com/nicross/fishyphus) - Sisyphean fishing horror roguelite
+- [Fishyphus](https://shiftbacktick.itch.io/fishyphus) - Sisyphean fishing horror
+- [Lacus Opportunitas](https://shiftbacktick.itch.io/lacus-opportunitas) - Lunar lake trading simulator
+- [Project Ephemera](https://shiftbacktick.itch.io/project-ephemera) - Forgotten demo disc of synths
 
 #### Commercial projects
 - [Periphery Synthetic EP](https://periphery-synthetic-ep.shiftbacktick.io) – Extrasolar musical explorer
