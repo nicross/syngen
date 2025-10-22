@@ -44,6 +44,7 @@ syngen.tool.fsm.prototype = {
 
     const exitPayload = {
       currentState: this.state,
+      event: this._lastEvent,
       nextState: state,
       ...data,
     }
@@ -53,6 +54,7 @@ syngen.tool.fsm.prototype = {
      * @event syngen.tool.fsm#event:exit
      * @type {Object}
      * @param {String} currentState
+     * @param {?String} event
      * @param {String} nextState
      * @param {...*} ...data
      */
@@ -64,6 +66,7 @@ syngen.tool.fsm.prototype = {
      * @event syngen.tool.fsm#event:exit-{state}
      * @type {Object}
      * @param {String} currentState
+     * @param {?String} event
      * @param {String} nextState
      * @param {...*} ...data
      */
@@ -71,6 +74,7 @@ syngen.tool.fsm.prototype = {
 
     const enterPayload = {
       currentState: state,
+      event: this._lastEvent,
       previousState: this.state,
       ...data,
     }
@@ -82,6 +86,7 @@ syngen.tool.fsm.prototype = {
      * @event syngen.tool.fsm#event:enter
      * @type {Object}
      * @param {String} currentState
+     * @param {?String} event
      * @param {String} previousState
      * @param {...*} ...data
      */
@@ -93,6 +98,7 @@ syngen.tool.fsm.prototype = {
      * @event syngen.tool.fsm#event:enter-{state}
      * @type {Object}
      * @param {String} currentState
+     * @param {?String} event
      * @param {String} previousState
      * @param {...*} ...data
      */
@@ -185,7 +191,9 @@ syngen.tool.fsm.prototype = {
        */
       this.pubsub.emit(`before-${state}-${event}`, beforePayload)
 
+      this._lastEvent = event
       action.call(this, data)
+      delete this._lastEvent
 
       const afterPayload = {
         currentState: this.state,
@@ -201,7 +209,6 @@ syngen.tool.fsm.prototype = {
        * @param {String} currentState
        * @param {String} event
        * @param {String} previousState
-       * @param {Object} state
        * @param {...*} ...data
        */
       this.pubsub.emit('after', afterPayload)
@@ -214,7 +221,6 @@ syngen.tool.fsm.prototype = {
        * @param {String} currentState
        * @param {String} event
        * @param {String} previousState
-       * @param {Object} state
        * @param {...*} ...data
        */
       this.pubsub.emit(`after-${event}`, afterPayload)
@@ -227,7 +233,6 @@ syngen.tool.fsm.prototype = {
        * @param {String} currentState
        * @param {String} event
        * @param {String} previousState
-       * @param {Object} state
        * @param {...*} ...data
        */
       this.pubsub.emit(`after-${state}-${event}`, afterPayload)
