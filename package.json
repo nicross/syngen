@@ -7,13 +7,12 @@
   "bugs": "https://github.com/nicross/syngen/issues",
   "repository": "git://github.com/nicross/syngen.git",
   "devDependencies": {
-    "del": "^6.1.1",
-    "gulp": "^4.0.2",
+    "del": "^8.0.1",
+    "gulp": "^5.0.1",
     "gulp-concat": "^2.6.1",
     "gulp-header": "^2.0.9",
     "gulp-jsdoc3": "^3.0.0",
-    "gulp-rename": "^2.0.0",
-    "gulp-uglify-es": "^3.0.0",
-    "yargs": "^17.6.2"
+    "gulp-rename": "^2.1.0",
+    "gulp-uglify-es": "^3.0.0"
   }
 }

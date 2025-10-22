@@ -8,7 +8,9 @@ const package = require('./package.json')
 const rename = require('gulp-rename')
 const uglify = require('gulp-uglify-es').default
 
-gulp.task('clean', () => del(['dist', 'docs']))
+gulp.task('clean', () => import('del').then(
+  ({deleteSync}) => deleteSync(['dist', 'docs'])
+))
 
 gulp.task('dist', () => {
   const comment = `/* ${package.name} v${package.version} */${EOL}`
