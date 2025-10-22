@@ -1,4 +1,7 @@
 # syngen changelog
+## v0.2.1
+- Fixed audio clicks caused by `syngen.audio.ramp.hold()` in Chromium 140 and later.
+
 ## v0.2.0
 - Added `syngen.utility.simplex2d` for generating OpenSimplex noise in two dimensions
 - Added `syngen.utility.simplex3d` for generating OpenSimplex noise in three dimensions

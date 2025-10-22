@@ -1,4 +1,4 @@
-/*! syngen v0.2.0 */
+/*! syngen v0.2.1 */
 (() => {
 'use strict'
 
@@ -6935,8 +6935,8 @@ syngen.audio.ramp.exponential = function (audioParam, value, duration = syngen.c
  * @static
  */
 syngen.audio.ramp.hold = function (audioParam) {
-  audioParam.value = audioParam.value
   audioParam.cancelScheduledValues(0)
+  audioParam.setValueAtTime(audioParam.value, syngen.audio.time())
   return this
 }
 
