@@ -635,8 +635,8 @@ syngen.fn.hash = (value) => {
  * @static
  */
 syngen.fn.holdParam = function (audioParam) {
-  audioParam.value = audioParam.value
   audioParam.cancelScheduledValues(0)
+  audioParam.setValueAtTime(audioParam.value, syngen.time())
   return this
 }
 
@@ -5584,7 +5584,7 @@ syngen.tool.streamer2d.prototype = {
       width: this.radius * 2,
       x: position.x - this.radius,
       y: position.y - this.radius,
-    })
+    }).filter((item) => position.distance(item) <= this.radius)
 
     // Load and unload objects
     const loadedSet = new Set(this.loaded),
@@ -5663,7 +5663,7 @@ syngen.tool.streamer3d.prototype = {
       x: position.x - this.radius,
       y: position.y - this.radius,
       z: position.z - this.radius,
-    })
+    }).filter((item) => position.distance(item) <= this.radius)
 
     // Load and unload objects
     const loadedSet = new Set(this.loaded),
@@ -8376,6 +8376,412 @@ syngen.synth.prototype = {
 
 /* syngen v2.0.0-beta.1 */
 /**
+ * Creates a `GainNode` that inverts a signal with `scale`.
+ * @param {Object} [options={}]
+ * @param {AudioNode|AudioParam} [options.from]
+ * @param {Number} [options.scale=1]
+ * @param {AudioNode|AudioParam} [options.to]
+ * @returns {GainNode}
+ * @static
+ */
+syngen.circuit.invert = ({
+  from,
+  scale = 1,
+  to,
+} = {}) => {
+  const context = syngen.context(),
+    inverter = context.createGain()
+
+  inverter.gain.value = -Math.abs(scale)
+
+  if (from) {
+    from.connect(inverter)
+  }
+
+  if (to) {
+    inverter.connect(to)
+  }
+
+  return inverter
+}
+
+/* syngen v2.0.0-beta.1 */
+/**
+ * Creates a circuit that interpolates an input signal linearly within `[0, 1]` to `[min, max]`.
+ * Beware that it leverages `ConstantSourceNode`s.
+ * Pass a `chainStop` or call the returned `stop` method to free resources when no longer in use.
+ * @param {Object} [options={}]
+ * @param {syngen.synth~Synth} [options.chainStop]
+ * @param {AudioNode|AudioParam} [options.from]
+ *  Typically a `ConstantSourceNode`.
+ * @param {Number} [options.max=1]
+ * @param {Number} [options.min=0]
+ * @param {AudioNode|AudioParam} [options.to]
+ *  Typically an `AudioParam`.
+ * @returns {Object}
+ * @static
+ */
+syngen.circuit.lerp = ({
+  chainStop,
+  from,
+  max: maxValue = 1,
+  min: minValue = 0,
+  to,
+  when,
+} = {}) => {
+  const context = syngen.context()
+
+  const lerp = context.createGain(),
+    max = context.createConstantSource(),
+    min = context.createConstantSource()
+
+  lerp.gain.value = 0
+  max.offset.value = maxValue - minValue
+  min.offset.value = minValue
+  to.value = 0
+
+  from.connect(lerp.gain)
+  max.connect(lerp)
+  lerp.connect(to)
+  min.connect(to)
+
+  max.start(when)
+  min.start(when)
+
+  const wrapper = {
+    stop: (when = syngen.time()) => {
+      max.stop(when)
+      min.stop(when)
+      return this
+    },
+  }
+
+  if (chainStop) {
+    syngen.synth.chainStop(chainStop, wrapper)
+  }
+
+  return wrapper
+}
+
+/* syngen v2.0.0-beta.1 */
+/**
+ * Creates a circuit that scales an input signal linearly within `[fromMin, fromMax]` to `[toMin, toMax]`.
+ * Beware that it leverages `ConstantSourceNode`s.
+ * Pass a `chainStop` or call the returned `stop` method to free resources when no longer in use.
+ * @param {Object} [options={}]
+ * @param {syngen.synth~Synth} [options.chainStop]
+ * @param {AudioNode|AudioParam} [options.from]
+ *  Typically a `ConstantSourceNode`.
+ * @param {Number} [options.fromMax=1]
+ * @param {Number} [options.fromMin=0]
+ * @param {AudioNode|AudioParam} [options.to]
+ *   Typically an `AudioParam`.
+ * @param {Number} [options.toMax=1]
+ * @param {Number} [options.toMin=0]
+ * @returns {Object}
+ * @static
+ */
+syngen.circuit.scale = ({
+  chainStop,
+  from,
+  fromMax = 1,
+  fromMin = 0,
+  to,
+  toMax = 1,
+  toMin = 0,
+  when,
+} = {}) => {
+  const context = syngen.context()
+
+  const offset = context.createConstantSource(),
+    scale = context.createGain()
+
+  offset.offset.value = -fromMin // Translate to [0,fromMax-fromMin]
+  scale.gain.value = 1 / (fromMax - fromMin) // Scale down to [0,1]
+
+  offset.connect(scale)
+
+  if (from) {
+    from.connect(scale)
+  }
+
+  offset.start(when)
+
+  // Leverage lerp to handle upscale
+  const lerp = syngen.circuit.lerp({
+    from: scale,
+    max: toMax,
+    min: toMin,
+    to,
+    when,
+  })
+
+  const wrapper = {
+    stop: (when = syngen.time()) => {
+      lerp.stop(when)
+      offset.stop(when)
+      return this
+    },
+  }
+
+  if (chainStop) {
+    syngen.synth.chainStop(chainStop, wrapper)
+  }
+
+  return wrapper
+}
+
+/* syngen v2.0.0-beta.1 */
+/**
+ * Provides an interface for binaural audio processing.
+ * Typical use involves sending it a monophonic signal for processing and then routing its output to a bus.
+ * This interface is mainly a wrapper for two {@link syngen.ear.monaural|monaural} processors.
+ * @interface
+ * @todo Document private members
+ */
+syngen.ear.binaural = {}
+
+/**
+ * Instantiates a new binaural processor.
+ * @param {Object} [options]
+ * @param {Number} [options.x=0]
+ * @param {Number} [options.y=0]
+ * @param {Number} [options.z=0]
+ * @returns {syngen.ear.binaural}
+ * @static
+ */
+syngen.ear.binaural.create = function (options) {
+  return Object.create(this.prototype).construct(options)
+}
+
+syngen.ear.binaural.prototype = {
+  defaults: {
+    headWidth: 0.1524, // meters
+    stereoWidth: Math.PI / 4, // radians
+  },
+  /**
+   * Initializes the binaural processor.
+   * @instance
+   * @private
+   */
+  construct: function ({
+    filterModel = syngen.ear.filterModel.head,
+    gainModel = syngen.ear.gainModel.exponential,
+    headWidth = this.defaults.headWidth,
+    stereoWidth = this.defaults.stereoWidth,
+    x = 0,
+    y = 0,
+    z = 0,
+  } = {}) {
+    const context = syngen.context()
+
+    this.options = {
+      headWidth,
+      stereoWidth,
+    }
+
+    this.left = syngen.ear.monaural.create({
+      filterModel,
+      gainModel,
+    })
+
+    this.right = syngen.ear.monaural.create({
+      filterModel,
+      gainModel,
+    })
+
+    this.merger = context.createChannelMerger()
+    this.left.to(this.merger, 0, 0)
+    this.right.to(this.merger, 0, 1)
+
+    this.update({
+      x,
+      y,
+      z,
+    })
+
+    return this
+  },
+  /**
+   * Prepares the instance for garbage collection.
+   * @instance
+   */
+  destroy: function () {
+    this.left.destroy()
+    this.right.destroy()
+    return this
+  },
+  /**
+   * Connects `input` to this.
+   * @instance
+   * @param {AudioNode} input
+   */
+  from: function (input) {
+    this.left.from(input)
+    this.right.from(input)
+    return this
+  },
+  /**
+   * Connects this to `output`.
+   * @instance
+   * @param {AudioNode}
+   */
+  to: function (output) {
+    this.merger.connect(output)
+    return this
+  },
+  /**
+   * Updates its inner monaural processors with `options`.
+   * @instance
+   * @param {syngen.tool.vector3d} relative
+   */
+  update: function (relative = {}) {
+    if (!syngen.tool.vector3d.prototype.isPrototypeOf(relative)) {
+      relative = syngen.tool.vector3d.create(relative)
+    }
+
+    this.left.update({
+      normal: syngen.tool.vector3d.create(
+        syngen.tool.vector2d.unitX().rotate(
+          this.options.stereoWidth
+        )
+      ),
+      relative: relative.add({
+        y: -this.options.headWidth / 2,
+      }),
+    })
+
+    this.right.update({
+      normal: syngen.tool.vector3d.create(
+        syngen.tool.vector2d.unitX().rotate(
+          -this.options.stereoWidth
+        )
+      ),
+      relative: relative.add({
+        y: this.options.headWidth / 2,
+      }),
+    })
+
+    return this
+  },
+}
+
+/* syngen v2.0.0-beta.1 */
+/**
+ * Provides an interface for processing audio as an observer in a physical space.
+ * Importantly, it models interaural intensity differences, interaural arrival time, and acoustic shadow.
+ * @interface
+ * @todo Document private members
+ */
+syngen.ear.monaural = {}
+
+/**
+ * Instantiates a monaural processor.
+ * @param {Object} [options={}]
+ * @param {Number} [options.pan=0]
+ *   Between `[-1, 1]` representing hard-left to hard-right.
+ * @returns {syngen.ear.monaural}
+ * @static
+ */
+syngen.ear.monaural.create = function (options) {
+  return Object.create(this.prototype).construct(options)
+}
+
+syngen.ear.monaural.prototype = {
+  defaults: {
+    confusionRadius: 1,
+  },
+  /**
+   * Initializes the instance.
+   * @instance
+   * @private
+   */
+  construct: function ({
+    confusionRadius = this.defaults.confusionRadius,
+    filterModel = syngen.ear.filterModel.head,
+    gainModel = syngen.ear.gainModel.realistic,
+  } = {}) {
+    const context = syngen.context()
+
+    this.options = {
+      confusionRadius,
+    }
+
+    this.filterModel = filterModel
+    this.gainModel = gainModel
+
+    this.delay = context.createDelay()
+    this.filter = context.createBiquadFilter()
+    this.gain = context.createGain()
+
+    this.filter.frequency.value = syngen.const.maxFrequency
+    this.gain.gain.value = syngen.const.zeroGain
+
+    this.delay.connect(this.filter)
+    this.filter.connect(this.gain)
+
+    return this
+  },
+  /**
+   * Prepares the instance for garbage collection.
+   * @instance
+   */
+  destroy: function () {
+    return this
+  },
+  /**
+   * Connects `input` to this with additional `...args`.
+   * @instance
+   * @param {AudioNode} input
+   * @param {...*} [...args]
+   */
+  from: function (input, ...args) {
+    input.connect(this.delay, ...args)
+    return this
+  },
+  /**
+   * Connects this to `output` with additional `...args`.
+   * @instance
+   * @param {AudioNode} output
+   * @param {...*} [...args]
+   */
+  to: function (output, ...args) {
+    this.gain.connect(output, ...args)
+    return this
+  },
+  /**
+   * Updates the internal circuit with `options` relative to an observer facing 0° at the origin.
+   * @instance
+   * @todo Document parameters
+   */
+  update: function ({
+    normal = syngen.tool.vector3d.create(),
+    relative = syngen.tool.vector3d.create(),
+  } = {}) {
+    const distance = relative.distance()
+
+    if (distance > 1) {
+      relative = relative.scale(1 / distance)
+    }
+
+    // Calculate dot product, with a unit sphere of confusion
+    // Dot product of two normalized vectors is [-1, 1]
+    const dotProduct = syngen.fn.lerp(1, relative.dotProduct(normal), syngen.fn.clamp(distance / this.options.confusionRadius))
+
+    const delayTime = syngen.fn.clamp(distance / syngen.const.speedOfSound, syngen.const.zeroTime, 1),
+      filterFrequency = this.filterModel.calculate(dotProduct),
+      inputGain = this.gainModel.calculate(distance)
+
+    syngen.fn.setParam(this.delay.delayTime, delayTime)
+    syngen.fn.setParam(this.filter.frequency, filterFrequency)
+    syngen.fn.setParam(this.gain.gain, inputGain)
+
+    return this
+  },
+}
+
+/* syngen v2.0.0-beta.1 */
+/**
  * Creates a feedback delay line with a filter inserted into its feedback loop.
  * @param {Object} [options={}]
  * @param {Number} [options.delay=0.5]
@@ -8842,412 +9248,6 @@ syngen.effect.talkbox = ({
 
 /* syngen v2.0.0-beta.1 */
 /**
- * Creates a `GainNode` that inverts a signal with `scale`.
- * @param {Object} [options={}]
- * @param {AudioNode|AudioParam} [options.from]
- * @param {Number} [options.scale=1]
- * @param {AudioNode|AudioParam} [options.to]
- * @returns {GainNode}
- * @static
- */
-syngen.circuit.invert = ({
-  from,
-  scale = 1,
-  to,
-} = {}) => {
-  const context = syngen.context(),
-    inverter = context.createGain()
-
-  inverter.gain.value = -Math.abs(scale)
-
-  if (from) {
-    from.connect(inverter)
-  }
-
-  if (to) {
-    inverter.connect(to)
-  }
-
-  return inverter
-}
-
-/* syngen v2.0.0-beta.1 */
-/**
- * Creates a circuit that interpolates an input signal linearly within `[0, 1]` to `[min, max]`.
- * Beware that it leverages `ConstantSourceNode`s.
- * Pass a `chainStop` or call the returned `stop` method to free resources when no longer in use.
- * @param {Object} [options={}]
- * @param {syngen.synth~Synth} [options.chainStop]
- * @param {AudioNode|AudioParam} [options.from]
- *  Typically a `ConstantSourceNode`.
- * @param {Number} [options.max=1]
- * @param {Number} [options.min=0]
- * @param {AudioNode|AudioParam} [options.to]
- *  Typically an `AudioParam`.
- * @returns {Object}
- * @static
- */
-syngen.circuit.lerp = ({
-  chainStop,
-  from,
-  max: maxValue = 1,
-  min: minValue = 0,
-  to,
-  when,
-} = {}) => {
-  const context = syngen.context()
-
-  const lerp = context.createGain(),
-    max = context.createConstantSource(),
-    min = context.createConstantSource()
-
-  lerp.gain.value = 0
-  max.offset.value = maxValue - minValue
-  min.offset.value = minValue
-  to.value = 0
-
-  from.connect(lerp.gain)
-  max.connect(lerp)
-  lerp.connect(to)
-  min.connect(to)
-
-  max.start(when)
-  min.start(when)
-
-  const wrapper = {
-    stop: (when = syngen.time()) => {
-      max.stop(when)
-      min.stop(when)
-      return this
-    },
-  }
-
-  if (chainStop) {
-    syngen.synth.chainStop(chainStop, wrapper)
-  }
-
-  return wrapper
-}
-
-/* syngen v2.0.0-beta.1 */
-/**
- * Creates a circuit that scales an input signal linearly within `[fromMin, fromMax]` to `[toMin, toMax]`.
- * Beware that it leverages `ConstantSourceNode`s.
- * Pass a `chainStop` or call the returned `stop` method to free resources when no longer in use.
- * @param {Object} [options={}]
- * @param {syngen.synth~Synth} [options.chainStop]
- * @param {AudioNode|AudioParam} [options.from]
- *  Typically a `ConstantSourceNode`.
- * @param {Number} [options.fromMax=1]
- * @param {Number} [options.fromMin=0]
- * @param {AudioNode|AudioParam} [options.to]
- *   Typically an `AudioParam`.
- * @param {Number} [options.toMax=1]
- * @param {Number} [options.toMin=0]
- * @returns {Object}
- * @static
- */
-syngen.circuit.scale = ({
-  chainStop,
-  from,
-  fromMax = 1,
-  fromMin = 0,
-  to,
-  toMax = 1,
-  toMin = 0,
-  when,
-} = {}) => {
-  const context = syngen.context()
-
-  const offset = context.createConstantSource(),
-    scale = context.createGain()
-
-  offset.offset.value = -fromMin // Translate to [0,fromMax-fromMin]
-  scale.gain.value = 1 / (fromMax - fromMin) // Scale down to [0,1]
-
-  offset.connect(scale)
-
-  if (from) {
-    from.connect(scale)
-  }
-
-  offset.start(when)
-
-  // Leverage lerp to handle upscale
-  const lerp = syngen.circuit.lerp({
-    from: scale,
-    max: toMax,
-    min: toMin,
-    to,
-    when,
-  })
-
-  const wrapper = {
-    stop: (when = syngen.time()) => {
-      lerp.stop(when)
-      offset.stop(when)
-      return this
-    },
-  }
-
-  if (chainStop) {
-    syngen.synth.chainStop(chainStop, wrapper)
-  }
-
-  return wrapper
-}
-
-/* syngen v2.0.0-beta.1 */
-/**
- * Provides an interface for binaural audio processing.
- * Typical use involves sending it a monophonic signal for processing and then routing its output to a bus.
- * This interface is mainly a wrapper for two {@link syngen.ear.monaural|monaural} processors.
- * @interface
- * @todo Document private members
- */
-syngen.ear.binaural = {}
-
-/**
- * Instantiates a new binaural processor.
- * @param {Object} [options]
- * @param {Number} [options.x=0]
- * @param {Number} [options.y=0]
- * @param {Number} [options.z=0]
- * @returns {syngen.ear.binaural}
- * @static
- */
-syngen.ear.binaural.create = function (options) {
-  return Object.create(this.prototype).construct(options)
-}
-
-syngen.ear.binaural.prototype = {
-  defaults: {
-    headWidth: 0.1524, // meters
-    stereoWidth: Math.PI / 4, // radians
-  },
-  /**
-   * Initializes the binaural processor.
-   * @instance
-   * @private
-   */
-  construct: function ({
-    filterModel = syngen.ear.filterModel.head,
-    gainModel = syngen.ear.gainModel.exponential,
-    headWidth = this.defaults.headWidth,
-    stereoWidth = this.defaults.stereoWidth,
-    x = 0,
-    y = 0,
-    z = 0,
-  } = {}) {
-    const context = syngen.context()
-
-    this.options = {
-      headWidth,
-      stereoWidth,
-    }
-
-    this.left = syngen.ear.monaural.create({
-      filterModel,
-      gainModel,
-    })
-
-    this.right = syngen.ear.monaural.create({
-      filterModel,
-      gainModel,
-    })
-
-    this.merger = context.createChannelMerger()
-    this.left.to(this.merger, 0, 0)
-    this.right.to(this.merger, 0, 1)
-
-    this.update({
-      x,
-      y,
-      z,
-    })
-
-    return this
-  },
-  /**
-   * Prepares the instance for garbage collection.
-   * @instance
-   */
-  destroy: function () {
-    this.left.destroy()
-    this.right.destroy()
-    return this
-  },
-  /**
-   * Connects `input` to this.
-   * @instance
-   * @param {AudioNode} input
-   */
-  from: function (input) {
-    this.left.from(input)
-    this.right.from(input)
-    return this
-  },
-  /**
-   * Connects this to `output`.
-   * @instance
-   * @param {AudioNode}
-   */
-  to: function (output) {
-    this.merger.connect(output)
-    return this
-  },
-  /**
-   * Updates its inner monaural processors with `options`.
-   * @instance
-   * @param {syngen.tool.vector3d} relative
-   */
-  update: function (relative = {}) {
-    if (!syngen.tool.vector3d.prototype.isPrototypeOf(relative)) {
-      relative = syngen.tool.vector3d.create(relative)
-    }
-
-    this.left.update({
-      normal: syngen.tool.vector3d.create(
-        syngen.tool.vector2d.unitX().rotate(
-          this.options.stereoWidth
-        )
-      ),
-      relative: relative.add({
-        y: -this.options.headWidth / 2,
-      }),
-    })
-
-    this.right.update({
-      normal: syngen.tool.vector3d.create(
-        syngen.tool.vector2d.unitX().rotate(
-          -this.options.stereoWidth
-        )
-      ),
-      relative: relative.add({
-        y: this.options.headWidth / 2,
-      }),
-    })
-
-    return this
-  },
-}
-
-/* syngen v2.0.0-beta.1 */
-/**
- * Provides an interface for processing audio as an observer in a physical space.
- * Importantly, it models interaural intensity differences, interaural arrival time, and acoustic shadow.
- * @interface
- * @todo Document private members
- */
-syngen.ear.monaural = {}
-
-/**
- * Instantiates a monaural processor.
- * @param {Object} [options={}]
- * @param {Number} [options.pan=0]
- *   Between `[-1, 1]` representing hard-left to hard-right.
- * @returns {syngen.ear.monaural}
- * @static
- */
-syngen.ear.monaural.create = function (options) {
-  return Object.create(this.prototype).construct(options)
-}
-
-syngen.ear.monaural.prototype = {
-  defaults: {
-    confusionRadius: 1,
-  },
-  /**
-   * Initializes the instance.
-   * @instance
-   * @private
-   */
-  construct: function ({
-    confusionRadius = this.defaults.confusionRadius,
-    filterModel = syngen.ear.filterModel.head,
-    gainModel = syngen.ear.gainModel.realistic,
-  } = {}) {
-    const context = syngen.context()
-
-    this.options = {
-      confusionRadius,
-    }
-
-    this.filterModel = filterModel
-    this.gainModel = gainModel
-
-    this.delay = context.createDelay()
-    this.filter = context.createBiquadFilter()
-    this.gain = context.createGain()
-
-    this.filter.frequency.value = syngen.const.maxFrequency
-    this.gain.gain.value = syngen.const.zeroGain
-
-    this.delay.connect(this.filter)
-    this.filter.connect(this.gain)
-
-    return this
-  },
-  /**
-   * Prepares the instance for garbage collection.
-   * @instance
-   */
-  destroy: function () {
-    return this
-  },
-  /**
-   * Connects `input` to this with additional `...args`.
-   * @instance
-   * @param {AudioNode} input
-   * @param {...*} [...args]
-   */
-  from: function (input, ...args) {
-    input.connect(this.delay, ...args)
-    return this
-  },
-  /**
-   * Connects this to `output` with additional `...args`.
-   * @instance
-   * @param {AudioNode} output
-   * @param {...*} [...args]
-   */
-  to: function (output, ...args) {
-    this.gain.connect(output, ...args)
-    return this
-  },
-  /**
-   * Updates the internal circuit with `options` relative to an observer facing 0° at the origin.
-   * @instance
-   * @todo Document parameters
-   */
-  update: function ({
-    normal = syngen.tool.vector3d.create(),
-    relative = syngen.tool.vector3d.create(),
-  } = {}) {
-    const distance = relative.distance()
-
-    if (distance > 1) {
-      relative = relative.scale(1 / distance)
-    }
-
-    // Calculate dot product, with a unit sphere of confusion
-    // Dot product of two normalized vectors is [-1, 1]
-    const dotProduct = syngen.fn.lerp(1, relative.dotProduct(normal), syngen.fn.clamp(distance / this.options.confusionRadius))
-
-    const delayTime = syngen.fn.clamp(distance / syngen.const.speedOfSound, syngen.const.zeroTime, 1),
-      filterFrequency = this.filterModel.calculate(dotProduct),
-      inputGain = this.gainModel.calculate(distance)
-
-    syngen.fn.setParam(this.delay.delayTime, delayTime)
-    syngen.fn.setParam(this.filter.frequency, filterFrequency)
-    syngen.fn.setParam(this.gain.gain, inputGain)
-
-    return this
-  },
-}
-
-/* syngen v2.0.0-beta.1 */
-/**
  * Returns a formant definition for the vowel A.
  * @returns {syngen.formant~Definition}
  * @static
@@ -9444,59 +9444,6 @@ syngen.formant.createU = () => {
   return syngen.formant.create(
     syngen.formant.u()
   )
-}
-
-/* syngen v2.0.0-beta.1 */
-/**
- * Records the output of the provided input and exports it as a WebM file.
- * When no duration is passed, the [MediaRecorder](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder) _must_ be stopped to complete the export.
- * @param {Object} [options]
- * @param {Number} [options.duration=0]
- * @param {AudioNode} [options.input=syngen.mixer.output]
- * @param {String} [options.name=export.webm]
- * @returns {MediaRecorder}
- * @static
- */
-syngen.mixer.export = ({
-  duration = 0,
-  input = syngen.mixer.output(),
-  name = 'export.webm',
-} = {}) => {
-  if (!(input instanceof AudioNode)) {
-    throw new Error('Input must be an AudioNode')
-  }
-
-  const context = syngen.context(),
-    data = [],
-    destination = context.createMediaStreamDestination(),
-    recorder = new MediaRecorder(destination.stream)
-
-  recorder.ondataavailable = (e) => data.push(e.data)
-
-  recorder.onstop = () => {
-    try {
-      input.disconnect(destination)
-    } catch (e) {}
-
-    const blob = new Blob(data, {type: recorder.mimeType}),
-      url = URL.createObjectURL(blob)
-
-    const link = document.createElement('a')
-    link.download = name
-    link.href = url
-
-    link.click()
-    link.remove()
-  }
-
-  input.connect(destination)
-  recorder.start()
-
-  if (duration > 0) {
-    setTimeout(() => recorder.stop(), duration * 1000)
-  }
-
-  return recorder
 }
 
 /* syngen v2.0.0-beta.1 */
@@ -9859,6 +9806,59 @@ syngen.input.mouse = (() => {
 })()
 
 syngen.loop.on('frame', () => syngen.input.mouse.update())
+
+/* syngen v2.0.0-beta.1 */
+/**
+ * Records the output of the provided input and exports it as a WebM file.
+ * When no duration is passed, the [MediaRecorder](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder) _must_ be stopped to complete the export.
+ * @param {Object} [options]
+ * @param {Number} [options.duration=0]
+ * @param {AudioNode} [options.input=syngen.mixer.output]
+ * @param {String} [options.name=export.webm]
+ * @returns {MediaRecorder}
+ * @static
+ */
+syngen.mixer.export = ({
+  duration = 0,
+  input = syngen.mixer.output(),
+  name = 'export.webm',
+} = {}) => {
+  if (!(input instanceof AudioNode)) {
+    throw new Error('Input must be an AudioNode')
+  }
+
+  const context = syngen.context(),
+    data = [],
+    destination = context.createMediaStreamDestination(),
+    recorder = new MediaRecorder(destination.stream)
+
+  recorder.ondataavailable = (e) => data.push(e.data)
+
+  recorder.onstop = () => {
+    try {
+      input.disconnect(destination)
+    } catch (e) {}
+
+    const blob = new Blob(data, {type: recorder.mimeType}),
+      url = URL.createObjectURL(blob)
+
+    const link = document.createElement('a')
+    link.download = name
+    link.href = url
+
+    link.click()
+    link.remove()
+  }
+
+  input.connect(destination)
+  recorder.start()
+
+  if (duration > 0) {
+    setTimeout(() => recorder.stop(), duration * 1000)
+  }
+
+  return recorder
+}
 
 /* syngen v2.0.0-beta.1 */
 /**

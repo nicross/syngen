@@ -466,8 +466,8 @@ syngen.fn.hash = (value) => {
  * @static
  */
 syngen.fn.holdParam = function (audioParam) {
-  audioParam.value = audioParam.value
   audioParam.cancelScheduledValues(0)
+  audioParam.setValueAtTime(audioParam.value, syngen.time())
   return this
 }
 
