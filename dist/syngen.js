@@ -1,8 +1,8 @@
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 (() => {
 'use strict'
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * The global point of entry and default export for the framework.
  * @namespace
@@ -83,7 +83,7 @@ const syngen = (() => {
   }
 })()
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * A collection of useful constants used throughout the library.
  * These can be overridden at runtime.
@@ -194,7 +194,7 @@ syngen.const.zeroGain = 10 ** (-96 / 10) // syngen.fn.fromDb(syngen.const.zeroDb
 */
 syngen.const.zeroTime = 0.005
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * A collection of useful functions.
  * @namespace
@@ -1264,7 +1264,7 @@ syngen.fn.wrapAlternate = (value, min = 0, max = 1) => {
   return value
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides a binary tree interface for storing and querying objects in one-dimensional space.
  * @interface
@@ -1559,7 +1559,7 @@ syngen.tool.bitree.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.tool.cache2d = {}
 
 syngen.tool.cache2d.create = function (...args) {
@@ -1602,7 +1602,7 @@ syngen.tool.cache2d.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.tool.cache3d = {}
 
 syngen.tool.cache3d.create = function (...args) {
@@ -1652,7 +1652,7 @@ syngen.tool.cache3d.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.tool.cone = {}
 
 syngen.tool.cone.create = function (...args) {
@@ -1709,7 +1709,7 @@ syngen.tool.cone.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for Euler angles.
  * They express 3D orientations in space with pitch, roll, and yaw.
@@ -1925,7 +1925,7 @@ syngen.tool.euler.prototype = {
   yaw: 0,
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for finite-state machines.
  * Machines have defined finite states with actions that transition it to other states.
@@ -2206,7 +2206,7 @@ syngen.tool.fsm.prototype = {
   state: undefined,
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.tool.generator2d = {}
 
 syngen.tool.generator2d.create = function (...args) {
@@ -2299,7 +2299,7 @@ syngen.tool.generator2d.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.tool.generator3d = {}
 
 syngen.tool.generator3d.create = function (...args) {
@@ -2396,7 +2396,7 @@ syngen.tool.generator3d.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.tool.matrix4d = {}
 
 syngen.tool.matrix4d.create = function (...args) {
@@ -2591,7 +2591,7 @@ syngen.tool.matrix4d.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for generating seeded one-dimensional noise.
  * @interface
@@ -2693,7 +2693,7 @@ syngen.tool.noise.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an octree interface for storing and querying objects in three-dimensional space.
  * @interface
@@ -3181,7 +3181,7 @@ syngen.tool.octree.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for generating seeded two-dimensional Perlin noise.
  * @interface
@@ -3333,7 +3333,7 @@ syngen.tool.perlin2d.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for generating seeded two-dimensional Perlin noise.
  * @interface
@@ -3518,7 +3518,7 @@ syngen.tool.perlin3d.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for generating seeded four-dimensional Perlin noise.
  * @interface
@@ -3750,7 +3750,7 @@ syngen.tool.perlin4d.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.tool.plane = {}
 
 syngen.tool.plane.create = function (...args) {
@@ -3788,7 +3788,7 @@ syngen.tool.plane.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for a publish-subscribe messaging pattern.
  * Objects can be decorated with an existing or new instance with the static {@link syngen.tool.pubsub.decorate|decorate} method.
@@ -3947,7 +3947,7 @@ syngen.tool.pubsub.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides a quadtree interface for storing and querying objects in two-dimensional space.
  * @interface
@@ -4305,7 +4305,7 @@ syngen.tool.quadtree.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for quaternions.
  * They express 3D orientations in space with complex numbers.
@@ -4688,7 +4688,7 @@ syngen.tool.quaternion.identity = function () {
   })
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for generating seeded two-dimensional OpenSimplex noise.
  * @interface
@@ -4872,7 +4872,7 @@ syngen.tool.simplex2d.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for generating seeded three-dimensional OpenSimplex noise.
  * @interface
@@ -5138,7 +5138,7 @@ syngen.tool.simplex3d.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for generating seeded four-dimensional OpenSimplex noise.
  * @interface
@@ -5443,7 +5443,7 @@ syngen.tool.simplex4d.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.tool.sphere = {}
 
 syngen.tool.sphere.create = function (...args) {
@@ -5469,7 +5469,7 @@ syngen.tool.sphere.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.tool.streamer2d = {}
 
 syngen.tool.streamer2d.create = function (...args) {
@@ -5546,7 +5546,7 @@ syngen.tool.streamer2d.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.tool.streamer3d = {}
 
 syngen.tool.streamer3d.create = function (...args) {
@@ -5625,7 +5625,7 @@ syngen.tool.streamer3d.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for two-dimensional vectors with x-y coordinates.
  * @interface
@@ -5921,7 +5921,7 @@ syngen.tool.vector2d.unitY = function () {
   })
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for two-dimensional vectors with x-y-z coordinates.
  * @interface
@@ -6312,7 +6312,7 @@ syngen.tool.vector3d.unitZ = function () {
   })
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an event-driven main loop for the application.
  * Systems can subscribe to each frame and respond to state changes.
@@ -6508,7 +6508,7 @@ syngen.loop = (() => {
   })
 })()
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides a helper for importing and exporting state.
  * Systems can subscribe to its events to persist and load their inner states.
@@ -6573,7 +6573,7 @@ syngen.state = syngen.tool.pubsub.decorate({
   }
 })
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.buffer.brownNoise = ({
   channels = 1,
   duration = 0,
@@ -6606,7 +6606,7 @@ syngen.buffer.brownNoise = ({
   return buffer
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.buffer.impulse = ({
   buffer,
   power = 1,
@@ -6628,7 +6628,7 @@ syngen.buffer.impulse = ({
   return buffer
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.buffer.pinkNoise = ({
   channels = 1,
   duration = 0,
@@ -6673,7 +6673,7 @@ syngen.buffer.pinkNoise = ({
   return buffer
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.buffer.whiteNoise = ({
   channels = 1,
   duration = 0,
@@ -6698,7 +6698,7 @@ syngen.buffer.whiteNoise = ({
   return buffer
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 // TODO: Document
 syngen.ear.filterModel.base = {
   defaults: {},
@@ -6717,7 +6717,7 @@ syngen.ear.filterModel.base = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.ear.filterModel.head = syngen.ear.filterModel.base.extend({
   defaults: {
     coneRadius: Math.PI / 4,
@@ -6734,7 +6734,7 @@ syngen.ear.filterModel.head = syngen.ear.filterModel.base.extend({
   },
 })
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.ear.filterModel.musical = syngen.ear.filterModel.base.extend({
   defaults: {
     coneRadius: Math.PI / 4,
@@ -6753,7 +6753,7 @@ syngen.ear.filterModel.musical = syngen.ear.filterModel.base.extend({
   },
 })
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 // TODO: Document
 syngen.ear.gainModel.base = {
   defaults: {},
@@ -6772,7 +6772,7 @@ syngen.ear.gainModel.base = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.ear.gainModel.exponential = syngen.ear.gainModel.base.extend({
   defaults: {
     maxDistance: 100,
@@ -6793,7 +6793,7 @@ syngen.ear.gainModel.exponential = syngen.ear.gainModel.base.extend({
   },
 })
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.ear.gainModel.linear = syngen.ear.gainModel.base.extend({
   defaults: {
     maxDistance: 100,
@@ -6812,7 +6812,7 @@ syngen.ear.gainModel.linear = syngen.ear.gainModel.base.extend({
   },
 })
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.ear.gainModel.logarithmic = syngen.ear.gainModel.base.extend({
   defaults: {
     base: 10,
@@ -6833,7 +6833,7 @@ syngen.ear.gainModel.logarithmic = syngen.ear.gainModel.base.extend({
   },
 })
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.ear.gainModel.normalize = syngen.ear.gainModel.base.extend({
   defaults: {
     gain: 1,
@@ -6843,7 +6843,7 @@ syngen.ear.gainModel.normalize = syngen.ear.gainModel.base.extend({
   },
 })
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.ear.gainModel.realistic = syngen.ear.gainModel.base.extend({
   defaults: {
     power: 2,
@@ -6853,7 +6853,7 @@ syngen.ear.gainModel.realistic = syngen.ear.gainModel.base.extend({
   },
 })
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.ear.gainModel.realisticHorizon = syngen.ear.gainModel.base.extend({
   defaults: {
     horizonPower: 1/2,
@@ -6872,7 +6872,7 @@ syngen.ear.gainModel.realisticHorizon = syngen.ear.gainModel.base.extend({
   },
 })
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides a mastering process and utilities for routing audio into it like a virtual mixing board.
  * Implementations are encouraged to leverage this instead of the main audio destination directly.
@@ -7016,7 +7016,7 @@ syngen.mixer = (() => {
   }
 })()
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides a auxiliary send for global reverb processing.
  * Because `ConvolverNode`s are quite intensive, implementations are encouraged to leverage this to provide a single global reverb.
@@ -7196,7 +7196,7 @@ syngen.mixer.reverb = (() => {
   })
 })()
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.mixer.reverb.gainModel.base = {
   defaults: {},
   options: {},
@@ -7214,7 +7214,7 @@ syngen.mixer.reverb.gainModel.base = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.mixer.reverb.gainModel.bell = syngen.mixer.reverb.gainModel.base.extend({
   defaults: {
     bellPower: 0.75,
@@ -7226,7 +7226,7 @@ syngen.mixer.reverb.gainModel.bell = syngen.mixer.reverb.gainModel.base.extend({
   },
 })
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.mixer.reverb.gainModel.normalize = syngen.mixer.reverb.gainModel.base.extend({
   defaults: {
     gain: 1,
@@ -7236,7 +7236,7 @@ syngen.mixer.reverb.gainModel.normalize = syngen.mixer.reverb.gainModel.base.ext
   },
 })
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 // TODO: Support prioritization / customizable intervals
 syngen.ephemera = (() => {
   const ephemera = new Set(),
@@ -7311,7 +7311,7 @@ syngen.loop.on('frame', ({delta, paused}) => {
 
 syngen.state.on('reset', () => syngen.ephemera.reset())
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides factories that define and create circuits that model human vowel sounds.
  * @namespace
@@ -7440,7 +7440,7 @@ syngen.formant.transition = function(plugin, definition = [], duration = syngen.
  * @typedef syngen.formant~Plugin
  */
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Calculates and exposes real-time performance metrics.
  * @namespace
@@ -7494,7 +7494,7 @@ syngen.performance = (() => {
 
 syngen.loop.on('frame', (e) => syngen.performance.update(e))
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Maintains the coordinates and orientation of the listener.
  * @namespace
@@ -7637,7 +7637,7 @@ syngen.state.on('export', (data = {}) => data.position = syngen.position.export(
 syngen.state.on('import', (data = {}) => syngen.position.import(data.position))
 syngen.state.on('reset', () => syngen.position.reset())
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides a wrapper for the seed value.
  * The seed primarily influences {@link syngen.fn.srand()} as well as any other systems and utilities that rely on it.
@@ -7689,7 +7689,7 @@ syngen.state.on('export', (data = {}) => data.seed = syngen.seed.get())
 syngen.state.on('import', (data = {}) => syngen.seed.set(data.seed))
 syngen.state.on('reset', () => syngen.seed.set())
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides a variety of curves and curve generators that can be used with `WaveShaperNode`s.
  * @namespace
@@ -8080,7 +8080,7 @@ syngen.shape = (() => {
   }
 })()
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 syngen.sound = {
   // Attributes
   destination: syngen.mixer.input(),
@@ -8236,7 +8236,7 @@ syngen.sound = {
   onUpdate: () => {},
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides factories for building simple prefabricated synthesizers.
  * Importantly, these are _not_ the only way to generate audio with syngen.
@@ -8322,7 +8322,7 @@ syngen.synth.prototype = {
  * @typedef {Object} syngen.synth~Plugin
  */
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Creates a `GainNode` that inverts a signal with `scale`.
  * @param {Object} [options={}]
@@ -8353,7 +8353,7 @@ syngen.circuit.invert = ({
   return inverter
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Creates a circuit that interpolates an input signal linearly within `[0, 1]` to `[min, max]`.
  * Beware that it leverages `ConstantSourceNode`s.
@@ -8411,7 +8411,7 @@ syngen.circuit.lerp = ({
   return wrapper
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Creates a circuit that scales an input signal linearly within `[fromMin, fromMax]` to `[toMin, toMax]`.
  * Beware that it leverages `ConstantSourceNode`s.
@@ -8479,7 +8479,473 @@ syngen.circuit.scale = ({
   return wrapper
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
+/**
+ * Creates a feedback delay line with a filter inserted into its feedback loop.
+ * @param {Object} [options={}]
+ * @param {Number} [options.delay=0.5]
+ * @param {Number} [options.dry=1]
+ * @param {Number} [options.feedback=0.5]
+ * @param {Number} [options.filterDetune=0]
+ * @param {Number} [options.filterFrequency={@link syngen.const.maxFrequency}]
+ * @param {Number} [options.filterGain=0]
+ * @param {Number} [options.filterQ=1]
+ * @param {String} [options.filterType=lowpass]
+ * @param {Number} [options.maxDelayTime=1]
+ * @param {Number} [options.wet=0.5]
+ * @returns {syngen.synth~Plugin}
+ * @static
+ */
+syngen.effect.dubDelay = function ({
+  delay: delayAmount = 0.5,
+  dry: dryAmount = 1,
+  feedback: feedbackAmount = 0.5,
+  filterDetune = 0,
+  filterFrequency = syngen.const.maxFrequency,
+  filterGain = 0,
+  filterQ = 1,
+  filterType = 'lowpass',
+  maxDelayTime = 1,
+  wet: wetAmount = 0.5,
+} = {}) {
+  const context = syngen.context()
+
+  const delay = context.createDelay(maxDelayTime),
+    dry = context.createGain(),
+    feedback = context.createGain(),
+    filter = context.createBiquadFilter(),
+    input = context.createGain(),
+    output = context.createGain(),
+    wet = context.createGain()
+
+  input.connect(delay)
+  input.connect(dry)
+  delay.connect(filter)
+  filter.connect(feedback)
+  filter.connect(wet)
+  feedback.connect(delay)
+  dry.connect(output)
+  wet.connect(output)
+
+  delay.delayTime.value = delayAmount
+  dry.gain.value = dryAmount
+  feedback.gain.value = feedbackAmount
+  filter.detune.value = filterDetune
+  filter.frequency.value = filterFrequency
+  filter.gain.value = filterGain
+  filter.Q.value = filterQ
+  filter.type = filterType
+  input.gain.value = 1
+  output.gain.value = 1
+  wet.gain.value = wetAmount
+
+  return {
+    input,
+    output,
+    param: {
+      dry: dry.gain,
+      delay: delay.delayTime,
+      feedback: feedback.gain,
+      filter: {
+        detune: filter.detune,
+        gain: filter.gain,
+        frequency: filter.frequency,
+        Q: filter.Q,
+      },
+      gain: output.gain,
+      wet: wet.gain,
+    },
+  }
+}
+
+/* syngen v2.0.0-beta.2 */
+/**
+ * Creates a feedback delay line.
+ * @param {Object} [options={}]
+ * @param {Number} [options.delay=0.5]
+ * @param {Number} [options.dry=1]
+ * @param {Number} [options.feedback=0.5]
+ * @param {Number} [options.maxDelayTime=1]
+ * @param {Number} [options.wet=0.5]
+ * @returns {syngen.synth~Plugin}
+ * @static
+ */
+syngen.effect.feedbackDelay = ({
+  delay: delayAmount = 0.5,
+  dry: dryAmount = 1,
+  feedback: feedbackAmount = 0.5,
+  maxDelayTime = 1,
+  wet: wetAmount = 0.5,
+} = {}) => {
+  const context = syngen.context()
+
+  const delay = context.createDelay(maxDelayTime),
+    dry = context.createGain(),
+    feedback = context.createGain(),
+    input = context.createGain(),
+    output = context.createGain(),
+    wet = context.createGain()
+
+  input.connect(delay)
+  input.connect(dry)
+  delay.connect(feedback)
+  delay.connect(wet)
+  feedback.connect(delay)
+  dry.connect(output)
+  wet.connect(output)
+
+  delay.delayTime.value = delayAmount
+  dry.gain.value = dryAmount
+  feedback.gain.value = feedbackAmount
+  input.gain.value = 1
+  output.gain.value = 1
+  wet.gain.value = wetAmount
+
+  return {
+    input,
+    output,
+    param: {
+      dry: dry.gain,
+      delay: delay.delayTime,
+      feedback: feedback.gain,
+      gain: output.gain,
+      wet: wet.gain,
+    },
+  }
+}
+
+/* syngen v2.0.0-beta.2 */
+/**
+ * Creates a feedback delay line with multiple taps.
+ * @param {Object} [options={}]
+ * @param {Number} [options.dry=1]
+ * @param {Object[]} [options.tap=[]]
+ * @param {Object[]} [options.tap.delay=0.5}
+ * @param {Object[]} [options.tap.feedback=0.5}
+ * @param {Object[]} [options.tap.gain=1}
+ * @param {Object[]} [options.tap.maxDelayTime=1}
+ * @param {Number} [options.wet=1]
+ * @returns {syngen.synth~Plugin}
+ * @static
+ */
+syngen.effect.multitapDelay = ({
+  dry: dryAmount = 1,
+  tap: tapParams = [],
+  wet: wetAmount = 0.5,
+} = {}) => {
+  const context = syngen.context(),
+    dry = context.createGain(),
+    input = context.createGain(),
+    output = context.createGain(),
+    wet = context.createGain()
+
+  input.connect(dry)
+  dry.connect(output)
+  wet.connect(output)
+
+  dry.gain.value = dryAmount
+  input.gain.value = 1
+  output.gain.value = 1
+  wet.gain.value = wetAmount
+
+  const taps = tapParams.map(({
+    delay: delayAmount = 0.5,
+    feedback: feedbackAmount = 0.5,
+    gain: gainAmount = 1,
+    maxDelayTime = 1,
+  } = {}) => {
+    const delay = context.createDelay(maxDelayTime),
+      feedback = context.createGain(),
+      gain = context.createGain()
+
+    input.connect(gain)
+    gain.connect(delay)
+    delay.connect(feedback)
+    delay.connect(wet)
+    feedback.connect(delay)
+
+    delay.delayTime.value = delayAmount
+    feedback.gain.value = feedbackAmount
+    gain.gain.value = gainAmount
+
+    return {
+      delay: delay.delayTime,
+      feedback: feedback.gain,
+      gain: gain.gain,
+    }
+  })
+
+  return {
+    input,
+    output,
+    param: {
+      dry: dry.gain,
+      gain: output.gain,
+      tap: taps,
+      wet: wet.gain,
+    },
+  }
+}
+
+/* syngen v2.0.0-beta.2 */
+/**
+ * Creates a phaser or flange effect.
+ * Beware that this is not an out-of-the-box solution.
+ * Parameter values must be carefully chosen to achieve the desired effect.
+ * @param {Object} [options={}]
+ * @param {Number} [options.dry=0.5]
+ * @param {Number} [options.depth=0.001]
+ * @param {Number} [options.delay=0.01]
+ * @param {Number} [options.feedback={@link syngen.const.zeroGain}]
+ * @param {Number} [options.rate=1]
+ * @param {String} [options.type=sine]
+ * @param {Number} [options.wet=0.5]
+ * @param {Number} [options.when={@link syngen.time|syngen.time()}]
+ * @returns {syngen.synth~Plugin}
+ * @static
+ */
+syngen.effect.phaser = ({
+  dry: dryAmount = 0.5,
+  depth: depthAmount = 0.001,
+  delay: delayTimeAmount = 0.01,
+  feedback: feedbackAmount = syngen.const.zeroGain,
+  frequency = 1,
+  type = 'sine',
+  wet: wetAmount = 0.5,
+  when = syngen.time(),
+} = {}) => {
+  const context = syngen.context(),
+    delay = context.createDelay(),
+    depth = context.createGain(),
+    dry = context.createGain(),
+    feedback = context.createGain(),
+    input = context.createGain(),
+    lfo = context.createOscillator(),
+    output = context.createGain(),
+    wet = context.createGain()
+
+  delay.delayTime.value = delayTimeAmount
+  depth.gain.value = depthAmount
+  dry.gain.value = dryAmount
+  feedback.gain.value = feedbackAmount
+  lfo.frequency.value = frequency
+  wet.gain.value = wetAmount
+
+  input.connect(dry)
+  input.connect(delay)
+  delay.connect(wet)
+  delay.connect(feedback)
+  feedback.connect(delay)
+  dry.connect(output)
+  wet.connect(output)
+
+  lfo.connect(depth)
+  lfo.type = type
+  lfo.start(when)
+  depth.connect(delay.delayTime)
+
+  return {
+    input,
+    output,
+    param: {
+      delay: delay.delayTime,
+      depth: depth.gain,
+      dry: dry.gain,
+      feedback: feedback.gain,
+      frequency: lfo.frequency,
+      gain: output.gain,
+      wet: wet.gain,
+    },
+    stop: function (when = syngen.time()) {
+      lfo.stop(when)
+      return this
+    },
+  }
+}
+
+/* syngen v2.0.0-beta.2 */
+/**
+ * Creates a feedback delay line that bounces between stereo channels.
+ * @param {Object} [options={}]
+ * @param {Number} [options.delay=0.5]
+ * @param {Number} [options.dry=1]
+ * @param {Number} [options.feedback=0.5]
+ * @param {Number} [options.maxDelayTime=1]
+ * @param {Number} [options.wet=0.5]
+ * @returns {syngen.synth~Plugin}
+ * @static
+ */
+syngen.effect.pingPongDelay = function ({
+  delay: delayAmount = 0.5,
+  dry: dryAmount = 1,
+  feedback: feedbackAmount = 0.5,
+  maxDelayTime = 1,
+  wet: wetAmount = 0.5,
+} = {}) {
+  const context = syngen.context()
+
+  const delay = context.createDelay(maxDelayTime),
+    dry = context.createGain(),
+    feedback = context.createGain(),
+    input = context.createGain(),
+    merger = context.createChannelMerger(2),
+    output = context.createGain(),
+    panner = context.createStereoPanner(),
+    splitter = context.createChannelSplitter(2),
+    wet = context.createGain()
+
+  input.connect(dry)
+  input.connect(panner)
+  panner.connect(splitter)
+  splitter.connect(merger, 0, 1)
+  splitter.connect(merger, 1, 0)
+  merger.connect(delay)
+  delay.connect(feedback)
+  delay.connect(wet)
+  feedback.connect(panner)
+  dry.connect(output)
+  wet.connect(output)
+
+  delay.delayTime.value = delayAmount
+  dry.gain.value = dryAmount
+  feedback.gain.value = feedbackAmount
+  input.gain.value = 1
+  output.gain.value = 1
+  wet.gain.value = wetAmount
+
+  return {
+    input,
+    output,
+    param: {
+      dry: dry.gain,
+      delay: delay.delayTime,
+      feedback: feedback.gain,
+      gain: output.gain,
+      wet: wet.gain,
+    },
+  }
+}
+
+/* syngen v2.0.0-beta.2 */
+/**
+ * Creates a distortion effect with a configurable `curve`.
+ * @param {Object} [options={}]
+ * @param {Float32Array} [options.curve={@link syngen.shape.warm|syngen.shape.warm()}]
+ * @param {Number} [options.dry=1]
+ * @param {Number} [options.preGain=1]
+ * @param {Number} [options.wet=1]
+ * @returns {syngen.synth~Plugin}
+ * @see syngen.shape
+ * @static
+ */
+syngen.effect.shaper = ({
+  curve = syngen.shape.warm(),
+  dry: dryAmount = 0,
+  preGain: preGainAmount = 1,
+  wet: wetAmount = 1,
+} = {}) => {
+  const context = syngen.context(),
+    dry = context.createGain(),
+    input = context.createGain(),
+    output = context.createGain(),
+    preGain = context.createGain(),
+    shaper = context.createWaveShaper(),
+    wet = context.createGain()
+
+  dry.gain.value = dryAmount
+  preGain.gain.value = preGainAmount
+  shaper.curve = curve
+  wet.gain.value = wetAmount
+
+  input.connect(dry)
+  input.connect(preGain)
+  preGain.connect(shaper)
+  shaper.connect(wet)
+  dry.connect(output)
+  wet.connect(output)
+
+  return {
+    input,
+    output,
+    param: {
+      dry: dry.gain,
+      gain: output.gain,
+      preGain: inputGain.gain,
+      wet: wet.gain,
+    }
+  }
+}
+
+/* syngen v2.0.0-beta.2 */
+/**
+ * Creates a talk box that seamlessly blends between two formants with its `mix` parameter.
+ * @param {Object} [options={}]
+ * @param {Number} [options.dry=0]
+ * @param {syngen.formant~Plugin} [options.format0={@link syngen.formant.createU|syngen.formant.createU()}]
+ * @param {syngen.formant~Plugin} [options.format1={@link syngen.formant.createA|syngen.formant.createA()}]
+ * @param {Number} [options.mix=0.5]
+ * @param {Number} [options.wet=1]
+ * @returns {syngen.synth~Plugin}
+ * @static
+ */
+syngen.effect.talkbox = ({
+  dry: dryAmount = 0,
+  formant0 = syngen.formant.createU(),
+  formant1 = syngen.formant.createA(),
+  mix: mixAmount = 0.5,
+  wet: wetAmount = 1,
+} = {}) => {
+  const context = syngen.context(),
+    dry = context.createGain(),
+    input = context.createGain(),
+    invert = context.createGain(),
+    mix = context.createConstantSource(),
+    mix0 = context.createGain(),
+    mix1 = context.createGain(),
+    output = context.createGain(),
+    wet = context.createGain()
+
+  dry.gain.value = dryAmount
+  mix.offset.value = mixAmount
+  wet.gain.value = wetAmount
+
+  mix.connect(mix1.gain)
+  mix1.gain.value = 0
+
+  mix.connect(invert)
+  invert.connect(mix0.gain)
+  invert.gain.value = -1
+  mix0.gain.value = 1
+
+  input.connect(dry)
+  input.connect(mix0)
+  input.connect(mix1)
+  mix.start()
+  mix0.connect(formant0.input)
+  mix1.connect(formant1.input)
+  formant0.output.connect(wet)
+  formant1.output.connect(wet)
+  dry.connect(output)
+  wet.connect(output)
+
+  return {
+    input,
+    output,
+    param: {
+      dry: dry.gain,
+      formant0: formant0.param,
+      formant1: formant1.param,
+      mix: mix.offset,
+      wet: wet.gain,
+    },
+    stop: function (when = syngen.time()) {
+      mix.stop(when)
+      return this
+    },
+  }
+}
+
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for binaural audio processing.
  * Typical use involves sending it a monophonic signal for processing and then routing its output to a bus.
@@ -8614,7 +9080,7 @@ syngen.ear.binaural.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for processing audio as an observer in a physical space.
  * Importantly, it models interaural intensity differences, interaural arrival time, and acoustic shadow.
@@ -8728,473 +9194,7 @@ syngen.ear.monaural.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
-/**
- * Creates a feedback delay line with a filter inserted into its feedback loop.
- * @param {Object} [options={}]
- * @param {Number} [options.delay=0.5]
- * @param {Number} [options.dry=1]
- * @param {Number} [options.feedback=0.5]
- * @param {Number} [options.filterDetune=0]
- * @param {Number} [options.filterFrequency={@link syngen.const.maxFrequency}]
- * @param {Number} [options.filterGain=0]
- * @param {Number} [options.filterQ=1]
- * @param {String} [options.filterType=lowpass]
- * @param {Number} [options.maxDelayTime=1]
- * @param {Number} [options.wet=0.5]
- * @returns {syngen.synth~Plugin}
- * @static
- */
-syngen.effect.dubDelay = function ({
-  delay: delayAmount = 0.5,
-  dry: dryAmount = 1,
-  feedback: feedbackAmount = 0.5,
-  filterDetune = 0,
-  filterFrequency = syngen.const.maxFrequency,
-  filterGain = 0,
-  filterQ = 1,
-  filterType = 'lowpass',
-  maxDelayTime = 1,
-  wet: wetAmount = 0.5,
-} = {}) {
-  const context = syngen.context()
-
-  const delay = context.createDelay(maxDelayTime),
-    dry = context.createGain(),
-    feedback = context.createGain(),
-    filter = context.createBiquadFilter(),
-    input = context.createGain(),
-    output = context.createGain(),
-    wet = context.createGain()
-
-  input.connect(delay)
-  input.connect(dry)
-  delay.connect(filter)
-  filter.connect(feedback)
-  filter.connect(wet)
-  feedback.connect(delay)
-  dry.connect(output)
-  wet.connect(output)
-
-  delay.delayTime.value = delayAmount
-  dry.gain.value = dryAmount
-  feedback.gain.value = feedbackAmount
-  filter.detune.value = filterDetune
-  filter.frequency.value = filterFrequency
-  filter.gain.value = filterGain
-  filter.Q.value = filterQ
-  filter.type = filterType
-  input.gain.value = 1
-  output.gain.value = 1
-  wet.gain.value = wetAmount
-
-  return {
-    input,
-    output,
-    param: {
-      dry: dry.gain,
-      delay: delay.delayTime,
-      feedback: feedback.gain,
-      filter: {
-        detune: filter.detune,
-        gain: filter.gain,
-        frequency: filter.frequency,
-        Q: filter.Q,
-      },
-      gain: output.gain,
-      wet: wet.gain,
-    },
-  }
-}
-
-/* syngen v2.0.0-beta.1 */
-/**
- * Creates a feedback delay line.
- * @param {Object} [options={}]
- * @param {Number} [options.delay=0.5]
- * @param {Number} [options.dry=1]
- * @param {Number} [options.feedback=0.5]
- * @param {Number} [options.maxDelayTime=1]
- * @param {Number} [options.wet=0.5]
- * @returns {syngen.synth~Plugin}
- * @static
- */
-syngen.effect.feedbackDelay = ({
-  delay: delayAmount = 0.5,
-  dry: dryAmount = 1,
-  feedback: feedbackAmount = 0.5,
-  maxDelayTime = 1,
-  wet: wetAmount = 0.5,
-} = {}) => {
-  const context = syngen.context()
-
-  const delay = context.createDelay(maxDelayTime),
-    dry = context.createGain(),
-    feedback = context.createGain(),
-    input = context.createGain(),
-    output = context.createGain(),
-    wet = context.createGain()
-
-  input.connect(delay)
-  input.connect(dry)
-  delay.connect(feedback)
-  delay.connect(wet)
-  feedback.connect(delay)
-  dry.connect(output)
-  wet.connect(output)
-
-  delay.delayTime.value = delayAmount
-  dry.gain.value = dryAmount
-  feedback.gain.value = feedbackAmount
-  input.gain.value = 1
-  output.gain.value = 1
-  wet.gain.value = wetAmount
-
-  return {
-    input,
-    output,
-    param: {
-      dry: dry.gain,
-      delay: delay.delayTime,
-      feedback: feedback.gain,
-      gain: output.gain,
-      wet: wet.gain,
-    },
-  }
-}
-
-/* syngen v2.0.0-beta.1 */
-/**
- * Creates a feedback delay line with multiple taps.
- * @param {Object} [options={}]
- * @param {Number} [options.dry=1]
- * @param {Object[]} [options.tap=[]]
- * @param {Object[]} [options.tap.delay=0.5}
- * @param {Object[]} [options.tap.feedback=0.5}
- * @param {Object[]} [options.tap.gain=1}
- * @param {Object[]} [options.tap.maxDelayTime=1}
- * @param {Number} [options.wet=1]
- * @returns {syngen.synth~Plugin}
- * @static
- */
-syngen.effect.multitapDelay = ({
-  dry: dryAmount = 1,
-  tap: tapParams = [],
-  wet: wetAmount = 0.5,
-} = {}) => {
-  const context = syngen.context(),
-    dry = context.createGain(),
-    input = context.createGain(),
-    output = context.createGain(),
-    wet = context.createGain()
-
-  input.connect(dry)
-  dry.connect(output)
-  wet.connect(output)
-
-  dry.gain.value = dryAmount
-  input.gain.value = 1
-  output.gain.value = 1
-  wet.gain.value = wetAmount
-
-  const taps = tapParams.map(({
-    delay: delayAmount = 0.5,
-    feedback: feedbackAmount = 0.5,
-    gain: gainAmount = 1,
-    maxDelayTime = 1,
-  } = {}) => {
-    const delay = context.createDelay(maxDelayTime),
-      feedback = context.createGain(),
-      gain = context.createGain()
-
-    input.connect(gain)
-    gain.connect(delay)
-    delay.connect(feedback)
-    delay.connect(wet)
-    feedback.connect(delay)
-
-    delay.delayTime.value = delayAmount
-    feedback.gain.value = feedbackAmount
-    gain.gain.value = gainAmount
-
-    return {
-      delay: delay.delayTime,
-      feedback: feedback.gain,
-      gain: gain.gain,
-    }
-  })
-
-  return {
-    input,
-    output,
-    param: {
-      dry: dry.gain,
-      gain: output.gain,
-      tap: taps,
-      wet: wet.gain,
-    },
-  }
-}
-
-/* syngen v2.0.0-beta.1 */
-/**
- * Creates a phaser or flange effect.
- * Beware that this is not an out-of-the-box solution.
- * Parameter values must be carefully chosen to achieve the desired effect.
- * @param {Object} [options={}]
- * @param {Number} [options.dry=0.5]
- * @param {Number} [options.depth=0.001]
- * @param {Number} [options.delay=0.01]
- * @param {Number} [options.feedback={@link syngen.const.zeroGain}]
- * @param {Number} [options.rate=1]
- * @param {String} [options.type=sine]
- * @param {Number} [options.wet=0.5]
- * @param {Number} [options.when={@link syngen.time|syngen.time()}]
- * @returns {syngen.synth~Plugin}
- * @static
- */
-syngen.effect.phaser = ({
-  dry: dryAmount = 0.5,
-  depth: depthAmount = 0.001,
-  delay: delayTimeAmount = 0.01,
-  feedback: feedbackAmount = syngen.const.zeroGain,
-  frequency = 1,
-  type = 'sine',
-  wet: wetAmount = 0.5,
-  when = syngen.time(),
-} = {}) => {
-  const context = syngen.context(),
-    delay = context.createDelay(),
-    depth = context.createGain(),
-    dry = context.createGain(),
-    feedback = context.createGain(),
-    input = context.createGain(),
-    lfo = context.createOscillator(),
-    output = context.createGain(),
-    wet = context.createGain()
-
-  delay.delayTime.value = delayTimeAmount
-  depth.gain.value = depthAmount
-  dry.gain.value = dryAmount
-  feedback.gain.value = feedbackAmount
-  lfo.frequency.value = frequency
-  wet.gain.value = wetAmount
-
-  input.connect(dry)
-  input.connect(delay)
-  delay.connect(wet)
-  delay.connect(feedback)
-  feedback.connect(delay)
-  dry.connect(output)
-  wet.connect(output)
-
-  lfo.connect(depth)
-  lfo.type = type
-  lfo.start(when)
-  depth.connect(delay.delayTime)
-
-  return {
-    input,
-    output,
-    param: {
-      delay: delay.delayTime,
-      depth: depth.gain,
-      dry: dry.gain,
-      feedback: feedback.gain,
-      frequency: lfo.frequency,
-      gain: output.gain,
-      wet: wet.gain,
-    },
-    stop: function (when = syngen.time()) {
-      lfo.stop(when)
-      return this
-    },
-  }
-}
-
-/* syngen v2.0.0-beta.1 */
-/**
- * Creates a feedback delay line that bounces between stereo channels.
- * @param {Object} [options={}]
- * @param {Number} [options.delay=0.5]
- * @param {Number} [options.dry=1]
- * @param {Number} [options.feedback=0.5]
- * @param {Number} [options.maxDelayTime=1]
- * @param {Number} [options.wet=0.5]
- * @returns {syngen.synth~Plugin}
- * @static
- */
-syngen.effect.pingPongDelay = function ({
-  delay: delayAmount = 0.5,
-  dry: dryAmount = 1,
-  feedback: feedbackAmount = 0.5,
-  maxDelayTime = 1,
-  wet: wetAmount = 0.5,
-} = {}) {
-  const context = syngen.context()
-
-  const delay = context.createDelay(maxDelayTime),
-    dry = context.createGain(),
-    feedback = context.createGain(),
-    input = context.createGain(),
-    merger = context.createChannelMerger(2),
-    output = context.createGain(),
-    panner = context.createStereoPanner(),
-    splitter = context.createChannelSplitter(2),
-    wet = context.createGain()
-
-  input.connect(dry)
-  input.connect(panner)
-  panner.connect(splitter)
-  splitter.connect(merger, 0, 1)
-  splitter.connect(merger, 1, 0)
-  merger.connect(delay)
-  delay.connect(feedback)
-  delay.connect(wet)
-  feedback.connect(panner)
-  dry.connect(output)
-  wet.connect(output)
-
-  delay.delayTime.value = delayAmount
-  dry.gain.value = dryAmount
-  feedback.gain.value = feedbackAmount
-  input.gain.value = 1
-  output.gain.value = 1
-  wet.gain.value = wetAmount
-
-  return {
-    input,
-    output,
-    param: {
-      dry: dry.gain,
-      delay: delay.delayTime,
-      feedback: feedback.gain,
-      gain: output.gain,
-      wet: wet.gain,
-    },
-  }
-}
-
-/* syngen v2.0.0-beta.1 */
-/**
- * Creates a distortion effect with a configurable `curve`.
- * @param {Object} [options={}]
- * @param {Float32Array} [options.curve={@link syngen.shape.warm|syngen.shape.warm()}]
- * @param {Number} [options.dry=1]
- * @param {Number} [options.preGain=1]
- * @param {Number} [options.wet=1]
- * @returns {syngen.synth~Plugin}
- * @see syngen.shape
- * @static
- */
-syngen.effect.shaper = ({
-  curve = syngen.shape.warm(),
-  dry: dryAmount = 0,
-  preGain: preGainAmount = 1,
-  wet: wetAmount = 1,
-} = {}) => {
-  const context = syngen.context(),
-    dry = context.createGain(),
-    input = context.createGain(),
-    output = context.createGain(),
-    preGain = context.createGain(),
-    shaper = context.createWaveShaper(),
-    wet = context.createGain()
-
-  dry.gain.value = dryAmount
-  preGain.gain.value = preGainAmount
-  shaper.curve = curve
-  wet.gain.value = wetAmount
-
-  input.connect(dry)
-  input.connect(preGain)
-  preGain.connect(shaper)
-  shaper.connect(wet)
-  dry.connect(output)
-  wet.connect(output)
-
-  return {
-    input,
-    output,
-    param: {
-      dry: dry.gain,
-      gain: output.gain,
-      preGain: inputGain.gain,
-      wet: wet.gain,
-    }
-  }
-}
-
-/* syngen v2.0.0-beta.1 */
-/**
- * Creates a talk box that seamlessly blends between two formants with its `mix` parameter.
- * @param {Object} [options={}]
- * @param {Number} [options.dry=0]
- * @param {syngen.formant~Plugin} [options.format0={@link syngen.formant.createU|syngen.formant.createU()}]
- * @param {syngen.formant~Plugin} [options.format1={@link syngen.formant.createA|syngen.formant.createA()}]
- * @param {Number} [options.mix=0.5]
- * @param {Number} [options.wet=1]
- * @returns {syngen.synth~Plugin}
- * @static
- */
-syngen.effect.talkbox = ({
-  dry: dryAmount = 0,
-  formant0 = syngen.formant.createU(),
-  formant1 = syngen.formant.createA(),
-  mix: mixAmount = 0.5,
-  wet: wetAmount = 1,
-} = {}) => {
-  const context = syngen.context(),
-    dry = context.createGain(),
-    input = context.createGain(),
-    invert = context.createGain(),
-    mix = context.createConstantSource(),
-    mix0 = context.createGain(),
-    mix1 = context.createGain(),
-    output = context.createGain(),
-    wet = context.createGain()
-
-  dry.gain.value = dryAmount
-  mix.offset.value = mixAmount
-  wet.gain.value = wetAmount
-
-  mix.connect(mix1.gain)
-  mix1.gain.value = 0
-
-  mix.connect(invert)
-  invert.connect(mix0.gain)
-  invert.gain.value = -1
-  mix0.gain.value = 1
-
-  input.connect(dry)
-  input.connect(mix0)
-  input.connect(mix1)
-  mix.start()
-  mix0.connect(formant0.input)
-  mix1.connect(formant1.input)
-  formant0.output.connect(wet)
-  formant1.output.connect(wet)
-  dry.connect(output)
-  wet.connect(output)
-
-  return {
-    input,
-    output,
-    param: {
-      dry: dry.gain,
-      formant0: formant0.param,
-      formant1: formant1.param,
-      mix: mix.offset,
-      wet: wet.gain,
-    },
-    stop: function (when = syngen.time()) {
-      mix.stop(when)
-      return this
-    },
-  }
-}
-
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Returns a formant definition for the vowel A.
  * @returns {syngen.formant~Definition}
@@ -9234,7 +9234,7 @@ syngen.formant.createA = () => {
   )
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Returns a formant definition for the vowel E.
  * @returns {syngen.formant~Definition}
@@ -9274,7 +9274,7 @@ syngen.formant.createE = () => {
   )
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Returns a formant definition for the vowel I.
  * @returns {syngen.formant~Definition}
@@ -9314,7 +9314,7 @@ syngen.formant.createI = () => {
   )
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Returns a formant definition for the vowel O.
  * @returns {syngen.formant~Definition}
@@ -9354,7 +9354,7 @@ syngen.formant.createO = () => {
   )
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Returns a formant definition for the vowel U.
  * @returns {syngen.formant~Definition}
@@ -9394,7 +9394,7 @@ syngen.formant.createU = () => {
   )
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Queries gamepad input once per frame and exposes its state.
  * @namespace
@@ -9547,7 +9547,7 @@ syngen.input.gamepad = (() => {
 
 syngen.loop.on('frame', () => syngen.input.gamepad.update())
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Exposes keypresses by their codes.
  * @namespace
@@ -9603,7 +9603,7 @@ window.addEventListener('blur', (e) => {
   }
 })
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Exposes mouse movement, scrolling, and buttons pressed.
  * @namespace
@@ -9755,7 +9755,7 @@ syngen.input.mouse = (() => {
 
 syngen.loop.on('frame', () => syngen.input.mouse.update())
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Records the output of the provided input and exports it as a WebM file.
  * When no duration is passed, the [MediaRecorder](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder) _must_ be stopped to complete the export.
@@ -9808,7 +9808,7 @@ syngen.mixer.export = ({
   return recorder
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Creates an additive synthesizer which wraps configurable harmonics into a unified synth.
  * Each harmonic is calculated from an individual frequency coefficient, gain multiplier, and detune modifier.
@@ -9911,7 +9911,7 @@ syngen.synth.additive = ({
   })
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Creates a synthesizer with amplitude modulation.
  * @param {Object} [options={}]
@@ -10001,7 +10001,7 @@ syngen.synth.am = ({
   })
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Creates a synthesizer which applies amplitude modulation to an `AudioBufferSourceNode`.
  * @param {Object} [options={}]
@@ -10106,7 +10106,7 @@ syngen.synth.amBuffer = ({
   })
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Creates a synthesizer which uses an `AudioBufferSourceNode`.
  * @param {Object} [options={}]
@@ -10176,7 +10176,7 @@ syngen.synth.buffer = ({
   })
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Creates a synthesizer with frequency modulation.
  * @param {Object} [options={}]
@@ -10260,7 +10260,7 @@ syngen.synth.fm = ({
   })
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides utility functions for the synth factories.
  * @private
@@ -10459,7 +10459,7 @@ syngen.synth.fn.shaped = function (synth, curve) {
   return this.chainAssign(synth, 'shaper', shaper)
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Creates a simple low-frequency oscillator intended for modulation.
  * This is identical to {@link |createSimple()} except with different terminology.
@@ -10514,7 +10514,7 @@ syngen.synth.lfo = ({
   })
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Creates a synthesizer with both amplitude and frequency modulation.
  * @param {Object} [options={}]
@@ -10631,7 +10631,7 @@ syngen.synth.mod = ({
   })
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Creates a simple synthesizer with configurable pulse-width modulation.
  * @param {Object} [options={}]
@@ -10702,7 +10702,7 @@ syngen.synth.pwm = ({
   })
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Creates a simple synthesizer with a single oscillator.
  * @param {Object} [options={}]
@@ -10756,7 +10756,7 @@ syngen.synth.simple = ({
   })
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 /**
  * Provides an interface for routing audio to the global reverb auxiliary send.
  * Importantly, it models physical space to add pre-delay and attenuate based on distance.
@@ -10899,7 +10899,7 @@ syngen.mixer.reverb.send.prototype = {
   },
 }
 
-/* syngen v2.0.0-beta.1 */
+/* syngen v2.0.0-beta.2 */
 if (typeof module === 'object' && typeof module.exports === 'object') {
   module.exports = syngen
 }
