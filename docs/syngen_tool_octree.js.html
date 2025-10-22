@@ -102,7 +102,7 @@ syngen.tool.octree.prototype = {
   construct: function ({
     depth = syngen.const.maxSafeFloat * 2,
     height = syngen.const.maxSafeFloat * 2,
-    maxItems = 12,
+    maxItems = 32,
     width = syngen.const.maxSafeFloat * 2,
     x = -syngen.const.maxSafeFloat,
     y = -syngen.const.maxSafeFloat,
@@ -117,6 +117,14 @@ syngen.tool.octree.prototype = {
     this.x = x
     this.y = y
     this.z = z
+
+    this.center = {
+      x: this.x + (this.width / 2),
+      y: this.y + (this.height / 2),
+      z: this.z + (this.depth / 2),
+    }
+
+    this.radius = Math.max(this.height, this.width, this.depth) / syngen.const.unit3
 
     return this
   },
@@ -134,46 +142,29 @@ syngen.tool.octree.prototype = {
    *   Use this as an optimization.
    * @param {Function} filterItem
    *   Returns whether the passed `item` is included in the result set.
-   * @param {Number} [depth=0]
-   *   Do not use. Used internally to track recursion.
+   * @param {Array} [items=[]]
+   *   Do not use. Used internally for performance.
    * @returns {Object[]}
    */
-  filter: function (filterNode, filterItem, depth = 0) {
-    const filteredItems = () => {
-      if (filterItem) {
-        return this.items.filter(filterItem)
-      }
-
-      return this.items.slice()
-    }
-
-    if (!depth &amp;&amp; !this.nodes.length) {
-      return filteredItems()
-    }
-
-    const center = {
-      x: this.x + (this.width / 2),
-      y: this.y + (this.height / 2),
-      z: this.z + (this.depth / 2),
-    }
-
-    const radius = Math.max(this.height, this.width, this.depth) / syngen.const.unit3
-
-    if (!filterNode(center, radius)) {
-      return []
+  filter: function (filterNode, filterItem, items = []) {
+    if (!filterNode(this.center, this.radius)) {
+      return items
     }
 
     if (this.items.length) {
-      return filteredItems()
-    }
-
-    let items = []
-    depth += 1
-
-    for (const subtree of this.nodes) {
-      items = items.concat(
-        subtree.filter(filterNode, filterItem, depth)
-      )
+      for (const item of this.items) {
+        if (filterItem) {
+          if (filterItem(item)) {
+            items.push(item)
+          }
+        } else {
+          items.push(item)
+        }
+      }
+    } else if (this.nodes.length) {
+      for (const node of this.nodes) {
+        node.filter(filterNode, filterItem, items)
+      }
     }
 
     return items
@@ -191,10 +182,6 @@ syngen.tool.octree.prototype = {
    * @returns {Object|undefined}
    */
   find: function (query = {}, radius = Infinity) {
-    if (!('x' in query &amp;&amp; 'y' in query &amp;&amp; 'z' in query)) {
-      return
-    }
-
     if (
          isFinite(radius)
       &amp;&amp; !this.intersects({
@@ -209,12 +196,10 @@ syngen.tool.octree.prototype = {
       return
     }
 
-    const distance = ({x, y, z}) => ((x - query.x) ** 2) + ((y - query.y) ** 2) + ((z - query.z) ** 2),
-      index = this.getIndex(query),
-      radius3 = ((radius * (Math.sqrt(3) / 3)) ** 2) * 3
+    const radius2 = radius * radius
 
-    if (index == -1) {
-      let minDistance = radius3,
+    if (this.items.length) {
+      let minDistance = radius2,
         result
 
       for (const item of this.items) {
@@ -222,7 +207,7 @@ syngen.tool.octree.prototype = {
           continue
         }
 
-        const d = distance(item)
+        const d = syngen.fn.distance2(query, item)
 
         if (d &lt; minDistance) {
           minDistance = d
@@ -233,21 +218,17 @@ syngen.tool.octree.prototype = {
       return result
     }
 
-    let result = this.nodes[index].find(query, radius)
-    let minDistance = result ? distance(result) : radius3
+    let minDistance = radius2,
+      result
 
     for (const node of this.nodes) {
-      if (node === this.nodes[index]) {
-        continue
-      }
-
-      const item = node.find(query, minDistance)
+      const item = node.find(query, Math.sqrt(minDistance))
 
       if (!item || item === query) {
         continue
       }
 
-      const d = distance(item)
+      const d = syngen.fn.distance2(query, item)
 
       if (d &lt; minDistance) {
         minDistance = d
@@ -272,9 +253,9 @@ syngen.tool.octree.prototype = {
       return -1
     }
 
-    const midX = this.x + (this.width / 2),
-      midY = this.y + (this.height / 2),
-      midZ = this.z + (this.depth / 2)
+    const midX = this.center.x,
+      midY = this.center.y,
+      midZ = this.center.z
 
     const underMidX = x &lt;= midX,
       underMidY = y &lt;= midY
@@ -351,53 +332,6 @@ syngen.tool.octree.prototype = {
    */
   intersects: function (prism) {
     return syngen.fn.intersects(this, prism)
-  },
-  /**
-   * Reduces items in tree with filter functions.
-   * @param {Function} filterNode
-   *   Accepts `center` and `radius` of nodes described as spheres.
-   * @param {Function} [filterItem]
-   *   Accepts the current `item`.
-   * @returns {Object[]}
-   * @todo Describe tree nodes as rectangular prisms for intersection tests.
-   */
-  reduce: function (filterNode, filterItem, depth = 0) {
-    const filteredItems = () => {
-      if (filterItem) {
-        return this.items.filter(filterItem)
-      }
-
-      return this.items.slice()
-    }
-
-    if (!depth &amp;&amp; !this.nodes.length) {
-      return filteredItems()
-    }
-
-    const center = {
-      x: this.x + (this.width / 2),
-      y: this.y + (this.height / 2),
-      z: this.z + (this.depth / 2),
-    }
-
-    const radius = Math.max(this.height, this.width, this.depth) / syngen.const.unit3
-
-    if (!filterNode(center, radius)) {
-      return []
-    }
-
-    if (this.items.length) {
-      return filteredItems()
-    }
-
-    let items = []
-    depth += 1
-
-    for (const node of this.nodes) {
-      items = items.concat(node.reduce(filterNode, filterItem, depth))
-    }
-
-    return items
   },
   /**
    * Removes `item` from the tree, if it exists.

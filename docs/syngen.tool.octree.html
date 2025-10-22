@@ -965,7 +965,7 @@ Typically this is set programmatically.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line99">line 99</a>
+        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line107">line 107</a>
     </li></ul></dd>
     
 
@@ -1001,7 +1001,7 @@ Typically this is set programmatically.</p></td>
     
 
     
-    <h4 class="name" id="filter"><span class="type-signature"></span>filter<span class="signature">(filterNode, filterItem, depth<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;Object>}</span></h4>
+    <h4 class="name" id="filter"><span class="type-signature"></span>filter<span class="signature">(filterNode, filterItem, items<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;Object>}</span></h4>
     
 
     
@@ -1120,13 +1120,13 @@ Use this as an optimization.</p></td>
 
         <tr>
             
-                <td class="name"><code>depth</code></td>
+                <td class="name"><code>items</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Number</span>
+<span class="param-type">Array</span>
 
 
             
@@ -1147,12 +1147,12 @@ Use this as an optimization.</p></td>
             
                 <td class="default">
                 
-                    0
+                    []
                 
                 </td>
             
 
-            <td class="description last"><p>Do not use. Used internally to track recursion.</p></td>
+            <td class="description last"><p>Do not use. Used internally for performance.</p></td>
         </tr>
 
     
@@ -1193,7 +1193,7 @@ Use this as an optimization.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line113">line 113</a>
+        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line121">line 121</a>
     </li></ul></dd>
     
 
@@ -1500,7 +1500,7 @@ If no result is found, then <code>undefined</code> is returned.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line165">line 165</a>
+        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line156">line 156</a>
     </li></ul></dd>
     
 
@@ -1658,7 +1658,7 @@ If no result is found, then <code>undefined</code> is returned.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line289">line 289</a>
+        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line270">line 270</a>
     </li></ul></dd>
     
 
@@ -2059,7 +2059,7 @@ If no result is found, then <code>undefined</code> is returned.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line324">line 324</a>
+        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line305">line 305</a>
     </li></ul></dd>
     
 
@@ -2110,211 +2110,6 @@ If no result is found, then <code>undefined</code> is returned.</p>
     <dd>
         
 <span class="param-type">Boolean</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="reduce"><span class="type-signature"></span>reduce<span class="signature">(filterNode, filterItem<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;Object>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Reduces items in tree with filter functions.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>filterNode</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Accepts <code>center</code> and <code>radius</code> of nodes described as spheres.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>filterItem</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Accepts the current <code>item</code>.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line336">line 336</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-    <dt class="tag-todo">To Do:</dt>
-    <dd class="tag-todo">
-        <ul>
-            <li>Describe tree nodes as rectangular prisms for intersection tests.</li>
-        </ul>
-    </dd>
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Array.&lt;Object></span>
 
 
     </dd>
@@ -2433,7 +2228,7 @@ If no result is found, then <code>undefined</code> is returned.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line379">line 379</a>
+        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line313">line 313</a>
     </li></ul></dd>
     
 
@@ -2834,7 +2629,7 @@ If no result is found, then <code>undefined</code> is returned.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line407">line 407</a>
+        <a href="syngen_tool_octree.js.html">syngen/tool/octree.js</a>, <a href="syngen_tool_octree.js.html#line341">line 341</a>
     </li></ul></dd>
     
 
