@@ -18,7 +18,7 @@
 
       syngen.mixer.reverb.setImpulse(
         syngen.buffer.impulse({
-          buffer: syngen.buffer.white({
+          buffer: syngen.buffer.whiteNoise({
             channels: 2,
             duration: 8,
           }),
@@ -93,7 +93,7 @@
         // Select some parameters
         const angle = syngen.fn.randomFloat(0, Math.PI * 2),
           detune = syngen.fn.randomFloat(-25, 25),
-          distance = syngen.fn.lerpExp(2, 20, Math.random(), 0.75),
+          distance = syngen.fn.lerpExp(25, 100, Math.random(), 0.75),
           duration = syngen.fn.randomFloat(1/4, 1)
 
         const frequency = syngen.fn.fromMidi(
@@ -103,7 +103,7 @@
         )
 
         // Instantiate the drip
-        drip.new({
+        drip.instantiate({
           duration,
           frequency,
           x: distance * Math.cos(angle),
