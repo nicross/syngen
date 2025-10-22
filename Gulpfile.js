@@ -1,6 +1,5 @@
 const {EOL} = require('os')
 const concat = require('gulp-concat')
-const del = require('del')
 const header = require('gulp-header')
 const gulp = require('gulp')
 const jsdoc = require('gulp-jsdoc3')
@@ -8,7 +7,9 @@ const package = require('./package.json')
 const rename = require('gulp-rename')
 const uglify = require('gulp-uglify-es').default
 
-gulp.task('clean', () => del(['dist', 'docs']))
+gulp.task('clean', () => import('del').then(
+  ({deleteSync}) => deleteSync(['dist', 'docs'])
+))
 
 gulp.task('dist', () => {
   const comment = `/*! ${package.name} v${package.version} */${EOL}`
