@@ -34,7 +34,7 @@
       syngen.synth.am({
         carrierFrequency: syngen.fn.fromMidi(24),
         carrierGain: 0.75,
-        gain: syngen.fn.fromDb(-9),
+        gain: syngen.fn.fromDb(-6),
         modDepth: 0.25,
         modFrequency: 1/16,
       }).shaped(
@@ -49,6 +49,10 @@
         name: 'drip',
         reverb: true,
         relative: true,
+        reverbGainModel: syngen.mixer.reverb.gainModel.bell.instantiate({
+          bellPower: 0.25,
+          distancePower: 1,
+        }),
         onConstruct: function ({
           detune = 0,
           duration = syngen.const.zeroTime,
@@ -65,7 +69,7 @@
 
           this.synth.param.detune.linearRampToValueAtTime(detune + 1200, now + duration)
 
-          this.synth.param.gain.exponentialRampToValueAtTime(1, now + 1/16)
+          this.synth.param.gain.exponentialRampToValueAtTime(syngen.fn.fromDb(-6), now + 1/16)
           this.synth.param.gain.exponentialRampToValueAtTime(syngen.const.zeroGain, now + duration)
 
           this.synth.stop(now + duration)
@@ -93,7 +97,7 @@
         // Select some parameters
         const angle = syngen.fn.randomFloat(0, Math.PI * 2),
           detune = syngen.fn.randomFloat(-25, 25),
-          distance = syngen.fn.lerpExp(25, 100, Math.random(), 0.75),
+          distance = syngen.fn.lerpExp(50, 100, Math.random(), 0.75),
           duration = syngen.fn.randomFloat(1/4, 1)
 
         const frequency = syngen.fn.fromMidi(
@@ -104,6 +108,7 @@
 
         // Instantiate the drip
         drip.instantiate({
+          detune,
           duration,
           frequency,
           x: distance * Math.cos(angle),

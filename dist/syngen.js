@@ -8033,7 +8033,7 @@ syngen.sound = {
   radius: 0,
   relative: false, // whether coordinate space is relative (true) or global (false)
   reverb: false, // whether to use a reverb send
-  reverbGainModel: syngen.mixer.reverb.gainModel.linearBell,
+  reverbGainModel: syngen.mixer.reverb.gainModel.bell,
   // Static methods
   extend: function (definition) {
     return syngen.fn.extend(this, definition)
