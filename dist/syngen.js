@@ -1,7 +1,6 @@
-/*! syngen v0.2.1 */
+/* syngen v0.2.1 */
 (() => {
 'use strict'
-
 /**
  * The global point of entry and default export for the library.
  * @namespace
@@ -9880,23 +9879,6 @@ syngen.loop.on('frame', ({paused}) => {
 
 syngen.state.on('reset', () => syngen.streamer.reset())
 
-if (typeof module === 'object' && typeof module.exports === 'object') {
-  module.exports = syngen
-}
-
-if (typeof define === 'function' && define.amd) {
-	define('syngen', [], () => syngen)
-}
-
-if (typeof self !== 'undefined') {
-  self.syngen = syngen
-} else {
-  this.syngen = syngen
-}
-
-return syngen
-})()
-
 /**
  * Provides an interface for processing audio as an observer in a physical space.
  * Importantly, it models interaural intensity differences, interaural arrival time, and acoustic shadow.
@@ -10481,3 +10463,19 @@ syngen.audio.mixer.send.reverb.prototype = {
     return this
   },
 }
+if (typeof module === 'object' && typeof module.exports === 'object') {
+  module.exports = syngen
+}
+
+if (typeof define === 'function' && define.amd) {
+	define('syngen', [], () => syngen)
+}
+
+if (typeof self !== 'undefined') {
+  self.syngen = syngen
+} else {
+  this.syngen = syngen
+}
+
+return syngen
+})()

@@ -1,5 +1,7 @@
 const {EOL} = require('os')
 const concat = require('gulp-concat')
+const footer = require('gulp-footer')
+const fs = require('fs')
 const header = require('gulp-header')
 const gulp = require('gulp')
 const jsdoc = require('gulp-jsdoc3')
@@ -12,17 +14,16 @@ gulp.task('clean', () => import('del').then(
 ))
 
 gulp.task('dist', () => {
-  const comment = `/*! ${package.name} v${package.version} */${EOL}`
+  const comment = `/* ${package.name} v${package.version} */${EOL}`
 
   return gulp.src(getJs())
     .pipe(concat('syngen.js'))
+    .pipe(header(fs.readFileSync('src/wrapper/header.js')))
+    .pipe(footer(fs.readFileSync('src/wrapper/footer.js')))
     .pipe(header(comment))
     .pipe(gulp.dest('dist'))
-    .pipe(uglify({
-      output: {
-        comments: /^!/,
-      },
-    }))
+    .pipe(uglify())
+    .pipe(header(comment))
     .pipe(rename({extname: '.min.js'}))
     .pipe(gulp.dest('dist'))
 })
@@ -62,7 +63,6 @@ gulp.task('watch', () => {
 
 function getJs() {
   return [
-    'src/wrapper/header.js',
     'src/syngen.js',
     'src/syngen/utility.js',
     'src/syngen/utility/*.js',
@@ -82,6 +82,5 @@ function getJs() {
     'src/syngen/prop/null.js',
     'src/syngen/props.js',
     'src/syngen/streamer.js',
-    'src/wrapper/footer.js',
   ]
 }
