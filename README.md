@@ -47,6 +47,7 @@ Please browse the `example` directory or the projects below for more elaborate r
 ### Example projects
 - [Fishyphus](https://shiftbacktick.itch.io/fishyphus) - Sisyphean fishing horror
 - [Lacus Opportunitas](https://shiftbacktick.itch.io/lacus-opportunitas) - Lunar lake trading simulator
+- [Lost Lakes](https://shiftbacktick.itch.io/lost-lakes) - Northwoods hiking simulator
 - [Project Ephemera](https://shiftbacktick.itch.io/project-ephemera) - Forgotten demo disc of synths
 - [THE OMEGA REACH](https://shiftbacktick.itch.io/the-omega-reach) - Tactile universe explorer
 
