@@ -122,7 +122,7 @@ syngen.tool.quadtree.prototype = {
     }
 
     return items
-  }
+  },
   /**
    * Finds the closest item to `query` within `radius`.
    * If `query` is contained within the tree, then the next closest item is returned.

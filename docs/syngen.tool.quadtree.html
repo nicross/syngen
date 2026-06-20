@@ -921,6 +921,252 @@ Typically this is set programmatically.</p></td>
     
 
     
+    <h4 class="name" id="filter"><span class="type-signature"></span>filter<span class="signature">(filterNode, filterItem, items<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;Object>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Returns the items which satisfy <code>filterNode</code> and <code>filterItem</code>.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>filterNode</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last"><p>Returns <code>true</code> if the passed <code>center</code> and <code>radius</code> describing the node's bounding cube should be traversed.
+Use this as an optimization.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>filterItem</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last"><p>Returns whether the passed <code>item</code> is included in the result set.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>items</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    []
+                
+                </td>
+            
+
+            <td class="description last"><p>Do not use. Used internally for performance.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="syngen_tool_quadtree.js.html">syngen/tool/quadtree.js</a>, <a href="syngen_tool_quadtree.js.html#line103">line 103</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Object></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="find"><span class="type-signature"></span>find<span class="signature">(query, radius<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Object|undefined}</span></h4>
     
 
@@ -1151,7 +1397,7 @@ If no result is found, then <code>undefined</code> is returned.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_tool_quadtree.js.html">syngen/tool/quadtree.js</a>, <a href="syngen_tool_quadtree.js.html#line103">line 103</a>
+        <a href="syngen_tool_quadtree.js.html">syngen/tool/quadtree.js</a>, <a href="syngen_tool_quadtree.js.html#line137">line 137</a>
     </li></ul></dd>
     
 
@@ -1309,7 +1555,7 @@ If no result is found, then <code>undefined</code> is returned.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_tool_quadtree.js.html">syngen/tool/quadtree.js</a>, <a href="syngen_tool_quadtree.js.html#line204">line 204</a>
+        <a href="syngen_tool_quadtree.js.html">syngen/tool/quadtree.js</a>, <a href="syngen_tool_quadtree.js.html#line238">line 238</a>
     </li></ul></dd>
     
 
@@ -1632,7 +1878,7 @@ If no result is found, then <code>undefined</code> is returned.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_tool_quadtree.js.html">syngen/tool/quadtree.js</a>, <a href="syngen_tool_quadtree.js.html#line237">line 237</a>
+        <a href="syngen_tool_quadtree.js.html">syngen/tool/quadtree.js</a>, <a href="syngen_tool_quadtree.js.html#line271">line 271</a>
     </li></ul></dd>
     
 
@@ -1801,7 +2047,7 @@ If no result is found, then <code>undefined</code> is returned.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_tool_quadtree.js.html">syngen/tool/quadtree.js</a>, <a href="syngen_tool_quadtree.js.html#line245">line 245</a>
+        <a href="syngen_tool_quadtree.js.html">syngen/tool/quadtree.js</a>, <a href="syngen_tool_quadtree.js.html#line279">line 279</a>
     </li></ul></dd>
     
 
@@ -2124,7 +2370,7 @@ If no result is found, then <code>undefined</code> is returned.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="syngen_tool_quadtree.js.html">syngen/tool/quadtree.js</a>, <a href="syngen_tool_quadtree.js.html#line271">line 271</a>
+        <a href="syngen_tool_quadtree.js.html">syngen/tool/quadtree.js</a>, <a href="syngen_tool_quadtree.js.html#line305">line 305</a>
     </li></ul></dd>
     
 

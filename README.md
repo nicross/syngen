@@ -70,20 +70,20 @@ Common tasks have been automated with [Gulp](https://gulpjs.com):
 
 #### Build distributables only
 ```sh
-gulp dist
+npx gulp dist
 ```
 
 #### Build documentation only
 ```sh
-gulp docs
+npx gulp docs
 ```
 
 #### Build everything once
 ```sh
-gulp build
+npx gulp build
 ```
 
 #### Build everything continuously
 ```sh
-gulp watch
+npx gulp watch
 ```

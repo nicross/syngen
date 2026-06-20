@@ -1,4 +1,4 @@
-/* syngen v2.0.0-beta.2 */
+/* syngen v2.0.0-beta.4 */
 (() => {
 'use strict'
 /**
@@ -1624,7 +1624,7 @@ syngen.tool.cache3d.prototype = {
 
     return this
   },
-  set: function (x, y, value) {
+  set: function (x, y, z, value) {
     let xMap = this.map.get(x)
 
     if (!xMap) {
@@ -4017,6 +4017,40 @@ syngen.tool.quadtree.prototype = {
    */
   destroy: function () {
     return this.clear()
+  },
+  /**
+   * Returns the items which satisfy `filterNode` and `filterItem`.
+   * @param {Function} filterNode
+   *   Returns `true` if the passed `center` and `radius` describing the node's bounding cube should be traversed.
+   *   Use this as an optimization.
+   * @param {Function} filterItem
+   *   Returns whether the passed `item` is included in the result set.
+   * @param {Array} [items=[]]
+   *   Do not use. Used internally for performance.
+   * @returns {Object[]}
+   */
+  filter: function (filterNode, filterItem, items = []) {
+    if (!filterNode(this.center, this.radius)) {
+      return items
+    }
+
+    if (this.items.length) {
+      for (const item of this.items) {
+        if (filterItem) {
+          if (filterItem(item)) {
+            items.push(item)
+          }
+        } else {
+          items.push(item)
+        }
+      }
+    } else if (this.nodes.length) {
+      for (const node of this.nodes) {
+        node.filter(filterNode, filterItem, items)
+      }
+    }
+
+    return items
   },
   /**
    * Finds the closest item to `query` within `radius`.
@@ -7195,16 +7229,16 @@ syngen.ephemera = (() => {
   resetTimer()
 
   function resetManaged() {
-    for (const ephemeral of ephemera) {
-      resetManagedItem(ephemera)
+    for (const item of ephemera) {
+      resetManagedItem(item)
     }
   }
 
-  function resetManagedItem(ephemeral) {
-    if (ephemeral.clear) {
-      ephemeral.clear()
-    } else if (ephemeral.reset) {
-      ephemeral.reset()
+  function resetManagedItem(item) {
+    if (item.clear) {
+      item.clear()
+    } else if (item.reset) {
+      item.reset()
     }
   }
 
@@ -7213,20 +7247,20 @@ syngen.ephemera = (() => {
   }
 
   return {
-    add: function (ephemeral) {
-      if (!ephemeral || (!ephemeral.clear && !ephemeral.reset)) {
+    add: function (item) {
+      if (!item || (!item.clear && !item.reset)) {
         return this
       }
 
-      ephemera.add(ephemeral)
+      ephemera.add(item)
 
       return this
     },
-    remove: function (ephemeral, reset = true) {
-      ephemera.delete(ephemeral)
+    remove: function (item, reset = true) {
+      ephemera.delete(item)
 
       if (reset) {
-        resetManagedItem(ephemeral)
+        resetManagedItem(item)
       }
 
       return this
