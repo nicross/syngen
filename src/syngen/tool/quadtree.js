@@ -90,6 +90,40 @@ syngen.tool.quadtree.prototype = {
     return this.clear()
   },
   /**
+   * Returns the items which satisfy `filterNode` and `filterItem`.
+   * @param {Function} filterNode
+   *   Returns `true` if the passed `center` and `radius` describing the node's bounding cube should be traversed.
+   *   Use this as an optimization.
+   * @param {Function} filterItem
+   *   Returns whether the passed `item` is included in the result set.
+   * @param {Array} [items=[]]
+   *   Do not use. Used internally for performance.
+   * @returns {Object[]}
+   */
+  filter: function (filterNode, filterItem, items = []) {
+    if (!filterNode(this.center, this.radius)) {
+      return items
+    }
+
+    if (this.items.length) {
+      for (const item of this.items) {
+        if (filterItem) {
+          if (filterItem(item)) {
+            items.push(item)
+          }
+        } else {
+          items.push(item)
+        }
+      }
+    } else if (this.nodes.length) {
+      for (const node of this.nodes) {
+        node.filter(filterNode, filterItem, items)
+      }
+    }
+
+    return items
+  }
+  /**
    * Finds the closest item to `query` within `radius`.
    * If `query` is contained within the tree, then the next closest item is returned.
    * If no result is found, then `undefined` is returned.
