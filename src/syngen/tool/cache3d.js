@@ -26,7 +26,7 @@ syngen.tool.cache3d.prototype = {
 
     return this
   },
-  set: function (x, y, value) {
+  set: function (x, y, z, value) {
     let xMap = this.map.get(x)
 
     if (!xMap) {
