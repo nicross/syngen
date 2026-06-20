@@ -8,16 +8,16 @@ syngen.ephemera = (() => {
   resetTimer()
 
   function resetManaged() {
-    for (const ephemeral of ephemera) {
-      resetManagedItem(ephemera)
+    for (const item of ephemera) {
+      resetManagedItem(item)
     }
   }
 
-  function resetManagedItem(ephemeral) {
-    if (ephemeral.clear) {
-      ephemeral.clear()
-    } else if (ephemeral.reset) {
-      ephemeral.reset()
+  function resetManagedItem(item) {
+    if (item.clear) {
+      item.clear()
+    } else if (item.reset) {
+      item.reset()
     }
   }
 
@@ -26,20 +26,20 @@ syngen.ephemera = (() => {
   }
 
   return {
-    add: function (ephemeral) {
-      if (!ephemeral || (!ephemeral.clear && !ephemeral.reset)) {
+    add: function (item) {
+      if (!item || (!item.clear && !item.reset)) {
         return this
       }
 
-      ephemera.add(ephemeral)
+      ephemera.add(item)
 
       return this
     },
-    remove: function (ephemeral, reset = true) {
-      ephemera.delete(ephemeral)
+    remove: function (item, reset = true) {
+      ephemera.delete(item)
 
       if (reset) {
-        resetManagedItem(ephemeral)
+        resetManagedItem(item)
       }
 
       return this
