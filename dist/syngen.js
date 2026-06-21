@@ -1,4 +1,4 @@
-/* syngen v2.0.0-beta.4 */
+/* syngen v2.0.0-beta.5 */
 (() => {
 'use strict'
 /**
@@ -2243,19 +2243,18 @@ syngen.tool.generator2d.prototype = {
     }
 
     // Stream chunks in square around position
-    const radius = this.radius,
-      streamed = []
+    const radius = this.radius
 
-    const loaded = new Set(),
-      unloaded = new Set(this.loaded)
+    const streamed = new Set(this.loaded),
+      toLoad = new Set(),
+      toStream = new Set(),
+      toUnload = new Set(this.loaded)
 
     for (let x = cx - radius; x <= cx + radius; x += 1) {
       for (let y = cy - radius; y <= cy + radius; y += 1) {
         let chunk = this.cache.get(x, y)
 
-        if (chunk) {
-          unloaded.delete(chunk)
-        } else {
+        if (!chunk) {
           chunk = {
             x,
             y,
@@ -2263,26 +2262,29 @@ syngen.tool.generator2d.prototype = {
           }
 
           this.cache.set(x, y, chunk)
-          loaded.add(chunk)
         }
 
-        streamed.push(chunk)
+        if (!streamed.has(chunk)) {
+          toLoad.add(chunk)
+        }
+
+        toStream.add(chunk)
+        toUnload.delete(chunk)
       }
     }
 
     // Load and unload chunks
-    for (const chunk of loaded) {
+    for (const chunk of toLoad) {
       this.pubsub.emit('load', chunk)
     }
 
-    for (const chunk of unloaded) {
+    for (const chunk of toUnload) {
       this.pubsub.emit('unload', chunk)
     }
 
-    this.loaded = streamed
-
-    // Update current chunk
+    // Update state
     this.current = this.cache.get(cx, cy)
+    this.loaded = [...toStream]
 
     return this
   },
@@ -2336,20 +2338,19 @@ syngen.tool.generator3d.prototype = {
     }
 
     // Stream chunks in square around position
-    const radius = this.radius,
-      streamed = []
+    const radius = this.radius
 
-    const loaded = new Set(),
-      unloaded = new Set(this.loaded)
+    const streamed = new Set(this.loaded),
+      toLoad = new Set(),
+      toStream = new Set(),
+      toUnload = new Set(this.loaded)
 
     for (let x = cx - radius; x <= cx + radius; x += 1) {
       for (let y = cy - radius; y <= cy + radius; y += 1) {
         for (let y = cy - radius; y <= cy + radius; y += 1) {
           let chunk = this.cache.get(x, y, z)
 
-          if (chunk) {
-            unloaded.delete(chunk)
-          } else {
+          if (!chunk) {
             chunk = {
               x,
               y,
@@ -2358,27 +2359,30 @@ syngen.tool.generator3d.prototype = {
             }
 
             this.cache.set(x, y, z, chunk)
-            loaded.add(chunk)
           }
 
-          streamed.push(chunk)
+          if (!streamed.has(chunk)) {
+            toLoad.add(chunk)
+          }
+
+          toStream.add(chunk)
+          toUnload.delete(chunk)
         }
       }
     }
 
     // Load and unload chunks
-    for (const chunk of loaded) {
+    for (const chunk of toLoad) {
       this.pubsub.emit('load', chunk)
     }
 
-    for (const chunk of unloaded) {
+    for (const chunk of toUnload) {
       this.pubsub.emit('unload', chunk)
     }
 
-    this.loaded = streamed
-
-    // Update current chunk
+    // Update state
     this.current = this.cache.get(cx, cy, cz)
+    this.loaded = [...toStream]
 
     return this
   },
