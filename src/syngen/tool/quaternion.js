@@ -159,11 +159,11 @@ syngen.tool.quaternion.prototype = {
    * @returns {syngen.tool.quaternion}
    */
   divide: function (divisor) {
-    if (!syngen.tool.quaternion.prototype.isPrototypeOf(quaternion)) {
-      quaternion = syngen.tool.quaternion.create(quaternion)
+    if (!syngen.tool.quaternion.prototype.isPrototypeOf(divisor)) {
+      quaternion = syngen.tool.quaternion.create(divisor)
     }
 
-    return this.multiply(quaternion.inverse())
+    return this.multiply(divisor.inverse())
   },
   /**
    * Returns whether this is equal to `quaternion`.

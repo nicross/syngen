@@ -55,7 +55,7 @@ syngen.tool.generator3d.prototype = {
 
     for (let x = cx - radius; x <= cx + radius; x += 1) {
       for (let y = cy - radius; y <= cy + radius; y += 1) {
-        for (let y = cy - radius; y <= cy + radius; y += 1) {
+        for (let z = cz - radius; z <= cz + radius; z += 1) {
           let chunk = this.cache.get(x, y, z)
 
           if (!chunk) {

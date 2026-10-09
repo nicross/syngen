@@ -41,7 +41,7 @@ syngen.circuit.lerp = ({
   min.start(when)
 
   const wrapper = {
-    stop: (when = syngen.time()) => {
+    stop: function (when = syngen.time()) {
       max.stop(when)
       min.stop(when)
       return this

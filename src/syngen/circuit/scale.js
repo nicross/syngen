@@ -51,7 +51,7 @@ syngen.circuit.scale = ({
   })
 
   const wrapper = {
-    stop: (when = syngen.time()) => {
+    stop: function (when = syngen.time()) {
       lerp.stop(when)
       offset.stop(when)
       return this

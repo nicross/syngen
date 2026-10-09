@@ -41,7 +41,7 @@ syngen.effect.shaper = ({
     param: {
       dry: dry.gain,
       gain: output.gain,
-      preGain: inputGain.gain,
+      preGain: preGain.gain,
       wet: wet.gain,
     }
   }

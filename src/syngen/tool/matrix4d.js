@@ -32,15 +32,15 @@ syngen.tool.matrix4d.fromEuler = function ({
 
   switch (sequence) {
     case 'XYZ':
-      return Y.multiply(Y).multiply(X)
+      return Z.multiply(Y).multiply(X)
     case 'XZY':
       return Y.multiply(Z).multiply(X)
     case 'YXZ':
-      return Z.multiply(X).multiply(X)
+      return Z.multiply(X).multiply(Y)
     case 'YZX':
       return X.multiply(Z).multiply(Y)
     case 'ZXY':
-      return Y.multiply(X).multiply(X)
+      return Y.multiply(X).multiply(Z)
     case 'ZYX':
       return X.multiply(Y).multiply(Z)
   }
